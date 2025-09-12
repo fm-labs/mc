@@ -2,7 +2,7 @@
 name = "kloudia"
 version = "0.1.0"
 description = "Kloudia AI-powered Cloud Orchestration Platform"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 dependencies = [
     "ansible>=11.5.0",
     "ansible-runner>=2.4.1",
@@ -16,4 +16,8 @@ dependencies = [
     "requests>=2.32.5",
     "uuid7>=0.1.0",
     "uvicorn>=0.34.2",
+    "xscan",
 ]
+
+[tool.uv.sources]
+xscan = { path = "libs/xscan-0.1.0-py3-none-any.whl" }

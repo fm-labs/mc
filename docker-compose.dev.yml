@@ -12,9 +12,13 @@ services:
     networks:
       - kloudia-net
     volumes:
-      - ./config:/app/config:ro
-      - ./data:/data
+      - ${PWD}/config:/app/config:ro
+      - ${PWD}/data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
+      - HOST_DATA_DIR=${PWD}/data
+      - HOST_CONFIG_DIR=${PWD}/config
+      - CONFIG_DIR=/app/config
       - DATA_DIR=/data
       - REDIS_HOST=redis
       - REDIS_PORT=6379

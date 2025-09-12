@@ -4,11 +4,16 @@ FROM python:3.13.4-alpine3.22
 RUN apk update && apk add --no-cache \
     openssh \
     bash \
-    supervisor
+    supervisor \
+    docker-cli \
+    git \
+    curl
 
 # Set a non-root user
 RUN addgroup -S app && \
-    adduser -S app -G app
+    addgroup -S docker && \
+    adduser -S app -G app && \
+    adduser app docker
 
 
 # Working directory
@@ -17,6 +22,7 @@ WORKDIR /app
 # Install python dependencies
 RUN pip install --no-cache-dir uv
 COPY ./pyproject.toml ./uv.lock /app/
+COPY ./libs /app/libs
 RUN uv sync --no-cache-dir
 
 # Copy the rest of the files
