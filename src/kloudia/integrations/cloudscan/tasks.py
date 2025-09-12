@@ -41,6 +41,7 @@ def cloudscan_aws_inventory_scan_task(**kwargs):
                "-v", f"{HOST_CONFIG_DIR}/aws:/aws:ro",
                "-v", f"{HOST_DATA_DIR}:/data",
                image_name,
+               "aws",
                "scan",
                aws_account_id,
                aws_region_name,

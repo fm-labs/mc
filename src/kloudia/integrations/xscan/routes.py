@@ -21,11 +21,13 @@ router = APIRouter()
 def fetch_scan_results(category: str, target: str) -> List[dict]:
     return load_config_json("scan_results_example")
 
-@router.get("/results/{category}/{target}", response_model=KloudiaScanResultModel)
+
+@router.get("/xscan/results/{category}/{target}", response_model=KloudiaScanResultModel)
 async def get_scan_results(category: str, target: str) -> List[KloudiaScanResultModel]:
     return [KloudiaScanResultModel(**result) for result in fetch_scan_results(category, target)]
 
-@router.post("/run/{category}/{target}")
+
+@router.post("/xscan/run/{category}/{target}")
 async def run_domain_scan(category: str, target: str):
     if category == "cloud":
         task = scan_cloud_task.delay(target)

@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter
 
 from kloudia.config import load_config_json
-from kloudia.repos.datamodels import KloudiaRepoModel
+from kloudia.inventory.repos.datamodels import KloudiaRepoModel
 
 router = APIRouter()
 
