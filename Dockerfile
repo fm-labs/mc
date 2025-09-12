@@ -9,12 +9,6 @@ RUN apk update && apk add --no-cache \
     git \
     curl
 
-# Set a non-root user
-RUN addgroup -S app && \
-    addgroup -S docker && \
-    adduser -S app -G app && \
-    adduser app docker
-
 
 # Working directory
 WORKDIR /app
@@ -31,6 +25,11 @@ COPY ./src /app/src
 # Supervisor
 COPY ./docker/supervisor/supervisord.conf /etc/supervisord.conf
 COPY ./docker/supervisor/celery_worker.ini ./docker/supervisor/celery_flower.ini ./docker/supervisor/api.ini /etc/supervisor.d/
+
+# Set a non-root user
+RUN addgroup -S app && \
+    adduser -S app -G app && \
+    adduser app root # to allow docker socket access
 
 # Set file and directory permissions
 RUN chown -R app:app /app && \
