@@ -15,7 +15,12 @@ case $CMD in
 
   celery-worker)
     echo "Starting celery worker..."
-    celery --workdir ./src -A celery_worker.celery worker --loglevel=INFO
+    celery --workdir ./src -A celery_worker.celery worker --loglevel=INFO -E
+    ;;
+
+  celery-flower)
+    echo "Starting celery flower..."
+    celery --workdir ./src -A celery_worker.celery flower --loglevel=INFO
     ;;
 
   build-image)

@@ -8,6 +8,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "13080:8000"
+      - "13555:5555"
     networks:
       - kloudia-net
     volumes:

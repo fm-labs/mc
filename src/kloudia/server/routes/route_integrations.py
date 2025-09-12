@@ -11,7 +11,7 @@ def fetch_integrations() -> List[dict]:
     return load_config_json("integrations")
 
 @router.get("/")
-async def list_integrations() -> List[any]:
+async def list_integrations() -> List[dict]:
     return fetch_integrations()
 
 

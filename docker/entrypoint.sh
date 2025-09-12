@@ -4,6 +4,9 @@ CMD=$1
 PYTHON_PATH="/app/src:$PYTHON_PATH"
 export PYTHONPATH
 
+FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
+FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-admin}
+
 case $CMD in
   api)
     echo "Starting dev API server..."
@@ -14,7 +17,14 @@ case $CMD in
   celery-worker)
     echo "Starting celery worker..."
     sleep 3 # wait for other services to be ready
-    exec uv run celery --workdir /app/src -A celery_worker.celery worker --loglevel=INFO
+    exec uv run celery --workdir /app/src -A celery_worker.celery worker --loglevel=INFO -E
+    ;;
+
+
+  celery-flower)
+    echo "Starting celery flower..."
+    sleep 3 # wait for other services to be ready
+    exec uv run celery --workdir /app/src -A celery_worker.celery flower --loglevel=INFO --basic-auth=${FLOWER_USER_NAME}:${FLOWER_USER_PASSWORD}
     ;;
 
   supervisor)

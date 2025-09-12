@@ -24,7 +24,7 @@ COPY ./src /app/src
 
 # Supervisor
 COPY ./docker/supervisor/supervisord.conf /etc/supervisord.conf
-COPY ./docker/supervisor/celery_worker.ini ./docker/supervisor/api.ini /etc/supervisor.d/
+COPY ./docker/supervisor/celery_worker.ini ./docker/supervisor/celery_flower.ini ./docker/supervisor/api.ini /etc/supervisor.d/
 
 # Set file and directory permissions
 RUN chown -R app:app /app && \
@@ -54,4 +54,7 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
 CMD ["supervisor"]
 USER app
 
+# API port
 EXPOSE 8000
+# Flower port
+EXPOSE 5555

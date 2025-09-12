@@ -8,6 +8,7 @@ dependencies = [
     "ansible-runner>=2.4.1",
     "celery>=5.5.1",
     "fastapi>=0.115.12",
+    "flower>=2.0.1",
     "jinja2>=3.1.6",
     "pydantic>=2.11.3",
     "pymongo>=4.12.0",
