@@ -1,13 +1,13 @@
 import json
 import os
 
-from kloudia.integrations.github_integration import github_list_private_repos
+from kloudia.plugin.github.github_api import github_get_repos
 
 if __name__ == "__main__":
 
     github_token = os.environ.get("GITHUB_TOKEN", default="")
     # list all repos for a user
-    repos = github_list_private_repos(github_token)
+    repos = github_get_repos(github_token, visibility="all")
 
     print(repos)
     print(f"Found {len(repos)} repositories")

@@ -1,5 +1,5 @@
-
 # Make sure all tasks are imported, so that Celery can find them
+# flake8: noqa
 from orchestra.celery import celery
 from orchestra.tasks import *
 from kloudia.tasks import *
