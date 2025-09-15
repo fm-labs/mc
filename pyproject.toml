@@ -20,4 +20,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-xscan = { path = "libs/xscan-0.1.0-py3-none-any.whl" }
+xscan = { path = "libs/xscan-1.1.0-py3-none-any.whl" }
