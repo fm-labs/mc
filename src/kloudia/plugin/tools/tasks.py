@@ -1,11 +1,11 @@
 import subprocess
 
 from orchestra.celery import celery
-from kloudia.integrations.tools.toolindex import TOOL_INDEX
+from kloudia.plugin.tools.toolindex import TOOL_INDEX
 
 
 @celery.task
-def tool_exec_task(tool_name: str, command: str, **kwargs):
+def task_tool_exec(tool_name: str, command: str, **kwargs):
     if tool_name not in TOOL_INDEX:
         return {"error": f"Tool '{tool_name}' not found."}
 

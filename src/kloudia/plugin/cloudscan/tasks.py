@@ -6,7 +6,7 @@ from orchestra.celery import celery
 
 
 @celery.task
-def cloudscan_aws_inventory_scan_task(**kwargs):
+def task_cloudscan_aws_inventory_scan(**kwargs):
     # launch a docker container with the cloudscan image
     image_name = "fmlabs/cloudscan:latest"
 

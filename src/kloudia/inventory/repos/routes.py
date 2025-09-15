@@ -10,7 +10,7 @@ router = APIRouter()
 def fetch_repos() -> List[dict]:
     return load_config_json("repos")
 
-@router.get("/")
+@router.get("/inventory/repos")
 async def get_repos() -> List[KloudiaRepoModel]:
     return [KloudiaRepoModel(**repo) for repo in fetch_repos()]
 

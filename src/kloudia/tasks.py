@@ -3,8 +3,7 @@
 # flake8: noqa
 
 # Import all tasks to register them with Celery
-from kloudia.integrations.demo.tasks import *
-from kloudia.integrations.xscan.tasks import *
-from kloudia.integrations.cloudscan.tasks import *
-from kloudia.integrations.tools.tasks import *
-
+from kloudia.plugin.demo.tasks import *
+from kloudia.plugin.xscan.tasks import *
+from kloudia.plugin.cloudscan.tasks import *
+from kloudia.plugin.tools.tasks import *
