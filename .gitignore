@@ -7,6 +7,7 @@ resources/
 templates/
 tmp/
 src/oapp/
+src/x*.py
 projects.json
 
 ### Python template
