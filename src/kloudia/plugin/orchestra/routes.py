@@ -6,12 +6,12 @@ from fastapi import APIRouter
 from fastapi import WebSocket, HTTPException
 from fastapi.encoders import jsonable_encoder
 
+from kloudia.db.redis import get_redis_pubsub
 from orchestra.celery import celery, get_celery_task_instance
 from orchestra.datamodels import KoCeleryTaskSubmissionModel, KoCeleryTaskSubmissionResponseModel, \
     KoCeleryTaskInstanceModel, \
     KoAnsibleRunModel
-from orchestra.storage.mongodb import get_ansible_runs_collection
-from orchestra.storage.redis import get_redis_pubsub
+from orchestra.mongodb_helper import get_ansible_runs_collection, get_celery_task_log_collection
 
 router = APIRouter()
 
@@ -43,8 +43,24 @@ def create_celery_task(task: KoCeleryTaskSubmissionModel) -> KoCeleryTaskSubmiss
 @router.get("/celery/tasks/{task_id}", response_model=KoCeleryTaskSubmissionResponseModel)
 def get_celery_task(task_id: str) -> KoCeleryTaskInstanceModel:
     try:
-        task = get_celery_task_instance(task_id)
-        return jsonable_encoder(task)
+        task_data = get_celery_task_instance(task_id)
+        task_model = KoCeleryTaskInstanceModel(**task_data)
+        return jsonable_encoder(task_model)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/celery/logs/{task_id}")
+def get_celery_task_logs(task_id: str) -> dict:
+    """
+    Get Celery task logs from MongoDB.
+    """
+    try:
+        collection = get_celery_task_log_collection()
+        task_log = collection.find_one({"task_id": task_id})
+        if not task_log:
+            raise HTTPException(status_code=404, detail="Logs not found")
+        return jsonable_encoder(task_log)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

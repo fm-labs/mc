@@ -1,7 +1,7 @@
 import time
 
 from orchestra.ansible.runner import KoAnsibleRunModel
-from orchestra.storage.mongodb import get_ansible_runs_collection
+from orchestra.mongodb_helper import get_ansible_runs_collection
 
 
 def insert_ansible_run_record(run_id: str, project: str, playbook: str) -> KoAnsibleRunModel:

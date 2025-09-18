@@ -2,7 +2,7 @@ import os
 from tempfile import mkdtemp
 
 from orchestra.settings import DATA_DIR, TMP_DIR, RESOURCES_DIR
-from orchestra.utils.file_util import write_file
+from kloudia.util.file_util import write_file
 
 PROJECTS_DATA_DIR=os.path.join(DATA_DIR, "projects")
 

@@ -1,8 +1,11 @@
 # This file contains the celery app instance which is used to run the tasks
+from datetime import datetime
+
 from celery import Celery
+from celery.signals import task_prerun, task_postrun, task_failure, task_internal_error
 
 from orchestra import settings
-from orchestra.datamodels import KoCeleryTaskInstanceModel
+from orchestra.mongodb_helper import get_celery_task_log_collection
 
 celery_config = dict()
 celery_config['CELERY_BROKER_URL'] = settings.CELERY_BROKER_URL
@@ -21,7 +24,7 @@ def get_celery_task_object(task_id: str):
     return task
 
 
-def get_celery_task_instance(task_id: str) -> KoCeleryTaskInstanceModel:
+def get_celery_task_instance(task_id: str) -> dict:
     task = celery.AsyncResult(task_id)
     if task is None:
         raise Exception("Task not found")
@@ -52,4 +55,86 @@ def get_celery_task_instance(task_id: str) -> KoCeleryTaskInstanceModel:
     elif task.state == 'FAILURE':
         response_data['error'] = str(task.info)
 
-    return KoCeleryTaskInstanceModel(**response_data)
+    return response_data
+
+
+
+@task_prerun.connect
+def task_started_handler(sender=None, task_id=None, task=None, args=None, kwargs=None, **extra):
+    print("+++ Task Started:", task_id, sender.name)
+    log = {
+        "task_id": task_id,
+        "parent_task_id": getattr(task, 'parent_id', None),
+        "task_name": sender.name,
+        "state": "STARTED",
+        "args": args,
+        "kwargs": kwargs,
+        "start_time": datetime.utcnow(),
+    }
+
+    try:
+        collection = get_celery_task_log_collection()
+        collection.insert_one(log)
+    except Exception as e:
+        print("Failed to log task start:", e)
+
+
+@task_postrun.connect
+def task_finished_handler(sender=None, task_id=None, task=None, args=None, kwargs=None, retval=None, state=None, **extra):
+    print("+++ Task Finished:", task_id, state)
+
+    try:
+        collection = get_celery_task_log_collection()
+        collection.update_one(
+            {"task_id": task_id},
+            {
+                "$set": {
+                    "state": state,
+                    "end_time": datetime.utcnow(),
+                    "result": str(retval),
+                }
+            }
+        )
+    except Exception as e:
+        print("Failed to log task completion:", e)
+
+
+@task_failure.connect
+def task_failure_handler(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, einfo=None, **extra):
+    print("!!! Task Failure:", task_id, exception)
+
+    try:
+        collection = get_celery_task_log_collection()
+        collection.update_one(
+            {"task_id": task_id},
+            {
+                "$set": {
+                    "state": "FAILURE",
+                    "end_time": datetime.utcnow(),
+                    "error": str(exception),
+                    "traceback": str(traceback),
+                }
+            }
+        )
+    except Exception as e:
+        print("Failed to log task failure:", e)
+
+
+@task_internal_error.connect
+def task_internal_error_handler(sender=None, task_id=None, exception=None, args=None, kwargs=None, einfo=None, **extra):
+    print("!!! Internal error in task:", task_id, exception)
+
+    try:
+        collection = get_celery_task_log_collection()
+        collection.update_one(
+            {"task_id": task_id},
+            {
+                "$set": {
+                    "state": "INTERNAL_ERROR",
+                    "end_time": datetime.utcnow(),
+                    "error": str(exception),
+                }
+            }
+        )
+    except Exception as e:
+        print("Failed to log internal error:", e)

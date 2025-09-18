@@ -1,11 +1,36 @@
+import os
 import subprocess
 
+from kloudia import config
 from orchestra.celery import celery
 from kloudia.plugin.tools.toolindex import TOOL_INDEX
 
 
+@celery.task(bind=True)
+def task_subprocess_run(self, cmd: list, env: dict = None):
+    try:
+
+
+        print(f"Running command: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        print(f"Command finished with return code {result.returncode}")
+        print(f"STDOUT:\n{result.stdout}")
+        print(f"STDERR:\n{result.stderr}")
+
+        if result.returncode != 0:
+            return {"error": f"Command failed with return code {result.returncode}",
+                    "output": result.stdout,
+                    "stderr": result.stderr,
+                    "returncode": result.returncode}
+
+        return {"output": result.stdout}
+    except subprocess.CalledProcessError as e:
+        return {"error": str(e), "output": e.output}
+    except Exception as e:
+        return {"error": str(e)}
+
 @celery.task
-def task_tool_exec(tool_name: str, command: str, **kwargs):
+def task_tool_exec(self, tool_name: str, command: str, **kwargs):
     if tool_name not in TOOL_INDEX:
         return {"error": f"Tool '{tool_name}' not found."}
 
@@ -28,6 +53,8 @@ def task_tool_exec(tool_name: str, command: str, **kwargs):
             cmd = [part.replace(f"{{{{{arg}}}}}", str(kwargs[arg])) for part in cmd]
 
         print(f"Running command: {' '.join(cmd)}")
+        env = {}
+        env["HOST_DATA_DIR"] = config.HOST_DATA_DIR
         result = subprocess.run(cmd, capture_output=True, text=True)
         print(f"Command finished with return code {result.returncode}")
         print(f"STDOUT:\n{result.stdout}")

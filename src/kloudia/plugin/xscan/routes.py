@@ -1,11 +1,9 @@
-import uuid
 from typing import List
 
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from kloudia.config import load_config_json
-from kloudia.tasks import task_scan_cloud, task_scan_repo, task_scan_domain
+from kloudia.plugin.xscan.helper import fetch_scan_result
 
 class KloudiaScanConfigModel(BaseModel):
     mode: str
@@ -23,35 +21,21 @@ class KloudiaScanResultModel(BaseModel):
 
 router = APIRouter()
 
-def fetch_scan_results(scan_id) -> List[dict]:
-    all_results = load_config_json("scan_results_example")
-    return [result for result in all_results if result["uuid"] == scan_id]
 
-
-@router.get("/xscan/{scan_id}", response_model=KloudiaScanResultModel)
-async def get_scan_results(uuid: str) -> KloudiaScanResultModel | dict:
+@router.get("/xscan/results/{scan_id}", response_model=KloudiaScanResultModel)
+async def get_xscan_results(uuid: str) -> KloudiaScanResultModel | dict:
     """
     Retrieve scan results by scan ID.
     """
-    result = fetch_scan_results(uuid)
+    result = fetch_scan_result(uuid)
     if not result:
         return {"error": "Scan not found."}, 404
     return KloudiaScanResultModel(**result[0])
 
 
-@router.post("/xscan/run")
-async def run_domain_scan(request: KloudiaScanConfigModel) -> dict:
-    mode = request.mode
-    target = request.target
-    scan_id = str(uuid.uuid4())
-
-    if mode == "cloud":
-        task = task_scan_cloud.delay(target, ref=scan_id)
-    elif mode == "repo":
-        task = task_scan_repo.delay(target, ref=scan_id)
-    elif mode == "domain":
-        task = task_scan_domain.delay(target, ref=scan_id)
-    else:
-        return {"error": "Invalid scan category."}
-
-    return {"scan_id": scan_id, "task_id": task.id, "status": "queued"}
+# @router.post("/xscan/run")
+# async def submit_xscan_request(request: KloudiaScanConfigModel) -> dict:
+#     mode = request.mode
+#     target = request.target
+#
+#     return init_scan(mode, target)

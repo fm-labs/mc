@@ -9,6 +9,8 @@ tmp/
 src/oapp/
 src/x*.py
 projects.json
+.env.local
+*.local
 
 ### Python template
 # Byte-compiled / optimized / DLL files

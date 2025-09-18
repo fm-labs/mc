@@ -22,7 +22,10 @@ services:
       - DATA_DIR=/data
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - MONGODB_URL=mongodb://mongodb:27017
+      - REDIS_DB=0
+      - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
+    env_file:
+      - .env.local
     links:
       - redis
       - mongodb
@@ -43,6 +46,10 @@ services:
     image: mongo:latest
     ports:
       - "13017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
+      - MONGO_INITDB_ROOT_AUTHENTICATION_DATABASE=admin
     networks:
       - kloudia-net
     volumes:

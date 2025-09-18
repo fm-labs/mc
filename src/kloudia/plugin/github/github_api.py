@@ -22,7 +22,7 @@ def github_get_repos(token: str, visibility=None) -> list[dict]:
 
 
     while True:
-        url = f"https://api.github.com/user/repos?per_page=100&page={page}"
+        url = f"https://api.github.com/user/repos?per_page=100&page={page}&affiliation=owner"
         if visibility:
             url += f"&visibility={visibility}"
 
