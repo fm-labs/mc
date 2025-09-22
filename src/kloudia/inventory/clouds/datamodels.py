@@ -21,6 +21,6 @@ class KloudiaAzureAccountModel(BaseModel):
 class KloudiaCloudModel(BaseModel):
     name: str
     platform: str
-    aws: KloudiaAwsAccountModel = None
-    gcp: KloudiaGcpAccountModel = None
-    azure: KloudiaAzureAccountModel = None
+    aws: KloudiaAwsAccountModel | None = None
+    gcp: KloudiaGcpAccountModel | None = None
+    azure: KloudiaAzureAccountModel | None = None

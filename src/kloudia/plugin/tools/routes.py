@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from kloudia.plugin.tools.toolindex import TOOL_INDEX
+from kloudia.plugin.tools.toolindex import get_tool_index, get_tool_def
 from kloudia.plugin.tools.tasks import task_tool_exec
 
 router = APIRouter()
@@ -11,7 +11,7 @@ async def list_tools():
     """
     List tools.
     """
-    return TOOL_INDEX
+    return get_tool_index()
 
 
 @router.get("/tools/{tool_name}")
@@ -19,28 +19,32 @@ async def get_tool(tool_name: str):
     """
     Get tool details with list of commands.
     """
-    if tool_name not in TOOL_INDEX:
+    tool = get_tool_def(tool_name)
+    if not tool:
         return {"error": f"Tool '{tool_name}' not found."}
-    return TOOL_INDEX[tool_name]
+    return tool
 
 
-@router.post("/tools/exec/{tool_name}/{command}")
-async def execute_tool_command(tool_name: str, command: str, args: dict):
-    if tool_name not in TOOL_INDEX:
+@router.post("/tools/exec/{tool_name}/{command_name}")
+async def execute_tool_command(tool_name: str, command_name: str, args: dict):
+    tool = get_tool_def(tool_name)
+    if not tool:
         return {"error": f"Tool '{tool_name}' not found."}
-    if command not in TOOL_INDEX[tool_name]:
-        return {"error": f"Command '{command}' not found in tool '{tool_name}'."}
+    if command_name not in tool.get("commands", {}):
+        return {"error": f"Command '{command_name}' not found in tool '{tool_name}'."}
 
-    result = task_tool_exec(tool_name, command, **args)
+    result = task_tool_exec(tool_name, command_name, **args)
     return result
 
 
-@router.post("/tools/delay/{tool_name}/{command}")
-async def execute_tool_command_delayed(tool_name: str, command: str, args: dict):
-    if tool_name not in TOOL_INDEX:
-        return {"error": f"Tool '{tool_name}' not found."}
-    if command not in TOOL_INDEX[tool_name]:
-        return {"error": f"Command '{command}' not found in tool '{tool_name}'."}
+@router.post("/tools/delay/{tool_name}/{command_name}")
+async def execute_tool_command_delayed(tool_name: str, command_name: str, args: dict):
 
-    task = task_tool_exec.delay(tool_name, command, **args)
+    tool = get_tool_def(tool_name)
+    if not tool:
+        return {"error": f"Tool '{tool_name}' not found."}
+    if command_name not in tool.get("commands", {}):
+        return {"error": f"Command '{command_name}' not found in tool '{tool_name}'."}
+
+    task = task_tool_exec.delay(tool_name, command_name, **args)
     return {"task_id": task.id, "status": "started"}

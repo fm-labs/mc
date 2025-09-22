@@ -40,12 +40,13 @@ def create_celery_task(task: KoCeleryTaskSubmissionModel) -> KoCeleryTaskSubmiss
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/celery/tasks/{task_id}", response_model=KoCeleryTaskSubmissionResponseModel)
-def get_celery_task(task_id: str) -> KoCeleryTaskInstanceModel:
+@router.get("/celery/tasks/{task_id}")
+def get_celery_task(task_id: str) -> dict:
     try:
         task_data = get_celery_task_instance(task_id)
-        task_model = KoCeleryTaskInstanceModel(**task_data)
-        return jsonable_encoder(task_model)
+        #task_model = KoCeleryTaskInstanceModel(**task_data)
+        #return jsonable_encoder(task_model)
+        return task_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

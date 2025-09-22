@@ -1,4 +1,5 @@
 # This file contains the celery app instance which is used to run the tasks
+import time
 from datetime import datetime
 
 from celery import Celery
@@ -20,6 +21,7 @@ celery.conf.update(celery_config)
 
 
 def get_celery_task_object(task_id: str):
+    #global celery
     task = celery.AsyncResult(task_id)
     return task
 
@@ -29,7 +31,7 @@ def get_celery_task_instance(task_id: str) -> dict:
     if task is None:
         raise Exception("Task not found")
 
-    print(task_id, task.state, task)
+    print(task_id, task.state, task.info)
     response_data = {
         'task_id': task_id,
         'task_name': getattr(task, 'task_name', None),
@@ -38,8 +40,11 @@ def get_celery_task_instance(task_id: str) -> dict:
         'parent_id': getattr(task, 'parent_id', None),
         'progress': None,
         'result': None,
-        'error': None
+        'error': None,
+        'info': None,
+        '_timestamp': int(time.time()),
     }
+    print(response_data)
 
     if task.state == 'PROGRESS':
         response_data['progress'] = task.info

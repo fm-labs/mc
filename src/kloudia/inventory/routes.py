@@ -38,9 +38,26 @@ async def save_inventory_item(item_type: str, item: dict) -> bool:
 #     storage = get_inventory_storage_instance()
 #     return storage.delete_item(item_type, uuid)
 
+# @router.get("/{item_type}/_/actions", response_model=list)
+# async def get_inventory_item_actions(item_type: str, uuid: str, action_name: str) -> dict:
+#     try:
+#         _item_type = item_type.lower().replace("-", "_")
+#         #return list_inventory_item_actions(_item_type, uuid, action_name, {})
+#         return {"actions": [
+#             {"name": "sample_action", "description": "This is a sample action", "input_schema": {
+#                 "type": "object",
+#                 "properties": {
+#                     "param1": {"type": "string", "description": "Parameter 1"},
+#                     "param2": {"type": "integer", "description": "Parameter 2"}
+#                 },
+#                 "required": ["param1"]
+#             }}
+#         ]}
+#     except (ValueError, NotImplementedError, Exception) as e:
+#         return {"error": str(e)}
 
 @router.post("/{item_type}/{uuid}/action/{action_name}", response_model=dict)
-def request_inventory_item_action(item_type: str, uuid: str, action_name: str, action_params: dict) -> dict:
+async def request_inventory_item_action(item_type: str, uuid: str, action_name: str, action_params: dict) -> dict:
     try:
         _item_type = item_type.lower().replace("-", "_")
         return handle_inventory_item_action(_item_type, uuid, action_name, action_params)
