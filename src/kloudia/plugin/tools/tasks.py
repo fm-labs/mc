@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 from orchestra.celery import celery
@@ -58,7 +59,9 @@ def task_tool_exec(self, tool_name: str, command_name: str, **kwargs):
             cmd = [part.replace(f"{{{{{arg}}}}}", str(kwargs[arg])) for part in cmd]
 
         print(f"Running command: {' '.join(cmd)}")
-        env = {}
+
+        # todo evaluate and set environment variables from command definition
+        env = os.environ.copy()
         result = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env, timeout=SUBPROCESS_TIMEOUT)
         print(f"Command finished with return code {result.returncode}")
         print(f"STDOUT:\n{result.stdout}")
