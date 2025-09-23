@@ -1,34 +1,18 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Security
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestForm
 
-from kloudia.server.route_findings import router as findings_router
-from kloudia.server.route_integrations import router as integrations_router
+from kloudia.config import PLUGINS_ENABLED
+from kloudia.server.auth import authenticate_user, get_current_user
 from kloudia.inventory.routes import router as inventory_router
-
+from kloudia.util.jwt_util import create_access_token1
 
 app_router = APIRouter()
 
-#app_router.include_router(repos_router, prefix="/api/inventory/repos", tags=["inventory", "repos"])
-#app_router.include_router(clouds_router, prefix="/api/inventory/clouds", tags=["inventory", "clouds"])
-app_router.include_router(inventory_router, prefix="/api/inventory", tags=["inventory"])
-app_router.include_router(findings_router, prefix="/api/findings", tags=["findings"])
-app_router.include_router(integrations_router, prefix="/api/integrations", tags=["integrations"])
+app_router.include_router(inventory_router, prefix="/api/inventory", tags=["inventory"], dependencies=[Security(get_current_user)])
 
 
-# inventories = ["repos", "clouds"]
-# for inventory in inventories:
-#     try:
-#         module = __import__(f"kloudia.inventory.{inventory}.routes", fromlist=["router"])
-#     except ModuleNotFoundError:
-#         continue
-#
-#     router = getattr(module, "router")
-#     if router:
-#         app_router.include_router(router, prefix="/api", tags=['inventory ' + inventory])
-
-
-
-plugins = ["tools", "xscan", "orchestra", "cloudscan", "demo"]
-for plugin in plugins:
+for plugin in PLUGINS_ENABLED:
     try:
         module = __import__(f"kloudia.plugin.{plugin}.routes", fromlist=["router"])
     except ModuleNotFoundError:
@@ -36,18 +20,26 @@ for plugin in plugins:
 
     router = getattr(module, "router")
     if router:
-        app_router.include_router(router, prefix="/api", tags=['plugin ' + plugin])
+        app_router.include_router(router, prefix="/api", tags=['plugin ' + plugin], dependencies=[Security(get_current_user)])
 
 
 
-@app_router.get("/", tags=["info"])
+@app_router.get("/api/", tags=["info"])
 async def info() -> dict:
-    return dict({
-        "name": "Kloudia API Service",
-        "status": "running",
-        "version": "0.1.0",
-    })
+    return {"version": "0.1.0"}
 
-@app_router.get("/health", tags=["info"])
+
+@app_router.get("/api/health", tags=["info"])
 async def health():
     return {"status": "OK"}
+
+
+@app_router.post("/api/auth/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_access_token1(data={"sub": user["username"]})
+    #refresh_token = create_refresh_token(user["username"])
+    return {"access_token": token}
