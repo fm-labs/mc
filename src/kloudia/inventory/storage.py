@@ -32,30 +32,6 @@ def get_inventory_storage_instance() -> 'InventoryStorage':
     return _inventory_storage_instance
 
 
-# def fetch_inventory_items(inventory_type: str) -> List[dict]:
-#     return load_config_json(inventory_type)
-
-# def fetch_inventory_item(inventory_type: str, uuid: str) -> dict:
-#     items = fetch_inventory_items(inventory_type)
-#     for item in items:
-#         if item["uuid"] == uuid:
-#             return item
-#     return {}
-
-# def dump_inventory_item(inventory_type: str, item: dict):
-#     items = fetch_inventory_items(inventory_type)
-#     for i, existing_item in enumerate(items):
-#         if existing_item["uuid"] == item["uuid"]:
-#             items[i] = item
-#             break
-#     else:
-#         items.append(item)
-#     save_config_json(inventory_type, items)
-
-# def fetch_repos() -> List[dict]:
-#     return fetch_inventory_items("repos")
-
-
 
 class InventoryStorage(abc.ABC):
 

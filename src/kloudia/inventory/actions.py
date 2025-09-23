@@ -60,7 +60,7 @@ def handle_repository_item_scan(item: dict, action_params: dict) -> dict:
     return {"task_id": task.id}
 
 
-def handle_internet_domain_item_ping(item: dict, action_params: dict) -> dict:
+def handle_dns_domain_item_ping(item: dict, action_params: dict) -> dict:
     domain = item.get("name")
     if not domain:
         return {"error": "Domain name not found in item."}
@@ -70,7 +70,7 @@ def handle_internet_domain_item_ping(item: dict, action_params: dict) -> dict:
     return {"task_id": task.id}
 
 
-def handle_internet_domain_item_whois(item: dict, action_params: dict) -> dict:
+def handle_dns_domain_item_whois(item: dict, action_params: dict) -> dict:
     domain = item.get("name")
     if not domain:
         return {"error": "Domain name not found in item."}
@@ -80,7 +80,7 @@ def handle_internet_domain_item_whois(item: dict, action_params: dict) -> dict:
     return {"task_id": task.id}
 
 
-def handle_internet_domain_item_dig(item: dict, action_params: dict) -> dict:
+def handle_dns_domain_item_dig(item: dict, action_params: dict) -> dict:
     domain = item.get("name")
     if not domain:
         return {"error": "Domain name not found in item."}
@@ -90,7 +90,7 @@ def handle_internet_domain_item_dig(item: dict, action_params: dict) -> dict:
     return {"task_id": task.id}
 
 
-def handle_internet_domain_item_scan(item: dict, action_params: dict) -> dict:
+def handle_dns_domain_item_scan(item: dict, action_params: dict) -> dict:
     # creating a unique output directory for the scan results
     # the directory will be mapped to the docker container
     scan_id = f"{str(int(time()))}-{uuid.uuid4().hex}"
@@ -130,10 +130,10 @@ def handle_internet_domain_item_scan(item: dict, action_params: dict) -> dict:
 #     "container_image": {
 #         #"scan": handle_container_image_item_scan,
 #     },
-#     "internet_domain": {
-#         "ping": handle_internet_domain_item_ping,
-#         "whois": handle_internet_domain_item_whois,
-#         "dig": handle_internet_domain_item_dig,
-#         #"scan": handle_internet_domain_item_scan,
+#     "dns_domain": {
+#         "ping": handle_dns_domain_item_ping,
+#         "whois": handle_dns_domain_item_whois,
+#         "dig": handle_dns_domain_item_dig,
+#         #"scan": handle_dns_domain_item_scan,
 #     },
 # }
