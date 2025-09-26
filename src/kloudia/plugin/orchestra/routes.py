@@ -8,9 +8,7 @@ from fastapi.encoders import jsonable_encoder
 
 from kloudia.db.redis import get_redis_pubsub
 from orchestra.celery import celery, get_celery_task_instance
-from orchestra.datamodels import KoCeleryTaskSubmissionModel, KoCeleryTaskSubmissionResponseModel, \
-    KoCeleryTaskInstanceModel, \
-    KoAnsibleRunModel
+from orchestra.datamodels import KoCeleryTaskSubmissionModel, KoCeleryTaskSubmissionResponseModel, KoAnsibleRunModel
 from orchestra.mongodb_helper import get_ansible_runs_collection, get_celery_task_log_collection
 
 router = APIRouter()
@@ -34,7 +32,7 @@ def create_celery_task(task: KoCeleryTaskSubmissionModel) -> KoCeleryTaskSubmiss
     :return:
     """
     try:
-        task: AsyncResult = celery.send_task(task.task_name, kwargs=task.kwargs)
+        task: AsyncResult = celery.send_task(task.task_name, kwargs=task.parameters)
         return KoCeleryTaskSubmissionResponseModel(task_id=task.task_id, status="created")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -80,11 +78,8 @@ async def get_ansible_run_records() -> list[KoAnsibleRunModel]:
         #raise HTTPException(status_code=404, detail="No records found")
         return []
 
-    # mapped_records = []
-    # for record in records:
-    #     mapped_records.append(jsonable_encoder(record))
-    # return mapped_records
     return records
+
 
 @router.get("/ansible/runs/{run_id}", response_model=KoAnsibleRunModel)
 def get_ansible_run_record(run_id: str) -> KoAnsibleRunModel:
@@ -117,3 +112,6 @@ async def websocket_endpoint(websocket: WebSocket, run_id: str):
     finally:
         pubsub.unsubscribe(run_id)
         await websocket.close()
+
+
+

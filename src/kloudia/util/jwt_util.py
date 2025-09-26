@@ -11,8 +11,8 @@ def generate_random_jwt_secret_key(length: int = 32) -> str:
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 60 minutes
 JWT_REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days
 JWT_ALGORITHM = "HS256"
-JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', default=generate_random_jwt_secret_key())   # should be kept secret
-JWT_REFRESH_SECRET_KEY = os.environ.get('JWT_REFRESH_SECRET_KEY', default=generate_random_jwt_secret_key())    # should be kept secret
+JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', default="mysupersecretkey") # default=generate_random_jwt_secret_key())   # should be kept secret
+JWT_REFRESH_SECRET_KEY = os.environ.get('JWT_REFRESH_SECRET_KEY', default="mysupersecretrefreshkey") # default=generate_random_jwt_secret_key())    # should be kept secret
 
 
 

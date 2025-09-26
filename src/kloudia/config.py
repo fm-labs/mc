@@ -9,8 +9,9 @@ load_dotenv(".env")
 DATA_DIR = os.getenv("DATA_DIR", os.getcwd() + "/data")
 CONFIG_DIR = os.getenv("CONFIG_DIR", os.getcwd() + "/config")
 
-PLUGINS_ENABLED = ["tools", "xscan", "orchestra", "cloudscan", "demo"]
+PLUGINS_ENABLED = ["tools", "xscan", "orchestra", "cloudscan", "demo", "docker"]
 
+INTEGRATIONS_ENABLED = ["github", "dockerhub", "docker"]
 
 HOST_DATA_DIR = os.getenv("HOST_DATA_DIR")
 HOST_CONFIG_DIR = os.getenv("HOST_CONFIG_DIR")

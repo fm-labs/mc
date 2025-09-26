@@ -1,6 +1,6 @@
 import os
-import subprocess
 
+from kloudia.plugin.tools.helper import subprocess_run, subprocess_stream
 from orchestra.celery import celery
 from kloudia.plugin.tools.toolindex import get_tool_def
 
@@ -8,24 +8,43 @@ SUBPROCESS_TIMEOUT = 300  # seconds, hard timeout for subprocesses
 
 @celery.task(bind=True)
 def task_subprocess_run(self, cmd: list, env: dict = None):
-    try:
-        print(f"Running command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
-        print(f"Command finished with return code {result.returncode}")
-        print(f"STDOUT:\n{result.stdout}")
-        print(f"STDERR:\n{result.stderr}")
+    """
+    Synchronous version of subprocess_run, to be used in non-async contexts.
+    Runs the command and waits for it to complete before returning the result.
+    """
 
-        # if result.returncode != 0:
-        #     return {"error": f"Command failed with return code {result.returncode}",
-        #             "output": result.stdout,
-        #             "stderr": result.stderr,
-        #             "returncode": result.returncode}
+    result = subprocess_run(cmd, env)
+    #if "error" in result:
+    #    self.update_state(state='FAILURE', meta=result)
+    return result
 
-        return {"output": result.stdout, "stderr": result.stderr, "returncode": result.returncode}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e), "output": e.output, "stderr": e.stderr, "returncode": e.returncode}
-    except Exception as e:
-        return {"error": str(e)}
+
+@celery.task(bind=True)
+def task_subprocess_stream(self, cmd: list, env: dict = None):
+
+    output = []
+    bytes_received = 0
+    bytes_received_total = 0
+
+    def callback(line: str):
+        print(line)
+        output.append(line)
+
+        # todo stream log output to pubsub or websocket for real-time updates
+        # e.g. self.update_state(state='PROGRESS', meta={"log": line})
+
+        nonlocal bytes_received
+        nonlocal bytes_received_total
+
+        bytes_received += len(line)
+        if bytes_received > 10 * 1024 * 1024:  # every 10 MB
+            self.update_state(state='PROGRESS', meta={"status": f"Received {bytes_received} bytes so far..."})
+            bytes_received_total += bytes_received
+            bytes_received = 0
+
+    rc = subprocess_stream(cmd, env, callback=callback)
+
+    return {"stdout": "".join(output), "returncode": rc}
 
 
 @celery.task(bind=True)
@@ -62,16 +81,10 @@ def task_tool_exec(self, tool_name: str, command_name: str, **kwargs):
 
         # todo evaluate and set environment variables from command definition
         env = os.environ.copy()
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True, env=env, timeout=SUBPROCESS_TIMEOUT)
-        print(f"Command finished with return code {result.returncode}")
-        print(f"STDOUT:\n{result.stdout}")
-        print(f"STDERR:\n{result.stderr}")
+        result = subprocess_run(cmd, env)
+        if "error" in result:
+            self.update_state(state='FAILURE', meta=result)
 
-        #if result.returncode != 0:
-        #    raise Exception(f"Tool command failed with return code {result.returncode}")
-
-        return {"stdout": result.stdout, "stderr": result.stderr, "returncode": result.returncode}
-    except subprocess.CalledProcessError as e:
-        return {"error": str(e), "stdout": e.stdout, "stderr": e.stderr, "returncode": e.returncode}
+        return result
     except Exception as e:
-        return {"error": "Unknown exception occured: " +  str(e)}
+        return {"error": "Unknown exception occurred: " +  str(e)}

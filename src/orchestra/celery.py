@@ -31,34 +31,30 @@ def get_celery_task_instance(task_id: str) -> dict:
     if task is None:
         raise Exception("Task not found")
 
-    print(task_id, task.state, task.info)
+    print("Celery Task", task_id, task.state, task.result)
     response_data = {
         'task_id': task_id,
         'task_name': getattr(task, 'task_name', None),
-        'status': task.state,
-        'root_id': getattr(task, 'root_id', None),
-        'parent_id': getattr(task, 'parent_id', None),
+        'state': task.state,
         'progress': None,
         'result': None,
         'error': None,
-        'info': None,
-        '_timestamp': int(time.time()),
+        'timestamp': int(time.time()),
     }
-    print(response_data)
 
-    if task.state == 'PROGRESS':
-        response_data['progress'] = task.info
-    elif task.state == 'SUCCESS':
-        try:
+    try:
+
+        if task.state == 'PROGRESS':
+            response_data['progress'] = task.info
+        elif task.state == 'SUCCESS':
             result = task.result
             if isinstance(result, bytes):
                 result = result.decode('utf-8')
             response_data['result'] = result
-        except Exception as e:
-            print(e)
-            raise e
-    elif task.state == 'FAILURE':
-        response_data['error'] = str(task.info)
+    except Exception as e:
+        print("error during parsing celery result", e)
+        response_data['error'] = str(e)
+        #raise e
 
     return response_data
 

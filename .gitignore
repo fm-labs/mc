@@ -10,6 +10,7 @@ src/oapp/
 src/x*.py
 projects.json
 .env.local
+.env.docker.local
 *.local
 
 ### Python template

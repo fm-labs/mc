@@ -8,7 +8,7 @@ class KoProjectModel(BaseModel):
 
 class KoCeleryTaskSubmissionModel(BaseModel):
     task_name: str
-    kwargs: dict | None = None
+    parameters: dict | None = None
 
 
 class KoCeleryTaskSubmissionResponseModel(BaseModel):
