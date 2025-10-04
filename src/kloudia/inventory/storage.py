@@ -56,7 +56,7 @@ class FileBasedInventoryStorage(InventoryStorage):
     def save_item(self, inventory_type: str, item: dict) -> bool:
         items = self.list_items(inventory_type)
         for i, existing_item in enumerate(items):
-            if existing_item["uuid"] == item["uuid"]:
+            if existing_item["item_key"] == item["item_key"]:
                 items[i] = item
                 break
         else:
@@ -67,7 +67,7 @@ class FileBasedInventoryStorage(InventoryStorage):
     def get_item(self, inventory_type: str, uuid: str) -> dict:
         items = self.list_items(inventory_type)
         for item in items:
-            if item["uuid"] == uuid:
+            if item["item_key"] == uuid:
                 return item
         return {}
 
@@ -88,13 +88,13 @@ class MongoDBInventoryStorage(InventoryStorage):
 
     def save_item(self, inventory_type: str, item: dict) -> bool:
         collection = get_mongo_collection('inventory', inventory_type)
-        collection.update_one({'uuid': item['uuid']}, {'$set': item}, upsert=True)
+        collection.update_one({'item_key': item['item_key']}, {'$set': item}, upsert=True)
         return True
 
     def get_item(self, inventory_type: str, uuid: str) -> dict:
         db = self.mongo_client['inventory']
         collection = db[inventory_type]
-        item = collection.find_one({'uuid': uuid})
+        item = collection.find_one({'item_key': uuid})
         print("Fetched item from MongoDB:", item)
         if item:
             item.pop('_id', None)
@@ -115,7 +115,7 @@ class RedisInventoryStorage(InventoryStorage):
         return items
 
     def save_item(self, inventory_type: str, item: dict) -> bool:
-        key = f"{inventory_type}:{item['uuid']}"
+        key = f"{inventory_type}:{item['item_key']}"
         self.redis_client.hmset(key, item)
         return True
 

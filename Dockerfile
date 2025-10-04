@@ -6,13 +6,16 @@ RUN apk update && apk add --no-cache \
     bash \
     supervisor \
     docker-cli \
+    docker-compose \
+    openssl \
     git \
-    curl
+    curl \
+    rsync
 
 
 # Supervisor
 COPY ./docker/supervisor/supervisord.conf /etc/supervisord.conf
-COPY ./docker/supervisor/celery_worker.ini ./docker/supervisor/celery_flower.ini ./docker/supervisor/api.ini /etc/supervisor.d/
+COPY ./docker/supervisor/celery_worker.ini ./docker/supervisor/celery_flower.ini ./docker/supervisor/api.ini ./docker/supervisor/ssh-agent-keepalive.ini /etc/supervisor.d/
 
 # Set a non-root user
 RUN addgroup -S app && \
@@ -27,6 +30,10 @@ RUN mkdir -p /app && chown -R app:app /app && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
     chown -R app:app /run
+
+# pre-create a directory for the SSH agent socket
+RUN mkdir -p /ssh-agent && chown -R app:app /ssh-agent
+ENV SSH_AUTH_SOCK=/ssh-agent/agent.sock
 
 
 # Entry point script

@@ -2,21 +2,16 @@ import json
 import os
 import uuid
 
-from kloudia.integrations import load_integration_properties
+from kloudia.inventory.helper import gen_inventory_key
 from kloudia.inventory.storage import get_inventory_storage_instance
 from kloudia.plugin.github.github_api import github_get_repos
 
 if __name__ == "__main__":
 
     # get github credentials from integration properties
-    github_integration = load_integration_properties("software_provider", "github")
-    if github_integration is None:
-        raise Exception("No github integration found in config")
-
-    #github_token = os.environ.get("GITHUB_TOKEN", default="")
-    github_token = github_integration["password"] if "password" in github_integration else None
+    github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
-        raise Exception("No github token found")
+        raise ValueError("GITHUB_TOKEN environment variable is not set")
 
     # list all repos for a user
     repos = github_get_repos(github_token, visibility="all")
@@ -35,7 +30,7 @@ if __name__ == "__main__":
     for repo in repos:
         is_enabled = repo["archived"] is False and repo["disabled"] is False
         entry = {
-            "uuid": str(uuid.uuid4().hex),
+            "item_key": gen_inventory_key("repository", repo["full_name"]),
             "item_type": "repository",
             "provider": "github",
             "name": repo["full_name"],

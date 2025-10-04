@@ -8,6 +8,7 @@
 #   uvicorn server:app
 ################################################################
 import os
+from contextlib import asynccontextmanager
 from typing import Optional, Any
 
 from fastapi import FastAPI
@@ -18,10 +19,21 @@ from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from kloudia.db.redis import get_redis_client
 from kloudia.server.models import Problem
 from kloudia.server.router import app_router
 
 os.environ["DOCKER_HOST_1"] = os.environ.get("DOCKER_HOST_1", "tcp://localhost:30003")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state = {}
+    app.state.redis = get_redis_client()
+    try:
+        yield
+    finally:
+        await app.state.redis.aclose()
 
 app = FastAPI(title="Kloudia API", version="0.1.0")
 

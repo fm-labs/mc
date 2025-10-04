@@ -1,6 +1,6 @@
 import time
 
-from orchestra.ansible.runner import KoAnsibleRunModel
+from orchestra.datamodels import KoAnsibleRunModel
 from orchestra.mongodb_helper import get_ansible_runs_collection
 
 

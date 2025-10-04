@@ -1,8 +1,9 @@
+from orchestra.pubsub.publisher import enqueue_ansible_event
+
 
 def ko_ansible_artifacts_handler(artifacts_dir):
-    # Do something here
+    # todo process artifacts, e.g. archive and store in MongoDB/GridFS/S3
     print(artifacts_dir)
-
 
 
 def ko_ansible_status_handler(data, runner_config):
@@ -24,9 +25,8 @@ def ko_ansible_status_handler(data, runner_config):
     :return:
     """
     print("STATUSHANDLER", data)
-
-    # todo Update the status of the task in the database
-    # todo Publish the status to redis pub/sub
+    # Fire-and-forget: enqueue for async processing
+    enqueue_ansible_event({"type": "status", "data": data})
 
 
 def ko_ansible_event_handler(data):
@@ -42,7 +42,6 @@ def ko_ansible_event_handler(data):
     :return:
     """
     print("EVENTHANDLER", data)
-
-    # todo Store the event of the task in the database
-    # todo Publish the event to redis pub/sub
+    # Fire-and-forget: enqueue for async processing
+    enqueue_ansible_event({"type": "event", "data": data})
     return True

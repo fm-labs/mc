@@ -1,24 +1,27 @@
-import redis
-from redis import Redis
+from redis import asyncio as aioredis
 
 from kloudia import config
 
-_redis_instance = Redis | None
+_redis_instance = aioredis.Redis | None
 
-def get_redis_client():
+def get_global_redis_client():
     global _redis_instance
-    if _redis_instance is not None:
-        return _redis_instance
+    if _redis_instance is None:
+        _redis_instance = get_redis_client()
+    return _redis_instance
+
+def get_redis_client() -> aioredis.Redis:
+    redis_url = config.REDIS_URL or None
+    if redis_url:
+        return aioredis.from_url(redis_url, decode_responses=True)
 
     redis_host = config.REDIS_HOST #or "localhost"
     redis_port = config.REDIS_PORT #or 6379
     redis_db = config.REDIS_DB or 0
     redis_password = config.REDIS_PASSWORD or None
-
     if not redis_host or not redis_port:
-        raise ValueError("REDIS_HOST and REDIS_PORT must be set in environment variables.")
-
-    client = redis.Redis(
+        raise ValueError("REDIS_URL or REDIS_HOST + REDIS_PORT must be set in environment variables.")
+    client = aioredis.Redis(
         host=redis_host,
         port=redis_port,
         db=redis_db,
@@ -26,20 +29,14 @@ def get_redis_client():
         decode_responses=True,
     )
 
-    try:
-        client.ping()
-    except redis.ConnectionError as e:
-        raise ConnectionError(f"Could not connect to Redis: {e}")
+    #if ping:
+    #    try:
+    #        await client.ping()
+    #    except redis.ConnectionError as e:
+    #        raise ConnectionError(f"Could not connect to Redis: {e}")
 
-    _redis_instance = client
-    return _redis_instance
+    return client
 
 
-
-def get_redis_pubsub():
-    """
-    Get a Redis pubsub object.
-
-    :return:
-    """
-    return get_redis_client().pubsub()
+async def get_async_redis_client() -> aioredis.Redis:
+    return get_redis_client()

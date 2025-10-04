@@ -2,10 +2,10 @@ import os
 import json
 from pathlib import Path
 
-from kloudia.config import CONFIG_DIR
+from kloudia.config import RESOURCES_DIR
 
 TOOL_INDEX = []
-TOOL_DIR = Path(CONFIG_DIR) / "toolbox"
+TOOL_DIR = Path(RESOURCES_DIR) / "toolbox"
 
 def load_tool_index():
     global TOOL_INDEX

@@ -15,7 +15,6 @@ fake_users_db = {
     }
 }
 
-
 def lookup_user(username: str) -> dict:
     user = fake_users_db.get(username)
     return user
@@ -54,7 +53,3 @@ def get_current_user(token: str = Security(oauth2_scheme)):
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token", headers=err_headers)
     return {"username": payload.get("sub")}
-
-
-def get_fake_user():
-    return {"username": "dummy"}

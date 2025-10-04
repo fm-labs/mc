@@ -2,8 +2,8 @@ from typing import List, Dict, Optional, Any
 from pydantic import BaseModel
 
 
-class KoProjectModel(BaseModel):
-    id: str
+# class KoProjectModel(BaseModel):
+#     id: str
 
 
 class KoCeleryTaskSubmissionModel(BaseModel):

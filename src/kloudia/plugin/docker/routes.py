@@ -4,21 +4,22 @@ from typing import List, Annotated, Any
 
 import anyio
 from docker.models.containers import Container
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Query
 from starlette.concurrency import iterate_in_threadpool
 from starlette.requests import Request, ClientDisconnect
 from starlette.responses import StreamingResponse
 
-from kloudia.plugin.docker.helper import get_docker_client, DOCKER_HOSTS
+from kloudia.plugin.docker.helper import get_docker_client, DOCKER_HOSTS, init_container_hosts
 
 router = APIRouter()
 
 
 @router.get("/docker/hosts")
-def get_docker_hosts() -> list[dict]:
+def get_container_hosts(refresh: Annotated[bool, Query()] = False) -> list[dict]:
     hosts = []
+    init_container_hosts(refresh=refresh)
     for i, host in enumerate(DOCKER_HOSTS):
         hosts.append({"id": i, "url": host})
     return jsonable_encoder(hosts)
@@ -41,8 +42,11 @@ def get_docker_info(idx: int) -> dict:
 @router.get("/docker/{idx}/df")
 def get_docker_info(idx: int) -> dict:
     d = get_docker_client(idx)
-    summary = d.df()
-    return jsonable_encoder(summary)
+    try:
+        summary = d.df()
+        return jsonable_encoder(summary)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/docker/{idx}/containers")
@@ -61,6 +65,35 @@ def get_docker_container(idx: int, container_id: str) -> dict:
     d = get_docker_client(idx)
     container: Container = d.containers.get(container_id)
     return jsonable_encoder(container.attrs)
+
+
+@router.post("/docker/{idx}/containers/{container_id}/actions/{action}")
+def post_docker_container_action(idx: int, container_id: str, action: str) -> dict:
+    d = get_docker_client(idx)
+    container: Container = d.containers.get(container_id)
+
+    try:
+        if action == "start":
+            container.start()
+        elif action == "stop":
+            container.stop()
+        elif action == "restart":
+            container.restart()
+        elif action == "pause":
+            container.pause()
+        elif action == "unpause":
+            container.unpause()
+        elif action == "remove":
+            container.remove(force=True)
+        else:
+            raise HTTPException(status_code=404, detail=f"Unknown action {action}")
+
+        # refresh container state
+        container.reload()
+        return jsonable_encoder(container.attrs)
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/docker/{idx}/containers/{container_id}/logs")

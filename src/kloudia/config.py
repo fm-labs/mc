@@ -8,6 +8,9 @@ load_dotenv(".env")
 
 DATA_DIR = os.getenv("DATA_DIR", os.getcwd() + "/data")
 CONFIG_DIR = os.getenv("CONFIG_DIR", os.getcwd() + "/config")
+RESOURCES_DIR = os.environ.get("RESOURCES_DIR", os.getcwd() + "/resources")
+#TMP_DIR = os.environ.get("TMP_DIR", default=None) # None = use system temp dir
+TMP_DIR = os.path.join(DATA_DIR, "tmp")
 
 PLUGINS_ENABLED = ["tools", "xscan", "orchestra", "cloudscan", "demo", "docker"]
 
@@ -18,12 +21,20 @@ HOST_CONFIG_DIR = os.getenv("HOST_CONFIG_DIR")
 
 MONGODB_URL = os.getenv("MONGODB_URL", "")
 
+# redis connection settings
+# REDIS_URL is preferred if set
+REDIS_URL = os.getenv("REDIS_URL", "")
+# or
 REDIS_HOST = os.getenv("REDIS_HOST", "")
 REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
 REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+
+VAULT_FILE = os.getenv("VAULT_FILE", "config/credentials.yml")
+VAULT_PASS_FILE = os.getenv("VAULT_PASS_FILE", "config/credentials.password.txt")
+
 
 def load_config_json(file_name: str) -> dict|list:
     file_path = f"{CONFIG_DIR}/{file_name}.json"
@@ -73,3 +84,4 @@ def get_plugin_host_config_dir(plugin_name: str) -> str:
         raise ValueError("HOST_CONFIG_DIR is not set in environment variables.")
     path = f"{HOST_CONFIG_DIR}/plugins/{plugin_name}"
     return path
+

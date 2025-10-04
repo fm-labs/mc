@@ -1,8 +1,8 @@
 import os
 
-DATA_DIR = os.environ.get("DATA_DIR", default=os.path.join(os.getcwd(), "data"))
-RESOURCES_DIR = os.environ.get("RESOURCES_DIR", default=os.path.join(os.getcwd(), "resources"))
-TMP_DIR = os.environ.get("TMP_DIR", default=None) # None = use system temp dir
+from kloudia.config import DATA_DIR
+
+PROJECTS_DATA_DIR=os.path.join(DATA_DIR, "projects")
 
 MONGODB_URL = os.environ.get("MONGODB_URL", default="mongodb://mongodb:27017")
 

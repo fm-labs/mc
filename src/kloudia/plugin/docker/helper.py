@@ -2,8 +2,10 @@ import os
 
 import docker
 
+from kloudia.inventory.storage import get_inventory_storage_instance
 
-def enumerate_docker_hosts_from_env() -> list[str]:
+
+def enumerate_container_hosts_from_env() -> list[str]:
     """
     Enumerate Docker hosts from environment variables.
 
@@ -27,13 +29,40 @@ def enumerate_docker_hosts_from_env() -> list[str]:
 
 
 
-DOCKER_HOSTS = enumerate_docker_hosts_from_env()
+DOCKER_HOSTS = []
+PODMAN_HOSTS = []
+
+# Initialize Docker hosts from inventory
+def init_container_hosts(refresh: bool = False):
+    global DOCKER_HOSTS
+    global PODMAN_HOSTS
+    if (DOCKER_HOSTS or PODMAN_HOSTS) and not refresh:
+        return
+
+    DOCKER_HOSTS = []
+    PODMAN_HOSTS = []
+    inventory = get_inventory_storage_instance()
+    items = inventory.list_items("container_host")
+    for item in items:
+        url = item.get("properties", {}).get("url")
+        engine = item.get("properties", {}).get("engine", "docker").lower()
+        if engine == "docker" and url not in DOCKER_HOSTS:
+            DOCKER_HOSTS.append(url)
+        elif engine == "podman" and url not in PODMAN_HOSTS:
+            PODMAN_HOSTS.append(url)
+        else:
+            print(f"Unknown container engine '{engine}' for host '{url}'")
+    #print("Configured container hosts:", DOCKER_HOSTS, PODMAN_HOSTS)
+
 
 def get_docker_client(idx: int = 0) -> docker.DockerClient:
+    global DOCKER_HOSTS
     base_url = DOCKER_HOSTS[idx] if idx < len(DOCKER_HOSTS) else None
     if not base_url:
         raise ValueError(f"No Docker host configured for index {idx}")
 
     print("DOCKER_HOST", idx, base_url)
     use_ssl_client = base_url.startswith("ssh://")
-    return docker.DockerClient(base_url=base_url, use_ssh_client=use_ssl_client)
+    return docker.DockerClient(base_url=base_url, use_ssh_client=use_ssl_client, timeout=10)
+
+init_container_hosts()

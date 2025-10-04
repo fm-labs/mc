@@ -1,27 +1,11 @@
-import json
 import uuid
 
 import ansible_runner
 from ansible_runner import Runner
 
 from orchestra.ansible.handler import ko_ansible_status_handler, ko_ansible_event_handler
-from orchestra.datamodels import KoAnsibleRunModel
+from orchestra.pubsub.publisher import start_publisher
 
-
-# class AnsibleRun:
-#     def __init__(self, run_id: str, status: str = None, rc: int = None, stdout: str = None, stderr: str = None,
-#                  events: list = None, stats: dict = None):
-#         self.run_id = run_id
-#         self.status = status
-#         self.rc = rc
-#         self.stdout = stdout
-#         self.stderr = stderr
-#         self.events = events
-#         self.stats = stats
-#
-#     def __str__(self):
-#         return f"AnsibleRun(run_id={self.run_id}, status={self.status}, rc={self.rc}, stdout={self.stdout}, stderr={self.stderr}, events={self.events}, stats={self.stats})"
-#
 
 def run_ansible_playbook(private_data_dir, playbook, run_id=None, **kwargs) -> Runner:
     """
@@ -168,6 +152,8 @@ def run_ansible_playbook(private_data_dir, playbook, run_id=None, **kwargs) -> R
     #            cancel_callback=None, finished_callback=None,
     #            event_handler=None, status_handler=None, artifacts_handler=None)
     # r.run()
+
+    start_publisher()
 
     status_handler = kwargs.get('status_handler')
     if status_handler is None:

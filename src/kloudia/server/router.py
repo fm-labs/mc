@@ -36,7 +36,7 @@ async def health():
     return {"status": "OK"}
 
 
-@app_router.post("/api/auth/login")
+@app_router.post("/api/auth/login", tags=["auth"])
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
@@ -47,10 +47,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": token}
 
 
-@app_router.post("/api/auth/logout")
+@app_router.post("/api/auth/logout", tags=["auth"], dependencies=[Security(get_current_user)])
 def logout():
     return {"status": "logged out"}
 
-@app_router.get("/api/auth/me", tags=["info"], dependencies=[Security(get_current_user)])
+
+@app_router.get("/api/auth/user", tags=["auth"], dependencies=[Security(get_current_user)])
 def me(current_user: dict = Depends(get_current_user)):
     return current_user

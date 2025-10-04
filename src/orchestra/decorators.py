@@ -2,8 +2,8 @@ import datetime
 import functools
 import json
 
+from kloudia.db.redis import get_redis_pubsub
 from orchestra.celery import celery
-from orchestra.storage.redis import get_redis_pubsub
 
 
 def publishable_task(channel_key="job_id"):

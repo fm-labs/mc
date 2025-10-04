@@ -11,24 +11,28 @@ services:
       - "13555:5555"
     networks:
       - kloudia-net
+      - default
     volumes:
       - ${PWD}/config:/app/config:ro
       - ${PWD}/data:/data
+      - ${PWD}/resources:/app/resources:ro
+      #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
+      - ${HOME}/.ssh:/home/app/.ssh:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      - "localmachine:host-gateway"
     environment:
+      #- SSH_AUTH_SOCK=/ssh-agent
       - HOST_DATA_DIR=${PWD}/data
       - HOST_CONFIG_DIR=${PWD}/config
       - CONFIG_DIR=/app/config
+      - RESOURCES_DIR=/app/resources
       - DATA_DIR=/data
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
       - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - DOCKER_HOST_1=tcp://host.docker.internal:30003
-      - DOCKER_HOST_2=tcp://host.docker.internal:30004
     env_file:
       - .env.docker.local
     links:
