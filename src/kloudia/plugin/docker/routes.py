@@ -178,9 +178,12 @@ def stream_docker_container_logs(request: Request,
             pass
         finally:
             # Make sure to close the iterator/socket if supported
-            close = getattr(log_stream, "close", None)
-            if callable(close):
-                close()
+            try:
+                close = getattr(log_stream, "close", None)
+                if callable(close):
+                    close()
+            except Exception:
+                pass
             print(f"Log stream closed, container_id={container_id}")
 
     # return SSE response

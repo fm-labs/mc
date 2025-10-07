@@ -17,7 +17,8 @@ LiteralDumper.add_representer(str, str_representer)
 
 
 def yaml_dump(data: dict, stream, **kwargs) -> None:
-    yaml.dump(data, stream, default_flow_style=False, Dumper=LiteralDumper, **kwargs)
+    kwargs["default_flow_style"] = kwargs.get("default_flow_style", False)
+    yaml.dump(data, stream, Dumper=LiteralDumper, **kwargs)
 
 
 def yaml_to_json(yaml_path: str, json_path: str) -> None:

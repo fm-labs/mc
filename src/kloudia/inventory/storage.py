@@ -98,7 +98,7 @@ class MongoDBInventoryStorage(InventoryStorage):
         print("Fetched item from MongoDB:", item)
         if item:
             item.pop('_id', None)
-        return item if item else {}
+        return item if item else None
 
 
 class RedisInventoryStorage(InventoryStorage):

@@ -61,8 +61,7 @@ def get_docker_client(idx: int = 0) -> docker.DockerClient:
     if not base_url:
         raise ValueError(f"No Docker host configured for index {idx}")
 
-    print("DOCKER_HOST", idx, base_url)
     use_ssl_client = base_url.startswith("ssh://")
-    return docker.DockerClient(base_url=base_url, use_ssh_client=use_ssl_client, timeout=10)
+    return docker.DockerClient(base_url=base_url, use_ssh_client=use_ssl_client, timeout=15)
 
 init_container_hosts()
