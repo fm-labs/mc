@@ -1,6 +1,6 @@
-# mission-ctl
+# mc | mission-control
 
-The ultimate cloud- and hosting-agnostic platform for managing and deploying applications.
+A cloud- and hosting-platform-agnostic tool for managing compute resources and deploying applications.
 
 ## Features
 

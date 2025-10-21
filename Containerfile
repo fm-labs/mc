@@ -62,6 +62,7 @@ RUN uv sync --no-cache-dir
 
 # Copy the rest of the files
 COPY ./src /app/src
+COPY ./resources /app/resources
 
 RUN chown -R app:app /app
 

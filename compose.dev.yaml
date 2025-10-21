@@ -5,7 +5,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Containerfile
     ports:
       - "13080:8000"
       - "13555:5555"
@@ -53,7 +53,7 @@ services:
         - action: rebuild
           path: ./uv.lock
         - action: rebuild
-          path: ./Dockerfile
+          path: Containerfile
 
   redis:
     image: redis:latest

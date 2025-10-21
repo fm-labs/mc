@@ -12,6 +12,7 @@ projects.json
 .env.docker.local
 *.local
 _*.json
+rx.json
 .DS_Store
 
 ### Python template

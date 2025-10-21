@@ -20,7 +20,7 @@ class FindingModel(BaseModel):
 
 
 def save_finding(finding: dict) -> None:
-    collection = get_mongo_collection('mc', 'findings')
+    collection = get_mongo_collection('findings', 'findings')
     collection.insert_one(finding)
 
 
