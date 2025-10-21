@@ -1,7 +1,7 @@
 import os
 
-from kloudia import config
-from kloudia.util.ssh_agent_util import ssh_agent_start, ssh_agent_is_running, ssh_agent_list_keys, \
+from mc import config
+from mc.util.ssh_agent_util import ssh_agent_start, ssh_agent_is_running, ssh_agent_list_keys, \
     ssh_agent_load_keys_from_vault
 
 encrypted_vault_file = config.VAULT_FILE

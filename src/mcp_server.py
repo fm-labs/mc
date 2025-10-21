@@ -8,7 +8,7 @@ sys.path.append('.')
 
 async def init_mcp() -> 'FastMCP':
     try:
-        from kloudia.mcp.app import mcp as mcp_app
+        from mc.mcp.app import mcp as mcp_app
         return mcp_app
     except ImportError:
         print("Kloudia MCP not installed")

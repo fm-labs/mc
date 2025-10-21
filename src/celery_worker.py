@@ -2,7 +2,7 @@
 # flake8: noqa
 from orchestra.celery import celery
 from orchestra.tasks import *
-from kloudia.tasks import *
+from mc.tasks import *
 
 if __name__ == '__main__':
 

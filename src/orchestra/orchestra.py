@@ -4,8 +4,8 @@ import tempfile
 import time
 import uuid
 
-from kloudia.config import RESOURCES_DIR, TMP_DIR
-from kloudia.util.file_util import write_file
+from mc.config import RESOURCES_DIR, TMP_DIR
+from mc.util.file_util import write_file
 
 from orchestra.ansible.record import insert_ansible_run_record, update_ansible_run_record
 from orchestra.ansible.runner import run_ansible_playbook

@@ -18,12 +18,12 @@ from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from kloudia.db.redis import get_redis_client
-from kloudia.mcp.app import mcp as mcp_app
-from kloudia.mcp.helper import init_mcp_http_app
-from kloudia.plugin.docker.manager import bootstrap_container_connection_manager, get_container_connection_manager
-from kloudia.server.models import Problem
-from kloudia.server.router import app_router
+from mc.db.redis import get_redis_client
+from mc.mcp.app import mcp as mcp_app
+from mc.mcp.helper import init_mcp_http_app
+from mc.plugin.docker.manager import bootstrap_container_connection_manager, get_container_connection_manager
+from mc.server.models import Problem
+from mc.server.router import app_router
 
 # Load MCP server app with specified transport
 mcp_transport = os.getenv("MCP_TRANSPORT", "streamable-http")

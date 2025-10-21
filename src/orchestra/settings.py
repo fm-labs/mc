@@ -1,6 +1,6 @@
 import os
 
-from kloudia.config import DATA_DIR
+from mc.config import DATA_DIR
 
 PROJECTS_DATA_DIR=os.path.join(DATA_DIR, "projects")
 

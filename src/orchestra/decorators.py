@@ -2,7 +2,7 @@ import datetime
 import functools
 import json
 
-from kloudia.db.redis import get_redis_pubsub
+from mc.db.redis import get_redis_pubsub
 from orchestra.celery import celery
 
 

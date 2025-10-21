@@ -1,4 +1,4 @@
-# kloudia
+# mission-ctl
 
 The ultimate cloud- and hosting-agnostic platform for managing and deploying applications.
 

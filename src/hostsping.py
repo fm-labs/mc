@@ -5,8 +5,8 @@ import time
 # from scapy.layers.inet import IP, ICMP
 # from scapy.sendrecv import sr1
 
-from kloudia.db.mongodb import get_mongo_collection
-from kloudia.inventory.item.host import handle_host_ping
+from mc.db.mongodb import get_mongo_collection
+from mc.inventory.item.host import handle_host_ping
 
 # def ping(dst: str):
 #     pkt = IP(dst=dst) / ICMP(id=randint(0, 0xFFFF), seq=1) / b"hello"

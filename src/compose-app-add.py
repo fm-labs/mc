@@ -6,8 +6,8 @@
 import sys
 from pathlib import Path
 
-from kloudia.apps.compose_app import create_compose_app
-from kloudia.inventory.items import create_inventory_item, read_inventory_item
+from mc.apps.compose_app import create_compose_app
+from mc.inventory.items import create_inventory_item, read_inventory_item
 
 
 # def _build_app_dir_path(project_name: str, app_name: str) -> str:

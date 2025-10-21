@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 from redis.asyncio import Redis
 
-from kloudia.db.redis import get_redis_client
+from mc.db.redis import get_redis_client
 
 # --- Shared state ---
 _loop: Optional[asyncio.AbstractEventLoop] = None

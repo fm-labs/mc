@@ -6,8 +6,8 @@ from typing import Dict, Any, Iterable, List, Union
 
 import ansible_runner
 
-from kloudia.config import DATA_DIR, RESOURCES_DIR
-from kloudia.db.mongodb import get_mongo_collection
+from mc.config import DATA_DIR, RESOURCES_DIR
+from mc.db.mongodb import get_mongo_collection
 
 # ---------- Tunable thresholds ----------
 THRESHOLDS = {

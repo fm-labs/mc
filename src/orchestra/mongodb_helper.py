@@ -1,4 +1,4 @@
-from kloudia.db.mongodb import get_mongo_collection
+from mc.db.mongodb import get_mongo_collection
 
 
 def get_ansible_runs_collection():
