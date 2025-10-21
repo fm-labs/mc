@@ -10,7 +10,7 @@ services:
       - "13080:8000"
       - "13555:5555"
     networks:
-      - kloudia-net
+      - mc-net
     volumes:
       - ${PWD}/config:/app/config:ro
       - ${PWD}/data:/data
@@ -62,7 +62,7 @@ services:
     #expose:
     #  - "6379"
     networks:
-      - kloudia-net
+      - mc-net
     volumes:
       - redis-data:/data
 
@@ -75,7 +75,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=adminpassword
       - MONGO_INITDB_ROOT_AUTHENTICATION_DATABASE=admin
     networks:
-      - kloudia-net
+      - mc-net
     volumes:
       - mongo-data:/data/db
 
@@ -87,6 +87,6 @@ volumes:
     driver: local
 
 networks:
-  kloudia-net:
+  mc-net:
     driver: bridge
-    name: kloudia-net
+    name: mc-net

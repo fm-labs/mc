@@ -1,16 +1,16 @@
 [metadata]
-name = "kloudia"
+name = "mc"
 version = "1.0.0"
 description = "A sample web project deployment configuration"
 
 
 [vars]
 python_version = "3.11"
-app_name = "kloudia"
+app_name = "mc"
 app_entry = "app.py"
 app_port = "8080"
-image_name = "kloudia:latest"
-dockerhub_repo = "yourusername/kloudia:latest"
+image_name = "mc:latest"
+dockerhub_repo = "fmlabs/mc:latest"
 
 
 [build]
@@ -29,25 +29,25 @@ command = "./build_bin.sh"
 
 [build.image]
 what = "image"
-command="docker build -t kloudia:latest ."
+command="docker build -t mc:latest ."
 
 
 [publish]
 [publish.image]
 what = "image"
-src="kloudia:latest"
-dest="kloudia:${version}"
+src="mc:latest"
+dest="mc:${version}"
 
 [publish.image-dockerhub]
 what = "image"
-src="kloudia:${version}"
-dest="docker.io/yourusername/kloudia:latest"
-#dest="dockerhub://yourusername/kloudia:latest"
+src="mc:${version}"
+dest="docker.io/fmlabs/mc:latest"
+#dest="dockerhub://fmlabs/mc:latest"
 
 [publish.container-local]
 what = "container"
 engine = "docker"
-src="kloudia:latest"
+src="mc:latest"
 dest="unix:///var/run/docker.sock"
 command_before = "rx build image"
 

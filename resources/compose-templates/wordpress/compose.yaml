@@ -32,10 +32,6 @@ services:
       - wordpress-net
 
   wordpress:
-    labels:
-      - io.kloudia.app.managed=true
-      - io.kloudia.app.feature.router=true
-      - io.kloudia.app.router.container_port=80
     image: wordpress:latest
     restart: unless-stopped
     depends_on:
