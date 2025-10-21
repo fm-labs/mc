@@ -1,0 +1,63 @@
+---
+
+
+#- name: Install required system packages
+#  apt:
+#    pkg:
+#      - apt-transport-https
+#      - ca-certificates
+#      - curl
+#      - gnupg
+#      - lsb-release
+#    state: latest
+#    update_cache: true
+
+
+
+- name: Update apt and install podman
+  apt:
+    name:
+      - podman
+      #- podman-docker
+      #- podman-remote
+    state: latest
+    update_cache: true
+
+
+- name: Install compose engine for Podman (docker-compose)
+  apt:
+    name:
+      - docker-compose
+    state: latest
+  when: podman_plugin_compose | bool
+
+
+#    - name: Install Podman Module for Python
+#      pip:
+#        name: podman
+
+
+- name: Start and enable Podman service
+  systemd:
+    name: podman
+    state: started
+    enabled: yes
+
+
+- name: Verify Podman installation
+  command: podman --version
+  register: podman_version
+
+
+- name: Display Podman version
+  debug:
+    var: podman_version.stdout
+
+
+#- name: Add users to podman group
+#  user:
+#    name: "{{ item }}"
+#    append: true
+#    groups: podman
+#  loop: "{{ podman_users }}"
+#  when: podman_users | length > 0

@@ -1,0 +1,4 @@
+
+#podman_users: []  # List of users to add to the 'podman' group
+
+podman_plugin_compose: True  # Whether to install the podman compose plugin
