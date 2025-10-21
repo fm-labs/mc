@@ -29,7 +29,7 @@ command = "./build_bin.sh"
 
 [build.image]
 what = "image"
-command="docker build -t mc:latest ."
+command="docker build -f Containerfile -t mc:latest ."
 
 
 [publish]

@@ -25,6 +25,11 @@ RUN addgroup -S app && \
     adduser -S app -G app && \
     adduser app root # to allow docker socket access
 
+# Little hack to add user to docker group
+# Add user to docker group (gid = 999)
+# on alpine the group is 'ping' with gid 999
+RUN adduser app ping
+
 # Set file and directory permissions
 RUN mkdir -p /app && chown -R app:app /app && \
     mkdir -p /data && \
