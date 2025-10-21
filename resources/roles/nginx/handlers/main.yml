@@ -1,0 +1,25 @@
+---
+
+- name: "start nginx"
+  service: name="nginx" state="started"
+  listen: "start web services"
+
+- name: "stop nginx"
+  service: name="nginx" state="stopped"
+  listen: "stop web services"
+
+- name: "restart nginx"
+  service: name="nginx" state="restarted"
+  listen: "restart web services"
+
+- name: "reload nginx"
+  service: name="nginx" state="reloaded"
+  listen: "reload web services"
+
+- name: "safe-restart nginx"
+  shell: "/usr/sbin/nginx -t && /bin/systemctl restart nginx"
+  listen: "safe-reload web services"
+
+- name: "safe-reload nginx"
+  shell: "/usr/sbin/nginx -t && /bin/systemctl reload nginx"
+  listen: "safe-reload web services"

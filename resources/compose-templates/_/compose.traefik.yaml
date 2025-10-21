@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+
+  nginx:
+    #ports:
+    #  - "8888:80"  # direct host access on :8888 (optional alongside Traefik)
+    labels:
+      - traefik.enable=${TRAEFIK_ENABLE:-false}
+      - traefik.docker.network=${TRAEFIK_NETWORK:-traefik-ssl}
+
+      # HTTP router
+      - traefik.http.routers.${APP_ID}-http.rule=Host(`${APP_DOMAIN:-nginx.local}`)
+      - traefik.http.routers.${APP_ID}-http.entrypoints=${TRAEFIK_ENTRYPOINT_INSECURE:-web}
+
+      # HTTPS router
+      - traefik.http.routers.${APP_ID}.rule=Host(`${APP_DOMAIN:-nginx.local}`)
+      - traefik.http.routers.${APP_ID}.entrypoints=${TRAEFIK_ENTRYPOINT:-websecure}
+      - traefik.http.routers.${APP_ID}.tls=true
+      - traefik.http.routers.${APP_ID}.tls.certresolver=le
+
+      # service port inside the container
+      - traefik.http.services.${APP_ID}.loadbalancer.server.port=${CONTAINER_PORT:-80}
+
+    networks:
+      - ${TRAEFIK_NETWORK:-traefik-ssl}
+
+
+networks:
+  traefik-ssl:
+    external: true

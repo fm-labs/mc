@@ -1,0 +1,143 @@
+{
+    "id": "ping",
+    "name": "ping",
+    "description": "",
+    "version": "1.0",
+    "commands": {
+        "_docker": {
+            "cmd": [
+                "docker",
+                "run",
+                "--rm",
+                "alpine:latest",
+                "ping"
+            ],
+            "env": {},
+            "options": {
+                "pull_policy": null,
+                "volumes": null,
+                "workdir": null,
+                "user": null,
+                "entrypoint": null
+            }
+        },
+        "_": {
+            "cmd": [
+                "ping",
+                "-c",
+                "4",
+                "{{host}}"
+            ],
+            "description": "Send ICMP echo requests to a network host to test connectivity.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "host": {
+                        "type": "string",
+                        "description": "The target hostname or IP address to ping."
+                    }
+                },
+                "required": [
+                    "host"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The command output as a string."
+            }
+        },
+        "continuous": {
+            "cmd": [
+                "ping",
+                "{{host}}"
+            ],
+            "description": "Send continuous ping requests until stopped.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "host": {
+                        "type": "string",
+                        "description": "The target hostname or IP address to ping."
+                    }
+                },
+                "required": [
+                    "host"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The command output as a string."
+            }
+        },
+        "count": {
+            "cmd": [
+                "ping",
+                "-c",
+                "{{count}}",
+                "{{host}}"
+            ],
+            "description": "Send a specific number of ping requests.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "host": {
+                        "type": "string",
+                        "description": "The target hostname or IP address to ping."
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of ping requests to send.",
+                        "minimum": 1
+                    }
+                },
+                "required": [
+                    "host",
+                    "count"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The command output as a string."
+            }
+        },
+        "interval": {
+            "cmd": [
+                "ping",
+                "-c",
+                "{{count}}",
+                "-i",
+                "{{interval}}",
+                "{{host}}"
+            ],
+            "description": "Send ping requests with a custom interval.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "host": {
+                        "type": "string",
+                        "description": "The target hostname or IP address to ping."
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of ping requests to send.",
+                        "minimum": 1,
+                        "default": 4
+                    },
+                    "interval": {
+                        "type": "number",
+                        "description": "Interval between ping requests in seconds.",
+                        "minimum": 0.1
+                    }
+                },
+                "required": [
+                    "host",
+                    "interval"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The command output as a string."
+            }
+        }
+    }
+}

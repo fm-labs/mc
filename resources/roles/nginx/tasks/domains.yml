@@ -1,0 +1,16 @@
+
+- name: Ensure www root directory exists
+  file:
+    path: /srv/www
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+
+
+- name: Process all ingress domains
+  include_tasks: setup_domain.yml
+  loop: "{{ ingress_domains }}"
+  loop_control:
+      loop_var: ingress_domain
+  #when: ingress_domain.state == 'present'

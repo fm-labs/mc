@@ -1,0 +1,47 @@
+---
+
+# Packages
+- name: Install baseline software packages
+  apt:
+    name: "{{ item }}"
+    state: latest
+    update_cache: yes
+  with_items:
+    - byobu
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - gnupg
+    - lsb-release
+    - htop
+    - iotop
+    - iftop
+    - nano
+    - tree
+    - lsof
+    - unzip
+
+
+# Hostname
+- name: Set hostname
+  hostname:
+    name: "{{ baseline_hostname }}"
+  when: baseline_hostname is defined and baseline_hostname != ''
+
+#- name: Ensure localhost in hosts
+#  lineinfile:
+#    destfile: /etc/hosts
+#    regexp: '^127\.0\.0\.1'
+#    line: '127.0.0.1 {{ baseline_hostname }} localhost'
+#    insertbefore: BOF
+#    state: present
+#  when: baseline_hostname is defined and baseline_hostname != ''
+#
+#- name: Ensure local loopback in hosts
+#  lineinfile:
+#    destfile: /etc/hosts
+#    regexp: '^127\.0\.1\.1'
+#    line: '127.0.1.1 {{ baseline_hostname }}'
+#    insertafter: '^127\.0\.0\.1'
+#    state: present
+#  when: baseline_hostname is defined and baseline_hostname != ''

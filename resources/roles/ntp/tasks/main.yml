@@ -1,0 +1,5 @@
+---
+
+- name: "Install ntp package"
+  apt:
+    name: ntp

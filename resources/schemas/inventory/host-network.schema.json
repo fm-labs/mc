@@ -1,0 +1,66 @@
+{
+  "type": "object",
+  "title": "Host Network",
+  "description": "Host network inventory item",
+  "$icon": "network-wired",
+  "version": "1.0.0",
+  "properties": {
+    "category": {
+      "type": "string",
+      "title": "Category",
+      "description": "Category of the network (e.g., LAN, WAN, VPN)",
+      "default": "",
+      "enum": [
+        "",
+        "LAN",
+        "WAN",
+        "VPN",
+        "DMZ",
+        "CLOUD-VPC",
+        "Other"
+      ]
+    },
+    "visibility": {
+      "type": "string",
+      "title": "Visibility",
+      "description": "Visibility of the network (e.g., Public, Private)",
+      "default": "Private",
+      "enum": [
+        "",
+        "Public",
+        "Private",
+        "Protected",
+        "Isolated"
+      ]
+    },
+    "cidr": {
+      "type": "string",
+      "title": "CIDR",
+      "description": "Classless Inter-Domain Routing notation for the IP address and its associated routing prefix",
+      "default": ""
+    },
+    "gateway": {
+      "type": "string",
+      "title": "Gateway",
+      "description": "The gateway IP address for the network",
+      "default": ""
+    },
+    "dns_servers": {
+      "type": "array",
+      "title": "DNS Servers",
+      "description": "List of DNS server IP addresses for the network",
+      "items": {
+        "type": "string",
+        "format": "ipv4",
+        "title": "DNS Server"
+      },
+      "default": [],
+      "uniqueItems": true,
+      "minItems": 0,
+      "maxItems": 3
+    }
+  },
+  "required": [
+    "cidr", "category", "visibility"
+  ]
+}

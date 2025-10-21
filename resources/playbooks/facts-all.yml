@@ -1,0 +1,18 @@
+---
+
+- hosts: '{{ target }}'
+  gather_facts: yes
+
+  tasks:
+
+#    - name: Gather all facts
+#      ansible.builtin.setup:
+#        gather_subset: all
+
+#    - name: Display all gathered facts
+#      ansible.builtin.debug:
+#          var: ansible_facts
+
+    - name: Debug message
+      ansible.builtin.debug:
+        msg: "Hello from host {{ inventory_hostname }} ({{ ansible_fqdn }})"

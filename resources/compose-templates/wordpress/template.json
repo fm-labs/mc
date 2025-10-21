@@ -1,0 +1,85 @@
+{
+  "version": "1.0.0",
+  "routing": [
+    {
+      "id": "http",
+      "service": "wordpress",
+      "containerPort": 80,
+      "strategy": "domain",
+      "accessPolicy": "public"
+    }
+  ],
+  "environment": {
+    "properties": {
+      "WORDPRESS_DB_HOST": {
+        "type": "string",
+        "title": "Database Host",
+        "description": "Hostname or IP address of the database server.",
+        "default": "db",
+        "minLength": 1
+      },
+      "WORDPRESS_DB_USER": {
+        "type": "string",
+        "title": "Database User",
+        "description": "Username for the WordPress database.",
+        "default": "wordpress",
+        "minLength": 1
+      },
+      "WORDPRESS_DB_PASSWORD": {
+        "type": "string",
+        "title": "Database Password",
+        "description": "Password for the WordPress database user.",
+        "default": "",
+        "minLength": 12,
+        "widget": "password",
+        "$secret": true
+      },
+      "WORDPRESS_DB_NAME": {
+        "type": "string",
+        "title": "Database Name",
+        "description": "Name of the WordPress database.",
+        "default": "wordpress",
+        "minLength": 1
+      },
+      "WORDPRESS_TABLE_PREFIX": {
+        "type": "string",
+        "title": "Table Prefix",
+        "description": "Prefix for WordPress database tables.",
+        "default": "wp_",
+        "minLength": 1,
+        "pattern": "^\\w+$",
+        "patternErrorMessage": "Table prefix can only contain letters, numbers, and underscores."
+      },
+      "WORDPRESS_DEBUG": {
+        "type": "boolean",
+        "title": "Enable Debugging",
+        "description": "Enable or disable WordPress debugging mode.",
+        "default": false,
+        "enum": [
+          true,
+          false
+        ],
+        "enumNames": [
+          "Enabled",
+          "Disabled"
+        ]
+      },
+      "MYSQL_ROOT_PASSWORD": {
+        "type": "string",
+        "title": "Mysql Root Password",
+        "description": "Password for the Mysql root database user.",
+        "default": "",
+        "minLength": 12,
+        "widget": "password",
+        "$secret": true
+      }
+    },
+    "required": [
+      "WORDPRESS_DB_HOST",
+      "WORDPRESS_DB_USER",
+      "WORDPRESS_DB_PASSWORD",
+      "WORDPRESS_DB_NAME",
+      "MYSQL_ROOT_PASSWORD"
+    ]
+  }
+}

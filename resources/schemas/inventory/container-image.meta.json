@@ -1,0 +1,43 @@
+{
+  "actions": [
+    {
+      "id": "pull",
+      "name": "Pull",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "string",
+            "title": "Tag",
+            "default": "latest",
+            "description": "The tag of the container image to pull"
+          },
+          "pullPolicy": {
+            "type": "string",
+            "title": "Pull Policy",
+            "enum": ["always", "ifNotPresent", "never"],
+            "default": "ifNotPresent",
+            "description": "The pull policy for the container image"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "id": "scan",
+      "name": "Scan",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "immediate": {
+            "type": "boolean",
+            "default": true,
+            "description": "Run a security scan on the container image immediately"
+          }
+        }
+      }
+    }
+  ]
+}

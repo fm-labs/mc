@@ -1,0 +1,55 @@
+---
+
+- import_tasks: install_nginx_ppa.yml
+  when: nginx_setup_apt_repository != False
+
+
+- name: Install NGINX
+  apt:
+    name: nginx
+    state: latest
+
+
+- name: Ensure sites-available and sites-enabled directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+    owner: root
+    group: root
+  loop:
+    - /etc/nginx/sites-available
+    - /etc/nginx/sites-enabled
+
+
+- name: Configure nginx
+  template:
+    dest: /etc/nginx/nginx.conf
+    src: nginx.conf.jinja2
+    owner: root
+    group: root
+  notify: restart nginx
+
+
+- import_tasks: configure_security.yml
+  when: nginx_setup_security != False
+
+- import_tasks: configure_ssl.yml
+  when: nginx_setup_ssl != False
+
+- import_tasks: configure_certbot.yml
+  when: nginx_setup_certbot != False
+
+- import_tasks: configure_default_site.yml
+  when: nginx_setup_default_site != False
+
+- import_tasks: configure_default_site_ssl.yml
+  when: nginx_setup_default_site_ssl != False
+
+
+
+- name: Ensure NGINX is started and enabled
+  service:
+    name: nginx
+    state: started
+    enabled: yes

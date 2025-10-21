@@ -1,0 +1,36 @@
+{
+  "actions": [
+    {
+      "id": "configure_compose_app",
+      "name": "Configure App",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "default": true,
+            "description": "Confirm updating this item.",
+            "title": "Confirm"
+          }
+        }
+      }
+    },
+    {
+      "id": "deploy_compose_app",
+      "name": "Deploy App",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "default": true,
+            "description": "Confirm publishing this item.",
+            "title": "Confirm"
+          }
+        }
+      }
+    }
+  ]
+}

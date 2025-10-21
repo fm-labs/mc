@@ -3,7 +3,6 @@ bak/
 config/
 data/
 docs/
-resources/
 templates/
 tmp/
 src/oapp/
@@ -12,6 +11,8 @@ projects.json
 .env.local
 .env.docker.local
 *.local
+_*.json
+.DS_Store
 
 ### Python template
 # Byte-compiled / optimized / DLL files

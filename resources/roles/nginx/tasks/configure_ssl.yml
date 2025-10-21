@@ -1,0 +1,66 @@
+
+## SSL
+
+- name: Install openssl package
+  apt:
+    name: openssl
+    state: present
+
+
+- name: "Create nginx ssl directory"
+  file:
+    state: directory
+    path: /etc/nginx/ssl
+    owner: root
+    group: root
+    mode: 0755
+
+
+- set_fact:
+    _nginx_ssl_dhparam_bytes: 2048
+    _nginx_ssl_dhparam_file: "/etc/nginx/ssl/dhparam.pem"
+
+
+- stat:
+    path: "{{_nginx_ssl_dhparam_file}}"
+  register: _stat_dh
+
+
+- name: "Create Diffie-Hellman params for nginx (this might take a long time!)"
+  shell: "openssl dhparam -out {{_nginx_ssl_dhparam_file}} {{_nginx_ssl_dhparam_bytes}}"
+  args:
+    creates: "{{_nginx_ssl_dhparam_file}}"
+    executable: "/bin/bash"
+  register: _gen_dh
+  failed_when: _gen_dh.rc != 0
+  when:
+    - _stat_dh.stat.exists == False
+
+
+- stat:
+    path: /etc/nginx/ssl/self-signed.crt
+  register: _stat_ssl_self_signed
+
+
+- name: "Create a self-signed SSL certificate"
+  shell: "openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout /etc/nginx/ssl/self-signed.key -out /etc/nginx/ssl/self-signed.crt -subj '/CN=localhost'"
+  args:
+    creates: /etc/nginx/ssl/nginx.crt
+    executable: "/bin/bash"
+  register: _gen_ssl
+  failed_when: _gen_ssl.rc != 0
+  when:
+      - _stat_ssl_self_signed.stat.exists == False
+
+
+- name: "Create SSL config"
+  template:
+    dest: /etc/nginx/conf.d/ssl.conf
+    src: ssl.conf.jinja2
+    force: yes
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart nginx
+
+

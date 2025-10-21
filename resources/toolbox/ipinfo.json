@@ -1,0 +1,49 @@
+{
+    "id": "ipinfo",
+    "name": "ipinfo",
+    "description": "",
+    "version": "1.0",
+    "commands": {
+        "_docker": {
+            "cmd": [
+                "docker",
+                "run",
+                "--rm",
+                "joshbarrass/ipinfo"
+            ],
+            "env": {},
+            "options": {
+                "pull_policy": null,
+                "volumes": null,
+                "workdir": null,
+                "user": null,
+                "entrypoint": null
+            }
+        },
+        "lookup": {
+            "cmd": [
+                "ipinfo",
+                "{{ip}}"
+            ],
+            "description": "A tool that performs an IP lookup for the given IP address.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "ip": {
+                        "type": "string",
+                        "description": "The IP address to look up.",
+                        "$class": "net.host.ip"
+                    }
+                },
+                "required": [
+                    "ip"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The output of the ipinfo command.",
+                "$class": "output.text"
+            }
+        }
+    }
+}

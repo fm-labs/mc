@@ -1,0 +1,43 @@
+{
+  "actions": [
+    {
+      "id": "scan",
+      "name": "Scan",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "immediate": {
+            "type": "boolean",
+            "default": true,
+            "description": "Run the scan immediately"
+          }
+        }
+      }
+    },
+    {
+      "id": "",
+      "name": "",
+      "type": "separator"
+    },
+    {
+      "id": "delete",
+      "name": "Delete",
+      "type": "form",
+      "variant": "destructive",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "confirm": {
+            "type": "boolean",
+            "const": true,
+            "title": "I confirm that I want to delete this repository"
+          }
+        },
+        "required": [
+          "confirm"
+        ]
+      }
+    }
+  ]
+}

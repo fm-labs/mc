@@ -1,0 +1,20 @@
+---
+
+- name: Setup wireguard
+  hosts: '{{ target }}'
+  #gather_facts: yes
+
+  tasks:
+
+    - name: Setup wireguard server
+      import_role:
+        name: wireguard
+        tasks_from: server
+      tags: [wireguard]
+
+
+#    - name: Setup fail2ban for wireguard
+#      import_role:
+#        name: wireguard
+#        tasks_from: fail2ban
+#      tags: [fail2ban]

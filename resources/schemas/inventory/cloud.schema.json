@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "version": "1.0.0",
+  "title": "Cloud Account",
+  "description": "Cloud account inventory item",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "title": "Cloud Provider",
+      "enum": [
+        "aws",
+        "azure",
+        "gcp",
+        "digitalocean",
+        "linode"
+      ]
+    },
+    "accountId": {
+      "type": "string",
+      "title": "Account ID"
+    },
+    "regions": {
+      "type": "array",
+      "title": "Regions",
+      "items": {
+        "type": "string"
+      }
+    },
+    "syncInterval": {
+      "type": "integer",
+      "title": "Sync Interval (minutes)",
+      "default": 60
+    }
+  },
+  "required": [
+    "provider",
+    "accountId"
+  ]
+}

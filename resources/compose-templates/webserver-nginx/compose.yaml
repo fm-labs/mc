@@ -1,0 +1,9 @@
+
+services:
+
+  app:
+    image: nginx:latest
+    restart: always
+    labels:
+      - io.kloudia.app.feature.router=true
+      - io.kloudia.app.router.container_port=80

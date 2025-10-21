@@ -1,0 +1,112 @@
+{
+  "actions": [
+    {
+      "id": "ping",
+      "name": "Ping Host",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "id": "info",
+      "name": "Get Info",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "id": "setup_webstack",
+      "name": "Setup Web stack",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "description": "Installs pre-configured Traefik as a reverse proxy with automatic SSL via Let's Encrypt.",
+        "title": "Setup Webstack",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "id": "deploy_container",
+      "name": "Deploy Container",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "description": "Deploy a container to the host using Docker. Ensure Docker is installed and running.",
+        "title": "Deploy Container",
+        "properties": {
+          "image_url": {
+            "type": "string",
+            "title": "Image URL"
+          },
+          "tag": {
+            "type": "string",
+            "title": "Tag",
+            "default": "latest"
+          },
+          "private": {
+            "type": "boolean",
+            "title": "Private Image (requires authentication)",
+            "default": false
+          }
+        },
+        "required": [
+          "image_url"
+        ]
+      }
+    },
+    {
+      "id": "deploy_compose",
+      "name": "Deploy Docker Compose",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "description": "Deploy a multi-container application using Docker Compose. Ensure Docker and Docker Compose are installed and running.",
+        "title": "Deploy Docker Compose",
+        "properties": {
+          "compose_file_url": {
+            "type": "string",
+            "title": "Compose File URL",
+            "description": "URL to the docker-compose.yml file",
+            "default": "",
+            "examples": [
+              "https://example.com/path/to/docker-compose.yml"
+            ],
+            "pattern": "^(https?|ftp)://[^\\s/$.?#].[^\\s]*$",
+            "format": "uri",
+            "minLength": 5,
+            "maxLength": 2048
+          }
+        }
+      }
+    },
+    {
+      "id": "deploy_template",
+      "name": "Deploy Docker Template",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "description": "Deploy a container using a predefined template. Ensure Docker is installed and running.",
+        "title": "Deploy Docker Template",
+        "properties": {
+          "template_name": {
+            "type": "string",
+            "title": "Template Name",
+            "enum": [
+              "traefik-ssl",
+              "webserver-nginx"
+            ],
+            "default": "webserver-nginx",
+            "description": "Select a predefined template to deploy"
+          }
+        }
+      }
+    }
+  ]
+}

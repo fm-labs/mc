@@ -1,0 +1,81 @@
+
+services:
+
+#  db:
+#    image: mariadb:11
+#    restart: unless-stopped
+#    environment:
+#      MYSQL_DATABASE: wordpress
+#      MYSQL_USER: wordpress
+#      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:?VARIABLE-NOT-SET}
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?VARIABLE-NOT-SET}
+#    volumes:
+#      - db_data:/var/lib/mysql
+#    healthcheck:
+#      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 5
+
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: ${WORDPRESS_DB_PASSWORD:?VARIABLE-NOT-SET}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?VARIABLE-NOT-SET}
+      #MYSQL_RANDOM_ROOT_PASSWORD: '1'
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - wordpress-net
+
+  wordpress:
+    labels:
+      - io.kloudia.app.managed=true
+      - io.kloudia.app.feature.router=true
+      - io.kloudia.app.router.container_port=80
+    image: wordpress:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    #    condition: service_healthy
+    #ports:
+    #  - "8080:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:?VARIABLE-NOT-SET}
+      WORDPRESS_DB_NAME: wordpress
+      # Optional: set WP home/site URLs on first boot (adjust domain as needed)
+      # WORDPRESS_CONFIG_EXTRA: |
+      #   define('WP_HOME','http://localhost:8080');
+      #   define('WP_SITEURL','http://localhost:8080');
+    volumes:
+      - wp_data:/var/www/html
+      - ./dbcheck.php:/dbcheck.php:ro
+    networks:
+      - wordpress-net
+
+#  # Optional database GUI at http://localhost:8081
+#  phpmyadmin:
+#    image: phpmyadmin:latest
+#    depends_on:
+#      db:
+#        condition: service_healthy
+#    restart: unless-stopped
+#    ports:
+#      - "8081:80"
+#    environment:
+#      PMA_HOST: db
+#      PMA_ABSOLUTE_URI: http://localhost:8081/
+#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?VARIABLE-NOT-SET}
+
+volumes:
+  mysql_data:
+  wp_data:
+
+networks:
+  wordpress-net:
+    internal: true

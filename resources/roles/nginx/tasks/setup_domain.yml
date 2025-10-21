@@ -1,0 +1,96 @@
+---
+
+#ingress_domains:
+#  - domain: masternodez.io
+#    www_redirect: True
+#    ssl: True
+#    ssl_cert: /etc/letsencrypt/live/masternodez.io/fullchain.pem
+#    ssl_key: /etc/letsencrypt/live/masternodez.io/privkey.pem
+#    ssl_dhparam: /etc/letsencrypt/live/masternodez.io/dhparam.pem
+#    ssl_redirect: True
+#    mapping:
+#      - subdomain: www
+#        proxy_pass: http://localhost:3001
+#      - subdomain: api
+#        proxy_pass: http://localhost:3002
+
+- name: Print ingress domain name
+  debug:
+      msg: "Ingress domain: {{ ingress_domain.domain }}"
+
+
+- name: Print all subdomains
+  debug:
+      msg: "Subdomain: {{ item.subdomain }}"
+  loop: "{{ ingress_domain.mapping }}"
+  loop_control:
+      loop_var: item
+
+
+- name: Request SSL certificate including all subdomains (dry-run)
+  shell: "certbot certonly --webroot -w /var/www/letsencrypt -d {{ ingress_domain.domain }} {% for item in ingress_domain.mapping %} -d {{ item.subdomain }}.{{ ingress_domain.domain }} {% endfor %} --agree-tos --email domainadmin@{{ ingress_domain.domain }} --no-eff-email --force-renewal --dry-run"
+  args:
+      creates: "/etc/letsencrypt/live/{{ ingress_domain.domain }}/fullchain.pem"
+      executable: "/bin/bash"
+  register: _certbot_dry_run
+  failed_when: _certbot_dry_run.rc != 0
+
+
+
+- name: Request SSL certificate including all subdomains
+  shell: "certbot certonly --webroot -w /var/www/letsencrypt -d {{ ingress_domain.domain }} {% for item in ingress_domain.mapping %} -d {{ item.subdomain }}.{{ ingress_domain.domain }} {% endfor %} --agree-tos --email domainadmin@{{ ingress_domain.domain }} --no-eff-email --force-renewal"
+  args:
+      creates: "/etc/letsencrypt/live/{{ ingress_domain.domain }}/fullchain.pem"
+      executable: "/bin/bash"
+  register: _certbot
+  failed_when: _certbot.rc != 0
+
+
+- name: Add domain site configuration
+  template:
+    src: site.domain-ssl2.jinja2
+    dest: /etc/nginx/sites-available/{{ ingress_domain.domain }}
+    force: yes
+    owner: root
+    group: root
+    mode: 0644
+  vars:
+    domain_name: "{{ ingress_domain.domain }}"
+    #domain_aliases: "{% for item in ingress_domain.mapping %} {{ item.subdomain }}.{{ ingress_domain.domain }} {% endfor %}"
+    domain_aliases: ""
+    domain_root: "/srv/www/{{ ingress_domain.domain }}/www"
+    domain_ssl_certificate: "/etc/letsencrypt/live/{{ ingress_domain.domain }}/fullchain.pem"
+    domain_ssl_certificate_key: "/etc/letsencrypt/live/{{ ingress_domain.domain }}/privkey.pem"
+    #domain_redirect: "www.{{ ingress_domain.domain }}"
+    domain_mappings: "{{ ingress_domain.mapping }}"
+  notify: restart nginx
+
+
+- name: Enable domain site
+  file:
+      src: /etc/nginx/sites-available/{{ ingress_domain.domain }}
+      dest: /etc/nginx/sites-enabled/{{ ingress_domain.domain }}
+      state: link
+  notify: restart nginx
+
+
+#- name: Add domain site configuration for each subdomain mapping
+#  template:
+#      src: site.subdomain-ssl.jinja2
+#      dest: /etc/nginx/sites-available/{{ item.subdomain }}.{{ ingress_domain.domain }}
+#      force: yes
+#      owner: root
+#      group: root
+#      mode: 0644
+#  loop: "{{ ingress_domain.mapping }}"
+#  loop_control:
+#      loop_var: item
+#  vars:
+#      domain_name: "{{ item.subdomain }}.{{ ingress_domain.domain }}"
+#      domain_root: "/srv/www/{{ ingress_domain.domain }}/{{ item.subdomain }}"
+#      domain_ssl_cert: "/etc/letsencrypt/live/{{ ingress_domain.domain }}/fullchain.pem"
+#      domain_ssl_key: "/etc/letsencrypt/live/{{ ingress_domain.domain }}/privkey.pem"
+#      domain_proxy_pass: "{{ item.proxy_pass | default(omit) }}"
+#      domain_redirect: "{{ item.redirect | default(omit) }}"
+
+

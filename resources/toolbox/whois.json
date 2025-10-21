@@ -1,0 +1,108 @@
+{
+    "id": "whois",
+    "name": "whois",
+    "description": "",
+    "version": "1.0",
+    "commands": {
+        "_docker": {
+            "cmd": [
+                "docker",
+                "run",
+                "--rm",
+                "alpine:latest",
+                "whois"
+            ],
+            "env": {},
+            "options": {
+                "pull_policy": null,
+                "volumes": null,
+                "workdir": null,
+                "user": null,
+                "entrypoint": null
+            }
+        },
+        "_": {
+            "cmd": [
+                "whois",
+                "{{domain}}"
+            ],
+            "description": "Queries domain registration information from whois databases.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "The domain name or IP address to query."
+                    }
+                },
+                "required": [
+                    "domain"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The command output as a string."
+            }
+        },
+        "server": {
+            "cmd": [
+                "whois",
+                "-h",
+                "{{server}}",
+                "{{domain}}"
+            ],
+            "description": "Queries whois information using a specific whois server.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "The domain name or IP address to query."
+                    },
+                    "server": {
+                        "type": "string",
+                        "description": "The whois server to query."
+                    }
+                },
+                "required": [
+                    "domain",
+                    "server"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The command output as a string."
+            }
+        },
+        "port": {
+            "cmd": [
+                "whois",
+                "-p",
+                "{{port}}",
+                "{{domain}}"
+            ],
+            "description": "Queries whois information using a specific port on the whois server.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "domain": {
+                        "type": "string",
+                        "description": "The domain name or IP address to query."
+                    },
+                    "port": {
+                        "type": "integer",
+                        "description": "The port number to use for the whois query."
+                    }
+                },
+                "required": [
+                    "domain",
+                    "port"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The command output as a string."
+            }
+        }
+    }
+}

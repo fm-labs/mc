@@ -1,0 +1,13 @@
+---
+
+- name: Baseline setup for Debian-based servers
+  hosts: '{{ target }}'
+  gather_facts: yes
+
+  tasks:
+
+    - name: Import baseline role
+      import_role:
+        name: baseline-debian
+        tasks_from: main
+      tags: [baseline]

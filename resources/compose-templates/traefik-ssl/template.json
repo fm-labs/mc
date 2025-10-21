@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+
+  "routing": [
+    {
+      "id": "frontend",
+      "service": "nginx",
+      "containerPort": 80,
+      "strategy": "domain",
+      "accessPolicy": "public"
+    },
+    {
+      "id": "backend",
+      "service": "nginx",
+      "containerPort": 81,
+      "strategy": "domain",
+      "accessPolicy": "protected"
+    }
+  ],
+
+  "environment": {
+    "properties": {
+      "TRAEFIK_LETSENCRYPT_EMAIL": {
+        "type": "string",
+        "title": "Email",
+        "description": "Email address for Let's Encrypt notifications.",
+        "default": "",
+        "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        "patternErrorMessage": "Please enter a valid email address."
+      },
+      "TRAEFIK_BASIC_AUTH_USER": {
+        "type": "string",
+        "title": "Basic Auth User",
+        "description": "Username for basic authentication.",
+        "default": "admin",
+        "minLength": 3,
+        "maxLength": 20,
+        "pattern": "^[a-zA-Z0-9._-]+$",
+        "patternErrorMessage": "Username can only contain letters, numbers, dots, underscores, and hyphens."
+      },
+      "TRAEFIK_BASIC_AUTH_PASSWORD": {
+        "type": "string",
+        "title": "Basic Auth Password",
+        "description": "Password for basic authentication.",
+        "default": "",
+        "minLength": 8,
+        "maxLength": 64
+      },
+      "TRAEFIK_DASHBOARD": {
+        "type": "boolean",
+        "title": "Enable Dashboard",
+        "description": "Enable or disable the Traefik dashboard.",
+        "default": true,
+        "enum": [
+          true,
+          false
+        ],
+        "enumNames": [
+          "Enabled",
+          "Disabled"
+        ],
+        "widget": "toggle"
+      },
+      "TRAEFIK_DASHBOARD_DOMAIN": {
+        "type": "string",
+        "title": "Dashboard Domain",
+        "description": "The domain name for the Traefik dashboard.",
+        "default": ""
+      },
+      "TRAEFIK_LOG_LEVEL": {
+        "type": "string",
+        "title": "Log Level",
+        "description": "Set the log level for Traefik.",
+        "default": "INFO",
+        "enum": [
+          "DEBUG",
+          "INFO",
+          "WARN",
+          "ERROR"
+        ],
+        "enumNames": [
+          "Debug",
+          "Info",
+          "Warn",
+          "Error"
+        ],
+        "widget": "select"
+      }
+    },
+    "required": [
+      "LETSENCRYPT_EMAIL",
+      "TRAEFIK_BASIC_AUTH_USER",
+      "TRAEFIK_BASIC_AUTH_PASSWORD"
+    ]
+  }
+}

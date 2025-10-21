@@ -1,0 +1,17 @@
+{
+  "type": "object",
+  "description": "A JSON Schema for an inventory item.",
+  "title": "Inventory Schema",
+  "version": "1.0.0",
+  "$icon": "json",
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "title": "The full json schema as a string"
+    }
+  },
+  "required": [
+    "schema"
+  ]
+}

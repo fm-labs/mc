@@ -1,0 +1,13 @@
+---
+
+- name: Setup Security baseline for Debian/Ubuntu servers
+  hosts: '{{ target }}'
+  gather_facts: yes
+
+  tasks:
+
+    - name: Import baseline security role
+      import_role:
+        name: baseline-debian
+        tasks_from: security
+      tags: [baseline, security]

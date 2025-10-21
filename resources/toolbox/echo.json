@@ -1,0 +1,48 @@
+{
+    "id": "echo",
+    "name": "echo",
+    "description": "",
+    "version": "1.0",
+    "commands": {
+        "_docker": {
+            "cmd": [
+                "docker",
+                "run",
+                "--rm",
+                "alpine",
+                "echo"
+            ],
+            "env": {},
+            "options": {
+                "pull_policy": null,
+                "volumes": null,
+                "workdir": null,
+                "user": null,
+                "entrypoint": null
+            }
+        },
+        "_": {
+            "cmd": [
+                "echo",
+                "{{message}}"
+            ],
+            "description": "A tool that echoes the input message.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "The message to echo."
+                    }
+                },
+                "required": [
+                    "message"
+                ]
+            },
+            "output_schema": {
+                "type": "string",
+                "description": "The command output as a string."
+            }
+        }
+    }
+}

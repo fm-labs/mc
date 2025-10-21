@@ -1,0 +1,14 @@
+
+- name: Install certbot
+  apt:
+    name: certbot
+    state: present
+
+
+- name: Configure certbot - Setup ACME challenge root
+  file:
+    state: directory
+    path: /var/www/letsencrypt
+    owner: "www-data"
+    group: "www-data"
+    mode: 0750

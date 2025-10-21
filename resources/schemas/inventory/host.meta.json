@@ -1,0 +1,118 @@
+{
+  "name": "Host",
+  "pluralName": "Hosts",
+  "description": "A single host entry in the inventory.",
+  "icon": "server",
+  "actions": [
+    {
+      "id": "ping",
+      "name": "Ping",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 4,
+            "description": "Number of echo requests to send"
+          },
+          "timeout": {
+            "type": "integer",
+            "title": "Timeout (seconds)",
+            "default": 5,
+            "description": "Time to wait for a response"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "id": "ssh_connect",
+      "name": "Probe SSH Connection",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "port": {
+            "type": "integer",
+            "title": "Port",
+            "default": 22,
+            "description": "SSH port to connect to"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username",
+            "description": "Username for SSH authentication"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "description": "Password for SSH authentication"
+          },
+          "private_key": {
+            "type": "string",
+            "title": "Private Key",
+            "description": "SSH private key for authentication"
+          },
+          "passphrase": {
+            "type": "string",
+            "title": "Passphrase",
+            "description": "Passphrase for the private key, if applicable"
+          },
+          "timeout": {
+            "type": "integer",
+            "title": "Timeout (seconds)",
+            "default": 5,
+            "description": "Time to wait for a connection"
+          }
+        }
+      }
+    },
+    {
+      "id": "run_playbook",
+      "name": "Run Ansible Playbook",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project": {
+            "type": "string",
+            "title": "Project",
+            "description": "The Ansible project containing the playbook"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target",
+            "description": "The host or group of hosts to run the playbook against"
+          },
+          "playbook": {
+            "type": "string",
+            "title": "Playbook",
+            "description": "Path to the Ansible playbook to run",
+            "enum": [
+              "builtin/baseline-debian",
+              "builtin/baseline-debian-security",
+              "builtin/dockerhost-debian",
+              "builtin/podmanhost-debian",
+              "builtin/facts-all",
+              "builtin/facts-diskusage",
+              "builtin/hello-world",
+              "builtin/wireguard-server"
+            ]
+          },
+          "extra_vars": {
+            "type": "string",
+            "title": "Extra Variables",
+            "description": "Additional variables to pass to the playbook in JSON format"
+          }
+        },
+        "required": [
+          "project",
+          "target",
+          "playbook"
+        ]
+      }
+    }
+  ]
+}

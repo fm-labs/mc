@@ -1,0 +1,66 @@
+{
+  "type": "object",
+  "title": "Host",
+  "description": "Server host inventory item",
+  "version": "1.0.0",
+  "properties": {
+    "network": {
+      "type": "string",
+      "title": "Network name"
+    },
+    "hostname": {
+      "type": "string",
+      "title": "Hostname"
+    },
+    "ip_address": {
+      "type": "string",
+      "title": "IP Address"
+    },
+    "public_dns_name": {
+      "type": "string",
+      "title": "Public DNS Name"
+    },
+    "public_ip": {
+      "type": "string",
+      "title": "Public IP Address"
+    },
+    "ssh_enabled": {
+      "type": "boolean",
+      "title": "Enable SSH",
+      "default": false
+    },
+    "ssh_user": {
+      "type": "string",
+      "title": "SSH User",
+      "default": ""
+    },
+    "ssh_hostname": {
+      "type": "string",
+      "title": "SSH Hostname (if different)",
+      "default": ""
+    },
+    "ssh_port": {
+      "type": "integer",
+      "title": "SSH Port (default 22)"
+    },
+    "ssh_key_path": {
+      "type": "string",
+      "title": "SSH Key Path",
+      "default": ""
+    },
+    "autoconnect": {
+      "type": "boolean",
+      "title": "Auto-connect",
+      "default": false
+    },
+    "monitoring_enabled": {
+      "type": "boolean",
+      "title": "Enable Monitoring",
+      "default": false
+    }
+  },
+  "required": [
+    "hostname",
+    "ip_address"
+  ]
+}

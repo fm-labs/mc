@@ -1,0 +1,43 @@
+---
+
+
+- name: Checking admin vars
+  assert:
+    that:
+      - admin_user is defined and admin_user != ""
+      - admin_pubkey is defined and admin_pubkey != ""
+      - admin_password is defined and admin_password != ""
+
+
+- fail:
+    msg: "It's not allowed to use root as the admin user"
+  when: admin_user == "root"
+
+- name: Setup admin user group
+  group:
+    name: "{{admin_user}}"
+
+- name: Setup admin user
+  user:
+    name: "{{admin_user}}"
+    group: "{{admin_user}}"
+    system: no
+    state: present
+    groups: "adm,cdrom,sudo,dip,plugdev"
+    append: true
+    shell: "/bin/bash"
+    password: "{{ admin_password | password_hash('sha512') }}"
+    update_password: always
+
+- name: Install SSH keys for admin user
+  authorized_key:
+    user: "{{admin_user}}"
+    key: "{{admin_pubkey}}"
+    state: present
+    manage_dir: yes
+    exclusive: no
+    #path: "{{admin_home}}/.ssh/authorized_keys"
+    #comment: "{{ key.comment }}"
+  when:
+    - admin_pubkey is defined
+    - admin_pubkey != ""

@@ -1,0 +1,27 @@
+---
+
+# Default SSL site configuration
+
+
+- name: Add default SSL site configuration
+  template:
+    src: site.default-ssl.jinja2
+    dest: /etc/nginx/sites-available/default-ssl
+    force: yes
+    owner: root
+    group: root
+    mode: 0644
+  vars:
+    ssl_certificate: /etc/nginx/ssl/self-signed.crt
+    ssl_certificate_key: /etc/nginx/ssl/self-signed.key
+  #notify: restart nginx
+
+
+- name: Enable default site
+  file:
+      src: /etc/nginx/sites-available/default-ssl
+      dest: /etc/nginx/sites-enabled/default-ssl
+      state: link
+  notify: reload nginx
+
+

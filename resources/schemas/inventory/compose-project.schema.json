@@ -1,0 +1,84 @@
+{
+  "title": "Compose Project",
+  "description": "A Docker Compose project.",
+  "version": "1.0.0",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "source_url": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "Optional source URL."
+    },
+    "target_url": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "Optional target URL, e.g. 'ssh://user@host'."
+    },
+    "domain_name": {
+      "type": ["string", "null"],
+      "description": "Optional domain name for the app (host only).",
+      "pattern": "^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(?:\\.(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*\\.?$"
+    },
+    "project_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Logical project identifier."
+    },
+    "app_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "App name."
+    },
+    "app_dir": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Filesystem path where the app will be created."
+    },
+    "template_url": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "Optional template URL, e.g. 'git://user/repo'."
+    },
+    "description": {
+      "type": ["string", "null"],
+      "description": "Optional human-readable description of the app."
+    },
+    "version": {
+      "type": ["string", "null"],
+      "description": "Optional app version string."
+    },
+    "traefik_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether to auto-wire Traefik labels."
+    },
+    "traefik_http_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether to enable HTTP routing for the app."
+    },
+    "traefik_https_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether to enable SSL (HTTPS) routing for the app."
+    },
+    "traefik_service_name": {
+      "type": ["string", "null"],
+      "description": "Name of the compose service to attach the router.",
+      "minLength": 1
+    },
+    "traefik_container_port": {
+      "type": ["integer", "null"],
+      "description": "Container port the app listens on (for Traefik routing).",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "traefik_network_name": {
+      "type": ["string", "null"],
+      "description": "Name of the Docker network Traefik is on. Defaults to 'traefik'.",
+      "minLength": 1
+    }
+  },
+  "required": ["project_name", "source_url"]
+}
