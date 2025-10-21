@@ -58,6 +58,8 @@ async def get_webcheck_results(check_name: str, url: str=None) -> dict:
     if not url:
         return {"error": "URL parameter is required."}
 
+    if check_name in ["cookies", "threats", "screenshot", "tls"]:
+        return {"error": "Check is currently disabled globally."}
 
     ckeck_module = check_name #.replace("-", "_")
     module_name = "xscan.domain.webcheck." + ckeck_module

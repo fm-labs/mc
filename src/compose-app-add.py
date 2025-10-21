@@ -1,5 +1,5 @@
 # !/usr/bin/env python3
-# compose-app-add.py
+# compose-project-add.py
 # Description: Functions to create and manage Docker Compose applications from templates or git repositories.
 # App creation fails if the target directory already exists.
 # The template can be a local directory, a git repository, or a URL to a zip/tar.gz archive.
@@ -29,7 +29,7 @@ if __name__ == "__main__":
     # git_branch = "main"
     #
     # project_name = "my-project"
-    # app_name = "my-compose-app"
+    # app_name = "my-compose-project"
     # app_dir = f"data/projects/{project_name}/apps/{app_name}"
 
     # unified app src url scheme:
@@ -39,17 +39,17 @@ if __name__ == "__main__":
     # - https://example.com/path/to/template.zip (zip or tar.gz)
     # - git-template://user/repo.git#branch/template-name
 
-    # # a) create compose-app from template directory
+    # # a) create compose-project from template directory
     # create_compose_app_from_template_dir(app_name="from-template-dir",
     #                              app_dir=_build_app_dir_path(project_name, "from-template-dir"),
     #                              template_dir=template_dir)
     #
-    # # b) checkout git repo into compose-app directory
+    # # b) checkout git repo into compose-project directory
     # create_compose_app_from_git_repo(app_name="from-git-repo",
     #                          app_dir=_build_app_dir_path(project_name, "from-git-repo"),
     #                          git_repo=git_repo, git_branch=git_branch)
     #
-    # # c) checkout a template repo info temp dir and copy into compose-app directory
+    # # c) checkout a template repo info temp dir and copy into compose-project directory
     # # c1) from a git repo
     # create_compose_app_from_git_repo_template(app_name="from-git-template",
     #                                   app_dir=_build_app_dir_path(project_name, "from-git-template"),
@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     # read args from command line as src
     if len(sys.argv) < 4:
-        print("Usage: python compose-app-add.py <project_name> <app_name> <src>")
+        print("Usage: python compose-project-add.py <project_name> <app_name> <src>")
         print("  src: file://path/to/local/template")
         print("       git://user/repo.git#branch")
         print("       https://example.com/path/to/repo.git#branch")
@@ -98,11 +98,11 @@ if __name__ == "__main__":
     print("Successfully created compose app and added to inventory.")
     print("You can now deploy it using the 'rx deploy' command.")
     print("e.g. to deploy to local docker-compose:")
-    print(f"  rx deploy compose-app --name {app_name} --target local-docker-compose")
+    print(f"  rx deploy compose-project --name {app_name} --target local-docker-compose")
     # print("or to deploy to a remote server:")
-    # print(f"  rx deploy compose-app --name {app_name} --target my-remote-server")
+    # print(f"  rx deploy compose-project --name {app_name} --target my-remote-server")
     print("or to deploy to cloud providers (requires credentials in environment variables):")
-    print(f"  rx deploy compose-app --name {app_name} --target aws-ecs")
-    print(f"  rx deploy compose-app --name {app_name} --target digitalocean-app-platform")
-    print(f"  rx deploy compose-app --name {app_name} --target google-cloud-run")
+    print(f"  rx deploy compose-project --name {app_name} --target aws-ecs")
+    print(f"  rx deploy compose-project --name {app_name} --target digitalocean-app-platform")
+    print(f"  rx deploy compose-project --name {app_name} --target google-cloud-run")
 

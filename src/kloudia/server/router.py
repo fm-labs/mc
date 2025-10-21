@@ -5,13 +5,17 @@ from fastapi.security import OAuth2PasswordRequestForm
 from kloudia.config import PLUGINS_ENABLED
 from kloudia.server.auth import authenticate_user, get_current_user
 from kloudia.inventory.routes import router as inventory_router
+from kloudia.findings.routes import router as findings_router
 from kloudia.integrations.routes import router as integrations_router
 from kloudia.plugin.orchestra.routes_sse import router as sse_router
+from kloudia.plugin.orchestra.routes_infra import router as infra_router
 from kloudia.util.jwt_util import create_access_token1
 
 app_router = APIRouter()
-app_router.include_router(sse_router, prefix="/sse", tags=['sse'])
+app_router.include_router(sse_router, prefix="/sse", tags=["sse"])
+app_router.include_router(infra_router, prefix="/api", tags=["infrastructure"]) #, dependencies=[Security(get_current_user)])
 app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
+app_router.include_router(findings_router, prefix="/api", tags=["findings"], dependencies=[Security(get_current_user)])
 app_router.include_router(integrations_router, prefix="/api", tags=["integrations"], dependencies=[Security(get_current_user)])
 
 

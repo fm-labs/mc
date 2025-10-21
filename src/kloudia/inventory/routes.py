@@ -5,8 +5,20 @@ from fastapi import APIRouter, HTTPException
 from kloudia.inventory.actions import handle_inventory_item_action
 from kloudia.inventory.helper import get_schema_handler, get_meta_handler
 from kloudia.inventory import items
+from kloudia.inventory.metadata import list_inventory_item_types, InventoryMetadata, enumerate_inventories_metadata_from_schema_dir
 
 router = APIRouter()
+
+@router.get("/inventory", response_model=list[InventoryMetadata])
+async def get_inventory() -> list[InventoryMetadata]:
+    """
+    Get a list of all inventory item types that have associated JSON schemas.
+    Schema files are located in the resources dir or in the database.
+    """
+    metadata = enumerate_inventories_metadata_from_schema_dir()
+    # sort metadata dict by item_type
+    metadata.sort(key=lambda x: x.item_type)
+    return metadata
 
 
 @router.get("/inventory/{item_type}/_schema", response_model=dict)
@@ -35,7 +47,10 @@ async def get_inventory_metadata(item_type: str) -> dict:
 
 @router.get("/inventory/{item_type}", response_model=List[dict])
 async def list_inventory_items(item_type: str) -> List[dict]:
-    return items.list_inventory_items(item_type)
+    _items = items.list_inventory_items(item_type)
+    # sort items by name
+    _items.sort(key=lambda x: x.get("name", ""))
+    return _items
 
 
 @router.post("/inventory/{item_type}", response_model=dict)
@@ -53,7 +68,7 @@ async def update_inventory_item(item_type: str, item_key: str, data: dict) -> di
     return items.update_inventory_item(item_type, item_key, data)
 
 
-@router.delete("/{item_type}/{item_key}", response_model=bool)
+@router.delete("/inventory/{item_type}/{item_key}", response_model=bool)
 async def delete_inventory_item(item_type: str, item_key: str) -> bool:
     return items.delete_inventory_item(item_type, item_key)
 

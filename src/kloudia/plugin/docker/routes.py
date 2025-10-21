@@ -3,56 +3,92 @@ import json
 from typing import List, Annotated, Any
 
 import anyio
+from docker import DockerClient
 from docker.models.containers import Container
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
-from fastapi.params import Query
+from fastapi.params import Query, Path
+from podman import PodmanClient
+from pydantic import BaseModel
 from starlette.concurrency import iterate_in_threadpool
 from starlette.requests import Request, ClientDisconnect
 from starlette.responses import StreamingResponse
 
-from kloudia.plugin.docker.helper import get_docker_client, DOCKER_HOSTS, init_container_hosts
+from kloudia.inventory.storage import get_inventory_storage_instance
+from kloudia.plugin.docker.manager import ContainerClientsManager, get_container_connection_manager, \
+    bootstrap_container_connection_manager
 
 router = APIRouter()
 
 
+def dep_container_connection(
+        alias: str,
+        manager: ContainerClientsManager = Depends(get_container_connection_manager),
+) -> PodmanClient:
+    c = manager.get(alias)
+    if not c:
+       raise HTTPException(404, f"No Podman client named '{alias}'")
+    # inventory = get_inventory_storage_instance()
+    # item = inventory.get_item_by_name("container_host", alias)
+    # if not item:
+    #     raise HTTPException(404, f"No container host named '{alias}' in inventory")
+    #
+    # engine = item.get("properties", {}).get("engine", "docker").lower()
+    # url = item.get("properties", {}).get("url")
+    # if not url:
+    #     raise HTTPException(400, f"Container host '{alias}' has no URL configured")
+    #
+    # if engine == "docker":
+    #     client = DockerClient(base_url=url, timeout=15)
+    # else:
+    #     client = PodmanClient(base_url=url, timeout=15)
+    #return client
+    return c
+
+
+async def dep_container_connections_manager(
+        refresh: Annotated[bool, Query()] = False,
+        manager: ContainerClientsManager = Depends(get_container_connection_manager),
+) -> ContainerClientsManager:
+    if refresh:
+        print("Refreshing container connections")
+
+        await bootstrap_container_connection_manager()
+    return manager
+
+
 @router.get("/docker/hosts")
-def get_container_hosts(refresh: Annotated[bool, Query()] = False) -> list[dict]:
-    hosts = []
-    init_container_hosts(refresh=refresh)
-    for i, host in enumerate(DOCKER_HOSTS):
-        hosts.append({"id": i, "url": host})
-    return jsonable_encoder(hosts)
+def get_container_hosts(manager=Depends(dep_container_connections_manager)) -> list[dict]:
+    urls = manager.urls()
+    print("Container hosts", urls)
+    hosts = [{"id": name, "url": url} for name, url in urls.items()]
+    return hosts
 
 
-@router.get("/docker/{idx}/version")
-def get_docker_version(idx: int) -> dict:
-    d = get_docker_client(idx)
-    version_info = d.version()
+@router.get("/docker/{alias}/version")
+def get_docker_version(client=Depends(dep_container_connection)) -> dict:
+    version_info = client.version()
     return jsonable_encoder(version_info)
 
 
-@router.get("/docker/{idx}/info")
-def get_docker_info(idx: int) -> dict:
-    d = get_docker_client(idx)
-    info = d.info()
+@router.get("/docker/{alias}/info")
+def get_docker_info(client=Depends(dep_container_connection)) -> dict:
+    info = client.info()
     return jsonable_encoder(info)
 
 
-@router.get("/docker/{idx}/df")
-def get_docker_info(idx: int) -> dict:
-    d = get_docker_client(idx)
+@router.get("/docker/{alias}/df")
+def get_docker_info(client=Depends(dep_container_connection)) -> dict:
     try:
-        summary = d.df()
+        summary = client.df()
         return jsonable_encoder(summary)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.get("/docker/{idx}/containers")
-def list_docker_containers(idx: int) -> List[dict]:
-    d = get_docker_client(idx)
-    collection = d.containers.list(all=True)
+@router.get("/docker/{alias}/containers")
+def list_docker_containers(client=Depends(dep_container_connection)) -> List[dict]:
+    collection = client.containers.list(all=True)
     print("Containers", collection)
     containers = []
     for c in collection:
@@ -60,17 +96,17 @@ def list_docker_containers(idx: int) -> List[dict]:
     return jsonable_encoder(containers)
 
 
-@router.get("/docker/{idx}/containers/{container_id}")
-def get_docker_container(idx: int, container_id: str) -> dict:
-    d = get_docker_client(idx)
-    container: Container = d.containers.get(container_id)
+@router.get("/docker/{alias}/containers/{container_id}")
+def get_docker_container(container_id: str,
+                         client=Depends(dep_container_connection)) -> dict:
+    container: Container = client.containers.get(container_id)
     return jsonable_encoder(container.attrs)
 
 
-@router.post("/docker/{idx}/containers/{container_id}/actions/{action}")
-def post_docker_container_action(idx: int, container_id: str, action: str) -> dict:
-    d = get_docker_client(idx)
-    container: Container = d.containers.get(container_id)
+@router.post("/docker/{alias}/containers/{container_id}/actions/{action}")
+def post_docker_container_action(container_id: str, action: str,
+                                 client=Depends(dep_container_connection)) -> dict:
+    container: Container = client.containers.get(container_id)
 
     try:
         if action == "start":
@@ -96,15 +132,38 @@ def post_docker_container_action(idx: int, container_id: str, action: str) -> di
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/docker/{idx}/containers/{container_id}/logs")
-def get_docker_container_logs(idx: int,
-                              container_id: str,
+class ExecRequest(BaseModel):
+    command: str
+
+
+@router.post("/docker/{alias}/containers/{container_id}/exec")
+def post_docker_container_exec(container_id: Annotated[str, Path()],
+                               exec_req: ExecRequest,
+                               client=Depends(dep_container_connection),
+                               ) -> dict:
+    container: Container = client.containers.get(container_id)
+    command = exec_req.command
+    print(f"Executing command in container {container_id}: {command}")
+    if not command or command.strip() == "":
+        raise HTTPException(status_code=400, detail="Command cannot be empty")
+
+    try:
+        exec_instance = container.exec_run(cmd=command, stdout=True, stderr=True, stdin=False, tty=False)
+        output = exec_instance.output.decode('utf-8', errors='replace')
+        rc = exec_instance.exit_code
+        return {"container_id": container_id, "command": command, "exit_code": rc, "output": output}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/docker/{alias}/containers/{container_id}/logs")
+def get_docker_container_logs(container_id: str,
                               since: Annotated[int, Query()] = None,
                               until: Annotated[int, Query()] = None,
                               tail: Annotated[int, Query()] = 1000,
+                              client=Depends(dep_container_connection),
                               ) -> dict:
-    d = get_docker_client(idx)
-    container: Container = d.containers.get(container_id)
+    container: Container = client.containers.get(container_id)
 
     kwargs = {}
     if since:
@@ -117,18 +176,17 @@ def get_docker_container_logs(idx: int,
     return {"container_id": container_id, "logs": logs}
 
 
-@router.get("/docker/{idx}/containers/{container_id}/logs/stream")
+@router.get("/docker/{alias}/containers/{container_id}/logs/stream")
 def stream_docker_container_logs(request: Request,
-                                 idx: int,
                                  container_id: str,
                                  since: Annotated[int, Query()] = None,
                                  until: Annotated[int, Query()] = None,
                                  tail: Annotated[int, Query()] = 1000,
                                  follow: Annotated[bool, Query()] = True,
+                                 client=Depends(dep_container_connection),
                                  ) -> StreamingResponse:
-    d = get_docker_client(idx)
     print("Streaming logs for container", container_id)
-    container: Container = d.containers.get(container_id)
+    container: Container = client.containers.get(container_id)
 
     # only follow logs if container is running
     if not container.attrs['State']['Running']:
@@ -198,10 +256,9 @@ def stream_docker_container_logs(request: Request,
     )
 
 
-@router.get("/docker/{idx}/images")
-def list_docker_images(idx: int) -> List[dict]:
-    d = get_docker_client(idx)
-    collection = d.images.list()
+@router.get("/docker/{alias}/images")
+def list_docker_images(client=Depends(dep_container_connection)) -> List[dict]:
+    collection = client.images.list()
     print("Images", collection)
     images = []
     for img in collection:
@@ -209,8 +266,7 @@ def list_docker_images(idx: int) -> List[dict]:
     return jsonable_encoder(images)
 
 
-@router.get("/docker/{idx}/images/{image_id}")
-def get_docker_image(idx: int, image_id: str) -> dict:
-    d = get_docker_client(idx)
-    image = d.images.get(image_id)
+@router.get("/docker/{alias}/images/{image_id}")
+def get_docker_image(image_id: str, client=Depends(dep_container_connection)) -> dict:
+    image = client.images.get(image_id)
     return jsonable_encoder(image.attrs)

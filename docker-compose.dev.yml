@@ -11,17 +11,17 @@ services:
       - "13555:5555"
     networks:
       - kloudia-net
-      - default
     volumes:
       - ${PWD}/config:/app/config:ro
       - ${PWD}/data:/data
       - ${PWD}/resources:/app/resources:ro
-      #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       - ${HOME}/.ssh:/home/app/.ssh:ro
+      #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-      - "localmachine:host-gateway"
+      #- /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
+    #extra_hosts:
+    #  - "host.docker.internal:host-gateway"
+    #  - "localmachine:host-gateway"
     environment:
       #- SSH_AUTH_SOCK=/ssh-agent
       - HOST_DATA_DIR=${PWD}/data
@@ -35,17 +35,32 @@ services:
       - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
     env_file:
       - .env.docker.local
-    links:
-      - redis
-      - mongodb
     depends_on:
       - redis
       - mongodb
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /app/src
+          ignore:
+            - "__pycache__/"
+            - "*.pyc"
+            - "*.egg-info/"
+            - "x*.py"
+        - action: rebuild
+          path: ./docker
+        - action: rebuild
+          path: ./uv.lock
+        - action: rebuild
+          path: ./Dockerfile
 
   redis:
     image: redis:latest
     ports:
       - "13379:6379"
+    #expose:
+    #  - "6379"
     networks:
       - kloudia-net
     volumes:
@@ -74,3 +89,4 @@ volumes:
 networks:
   kloudia-net:
     driver: bridge
+    name: kloudia-net

@@ -27,6 +27,16 @@ case $CMD in
     ;;
 
 
+  scan)
+    echo "Running various inventory scans..."
+    while true; do
+      uv run /app/src/hostsping.py
+      uv run /app/src/hostsfacts.py
+      sleep 300
+    done
+    ;;
+
+
   celery-worker)
     echo "Starting celery worker..."
     sleep 3 # wait for other services to be ready
@@ -88,6 +98,11 @@ case $CMD in
     exec /usr/bin/supervisord --nodaemon -c /etc/supervisord.conf
     ;;
 
+  mcp-server-stdio)
+    echo "Starting MCP server in stdio mode..."
+    export MCP_TRANSPORT=stdio
+    exec uv run --directory /app src/mcp_server.py
+    ;;
 
   help)
     echo "Usage: $0 {api|celery-worker|supervisor|help}"

@@ -92,11 +92,17 @@ command = "celery --workdir ./src -A celery_worker.celery flower --loglevel=INFO
 
 [run.devstack-up]
 command_before = "rx build app"
-command = "docker-compose -f docker-compose.dev.yml --env-file .env.docker.local up --build --force-recreate -d"
+command = "docker-compose -f docker-compose.dev.yml --env-file .env.docker.local up --build --force-recreate --watch"
 
 [run.devstack-down]
-command = "docker-compose -f docker-compose.devstack.yml --env-file .env.docker.local down"
+command = "docker-compose -f docker-compose.dev.yml --env-file .env.docker.local down"
 
+[run.podstack-up]
+command_before = "rx build app"
+command = "podman compose -f docker-compose.dev.yml --env-file .env.docker.local up --build --force-recreate -d"
+
+[run.podstack-down]
+command = "podman compose -f docker-compose.dev.yml --env-file .env.docker.local down"
 
 # PIPELINES
 [pipelines]

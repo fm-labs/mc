@@ -1,6 +1,6 @@
 import abc
 import os
-from typing import List
+from typing import List, Optional
 
 from kloudia.config import load_config_json, save_config_json
 from kloudia.db.mongodb import get_mongo_client, get_mongo_collection
@@ -44,8 +44,15 @@ class InventoryStorage(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_item(self, inventory_type: str, uuid: str) -> dict:
+    def get_item(self, inventory_type: str, item_key: str) -> dict:
         pass
+
+    def get_item_by_name(self, inventory_type: str, name: str) -> dict:
+        items = self.list_items(inventory_type)
+        for item in items:
+            if item.get("name") == name:
+                return item
+        return {}
 
 
 class FileBasedInventoryStorage(InventoryStorage):
@@ -64,10 +71,10 @@ class FileBasedInventoryStorage(InventoryStorage):
         save_config_json(inventory_type, items)
         return True
 
-    def get_item(self, inventory_type: str, uuid: str) -> dict:
+    def get_item(self, inventory_type: str, item_key: str) -> dict:
         items = self.list_items(inventory_type)
         for item in items:
-            if item["item_key"] == uuid:
+            if item["item_key"] == item_key:
                 return item
         return {}
 
@@ -77,9 +84,11 @@ class MongoDBInventoryStorage(InventoryStorage):
     def __init__(self, mongo_client):
         self.mongo_client = mongo_client
 
-    def list_items(self, inventory_type: str) -> List[dict]:
+    def list_items(self, inventory_type: str, query: Optional[dict] = None) -> List[dict]:
+        if query is None:
+            query = {}
         collection = get_mongo_collection('inventory', inventory_type)
-        records = list(collection.find({}))
+        records = list(collection.find(query))
         filtered_records = []
         for record in records:
             record.pop('_id', None)
@@ -91,10 +100,10 @@ class MongoDBInventoryStorage(InventoryStorage):
         collection.update_one({'item_key': item['item_key']}, {'$set': item}, upsert=True)
         return True
 
-    def get_item(self, inventory_type: str, uuid: str) -> dict:
+    def get_item(self, inventory_type: str, item_key: str) -> dict:
         db = self.mongo_client['inventory']
         collection = db[inventory_type]
-        item = collection.find_one({'item_key': uuid})
+        item = collection.find_one({'item_key': item_key})
         print("Fetched item from MongoDB:", item)
         if item:
             item.pop('_id', None)
@@ -119,7 +128,7 @@ class RedisInventoryStorage(InventoryStorage):
         self.redis_client.hmset(key, item)
         return True
 
-    def get_item(self, inventory_type: str, uuid: str) -> dict:
-        key = f"{inventory_type}:{uuid}"
+    def get_item(self, inventory_type: str, item_key: str) -> dict:
+        key = f"{inventory_type}:{item_key}"
         item = self.redis_client.hgetall(key)
         return {k.decode('utf-8'): v.decode('utf-8') for k, v in item.items()} if item else {}

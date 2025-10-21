@@ -58,12 +58,29 @@ def handle_compose_app_deploy(item: dict, action_params: dict) -> dict:
     item_name = item.get("name")
     props = item.get("properties", {})
     project_name = props.get("project_name")
+    source_url = props.get("source_url")
     target_url = props.get("target_url")
 
+    if source_url is None or source_url == "":
+        raise ValueError(f"Compose app '{item_name}' does not have a source_url defined for deployment")
     if target_url is None or target_url == "":
         raise ValueError(f"Compose app '{item_name}' does not have a target_url defined for deployment")
     if project_name is None or project_name == "":
         raise ValueError(f"Compose app '{item_name}' does not have a project_name defined in properties")
+
+    sschema, surl = source_url.split("://", 1)
+    if sschema == "file":
+        pass
+    elif sschema == "github":
+        # convert to git url
+        giturl = f"git://github.com/{surl}.git"
+        # @todo clone the repo if not already cloned
+        source_url = giturl
+    elif sschema in ["http", "https"]:
+        # @todo download and extract the archive if not already done
+        pass
+    else:
+        raise ValueError(f"Compose app '{item_name}' has unsupported source_url schema '{sschema}'")
 
     app_dir = _build_app_dir_path(project_name, item_name)
     if not app_dir.exists() or not app_dir.is_dir():

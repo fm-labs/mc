@@ -1,3 +1,5 @@
+from typing import List
+
 from pymongo import MongoClient
 from kloudia import config
 
@@ -28,3 +30,16 @@ def get_mongo_client(ping: bool = False) -> MongoClient:
 def get_mongo_collection(db_name: str, collection_name: str):
     _mongo = get_mongo_client()
     return _mongo[db_name][collection_name]
+
+
+def mongodb_results_to_json(results: List[dict]) -> List[dict]:
+    json_results = []
+    for doc in results:
+        doc["_id"] = str(doc["_id"])  # Convert ObjectId to string
+        json_results.append(doc)
+    return json_results
+
+def mongodb_result_to_json(result: dict) -> dict:
+    if result and "_id" in result:
+        result["_id"] = str(result["_id"])  # Convert ObjectId to string
+    return result

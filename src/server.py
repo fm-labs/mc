@@ -8,35 +8,62 @@
 #   uvicorn server:app
 ################################################################
 import os
-from contextlib import asynccontextmanager
-from typing import Optional, Any
+import logging
+from contextlib import AsyncExitStack, asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import APIRouter, Security
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from kloudia.db.redis import get_redis_client
+from kloudia.mcp.app import mcp as mcp_app
+from kloudia.mcp.helper import init_mcp_http_app
+from kloudia.plugin.docker.manager import bootstrap_container_connection_manager, get_container_connection_manager
 from kloudia.server.models import Problem
 from kloudia.server.router import app_router
 
-os.environ["DOCKER_HOST_1"] = os.environ.get("DOCKER_HOST_1", "tcp://localhost:30003")
-
+# Load MCP server app with specified transport
+mcp_transport = os.getenv("MCP_TRANSPORT", "streamable-http")
+mcp_http_app = init_mcp_http_app(mcp_app, transport=mcp_transport)
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    app.state = {}
-    app.state.redis = get_redis_client()
-    try:
-        yield
-    finally:
-        await app.state.redis.aclose()
+async def lifespan(main_app: FastAPI):
+    print("Setting up resources for main app lifespan...")
 
-app = FastAPI(title="Kloudia API", version="0.1.0")
+    async with AsyncExitStack() as stack:
+        # init resources for the main app
+        main_app.state.redis = get_redis_client()
 
+        await bootstrap_container_connection_manager()
+
+        # if you want to be explicit, also enter the mounted app's lifespan:
+        # (This guarantees startup/shutdown even if you run the sub-app standalone elsewhere.)
+        await stack.enter_async_context(
+            mcp_http_app.router.lifespan_context(mcp_http_app)
+        )
+
+        try:
+            yield
+        finally:
+            # teardown in reverse order is handled by ExitStack, but if your redis
+            # client needs explicit closing, do it here (or register with stack)
+            await main_app.state.redis.aclose()
+            await get_container_connection_manager().close_all()
+
+
+logging.basicConfig(level=logging.INFO)
+
+
+# FastAPI app with lifespan context
+#app = FastAPI(title="Kloudia API", version="0.1.0", lifespan=mcp_http_app.lifespan)
+app = FastAPI(title="Kloudia API", version="0.1.0", lifespan=lifespan)
+
+app.mount("/mcp", mcp_http_app)
+
+# Middleware configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins

@@ -7,15 +7,18 @@ RUN apk update && apk add --no-cache \
     supervisor \
     docker-cli \
     docker-compose \
+    podman \
     openssl \
     git \
     curl \
-    rsync
+    rsync \
+    iputils \
+    libc-utils
 
 
 # Supervisor
 COPY ./docker/supervisor/supervisord.conf /etc/supervisord.conf
-COPY ./docker/supervisor/celery_worker.ini ./docker/supervisor/celery_flower.ini ./docker/supervisor/api.ini ./docker/supervisor/ssh-agent-keepalive.ini /etc/supervisor.d/
+COPY ./docker/supervisor/celery_worker.ini ./docker/supervisor/celery_flower.ini ./docker/supervisor/api.ini ./docker/supervisor/ssh-agent-keepalive.ini ./docker/supervisor/scan.ini /etc/supervisor.d/
 
 # Set a non-root user
 RUN addgroup -S app && \
