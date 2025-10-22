@@ -68,6 +68,7 @@ def open_vaultfile(vaultfile: str, mode: str = "r", password: str = None, passfi
     finally:
         if not error and mode == "w":
             try:
+                print("Re-encrypting vault file...")
                 run_ansible_vault("encrypt", decrypted_file.name, passfile, vaultfile)
             except Exception as e:
                 print(f"Warning: Failed to re-encrypt vault file: {e}", file=sys.stderr)

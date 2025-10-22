@@ -5,15 +5,16 @@ from orchestra.tasks import task_run_ansible_playbook
 
 def handle_host_ping(item: dict, action_params: dict) -> dict:
     props = item.get("properties", {})
-    host_name = props.get("ssh_hostname", props.get("hostname", item.get("name")))
-    if not host_name:
-       raise ValueError("Hostname not found in item properties.")
+    #host_name = props.get("ssh_hostname", props.get("hostname", item.get("name")))
+    #if not host_name:
+    #   raise ValueError("Hostname not found in item properties.")
     #host_ip = item.get("properties", {}).get("ip_address")
     #if not host_ip:
     #    raise ValueError("IP address not found in item properties.")
+    ping_target = props.get("ssh_hostname", props.get("ip_address", props.get("hostname", item.get("name"))))
     try:
         packet_count = action_params.get("count", "1")
-        output = subprocess.check_output(["ping", "-c", packet_count, "-W", "1", host_name], universal_newlines=True)
+        output = subprocess.check_output(["ping", "-c", packet_count, "-W", "1", ping_target], universal_newlines=True)
 
         # parse output to check for success
         print("OUTPUT:", output)

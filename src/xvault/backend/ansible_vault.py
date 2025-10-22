@@ -59,7 +59,7 @@ def run_ansible_vault(mode: str, vault_file: str, password_file: str, output_fil
 
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        print(f"{'Encrypted' if mode == 'encrypt' else 'Decrypted'} vault file: {vault_file}")
+        print(f"{'Encrypted' if mode == 'encrypt' else 'Decrypted'} vault file successfully.")
         return result.stdout
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(f"ansible-vault {mode} failed with exit code {exc.returncode}")

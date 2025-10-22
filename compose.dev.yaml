@@ -12,18 +12,20 @@ services:
     networks:
       - mc-net
     volumes:
-      - ${PWD}/config:/app/config:ro
+      - ${PWD}/config/credentials.password.txt:/run/secrets/credentials_vault_pass:ro
+      #- ${PWD}/config:/app/config:ro
       - ${PWD}/data:/data
-      - ${PWD}/resources:/app/resources:ro
-      - ${HOME}/.ssh:/home/app/.ssh:ro
+      #- ${PWD}/resources:/app/resources:ro
+      #- ${HOME}/.ssh:/home/app/.ssh:ro
       #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      #- /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
+      - /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     #extra_hosts:
     #  - "host.docker.internal:host-gateway"
     #  - "localmachine:host-gateway"
     environment:
       #- SSH_AUTH_SOCK=/ssh-agent
+      - DEV_MODE=1
       - HOST_DATA_DIR=${PWD}/data
       - HOST_CONFIG_DIR=${PWD}/config
       - CONFIG_DIR=/app/config
@@ -33,6 +35,9 @@ services:
       - REDIS_PORT=6379
       - REDIS_DB=0
       - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
+      - VAULT_FILE=/data/credentials.vault
+      - VAULT_PASS_FILE=/run/secrets/credentials_vault_pass
+      - SSH_CONFIG=/data/ssh_config
     env_file:
       - .env.docker.local
     depends_on:
@@ -48,6 +53,9 @@ services:
             - "*.pyc"
             - "*.egg-info/"
             - "x*.py"
+        - action: sync
+          path: ./resources
+          target: /app/resources
         - action: rebuild
           path: ./docker
         - action: rebuild

@@ -43,9 +43,14 @@
       "type": "integer",
       "title": "SSH Port (default 22)"
     },
+    "ssh_key_name": {
+      "type": "string",
+      "title": "SSH Key Name",
+      "default": ""
+    },
     "ssh_key_path": {
       "type": "string",
-      "title": "SSH Key Path",
+      "title": "SSH Key Path (deprecated)",
       "default": ""
     },
     "autoconnect": {

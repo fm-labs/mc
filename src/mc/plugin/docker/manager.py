@@ -98,8 +98,31 @@ async def bootstrap_container_connection_manager() -> None:
     items = inventory.list_items("container_host")
     for item in items:
         url = item.get("properties", {}).get("url")
-        print("Found container host in inventory:", url)
         engine = item.get("properties", {}).get("engine", "docker").lower()
+        print("Found container host in inventory:", engine, url)
+
+        # check if we have a host inventory record
+        if url.startswith("ssh://"):
+            hostname = url.split("://")[-1].split("/")[0]
+            print("Lookup host inventory record for:", hostname)
+            host = inventory.get_item_by_name("host", hostname)
+            if host:
+                print("  Found host inventory record:", host.get("name"))
+                ssh_hostname = host.get("properties", {}).get("ssh_hostname", hostname)
+                ssh_port = host.get("properties", {}).get("ssh_port", 22)
+                ssh_user = host.get("properties", {}).get("ssh_user", "")
+                ssh_key_name = host.get("properties", {}).get("ssh_key_name", "")
+
+                url = f"ssh://"
+                if ssh_user:
+                    url += f"{ssh_user}@"
+                url += f"{ssh_hostname}"
+                if ssh_port and ssh_port != 22:
+                    url += f":{ssh_port}"
+                print("  Updated container host URL to:", url)
+            else:
+                print("  No host inventory record found for:", hostname)
+
         engine_url = engine + "+" + url
         try:
             if engine == "docker" or engine == "podman":

@@ -50,18 +50,18 @@ if __name__ == "__main__":
                                    }}})
 
         # create or update finding
-        severity = 0 # "info"
+        severity = 0  # "info"
         message = "Host reachable"
 
         if ping_result is None or ping_result.get("status") != "reachable":
-            #severity = "warning"
+            # severity = "warning"
             severity = 3
             message = "Host not reachable"
 
         finding = {
             "resource_type": "host",
             "resource_id": str(host.get("_id")),
-            "resource_name": host.get("name", str(host.get("_id"))),
+            "resource_name": host.get("name"),
             "check_name": "ping",
             "details": ping_result,
             "severity": severity,
@@ -70,9 +70,10 @@ if __name__ == "__main__":
         }
         findings_collection.update_one({
             "resource_type": "host",
-            "resource_id": str(host.get("_id")),
-            "type": "ping"},
-            {
-                "$set": finding,
-                "$setOnInsert": {"first_seen": int(time.time())}
-            }, upsert=True)
+            "resource_name": host.get("name"),
+            "type": "ping"
+        },
+        {
+            "$set": finding,
+            "$setOnInsert": {"first_seen": int(time.time())}
+        }, upsert=True)

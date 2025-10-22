@@ -79,9 +79,9 @@ def dump_credentials(path: str, data: Dict[str, Any], fmt: str) -> None:
     dirpath = os.path.dirname(os.path.abspath(path)) or "."
     os.makedirs(dirpath, exist_ok=True)
     print(f"Writing {fmt} data to {path}...")
-    tmp = NamedTemporaryFile(mode="w+t", encoding="utf-8", delete=False)
+    #tmp = NamedTemporaryFile(mode="w+t", encoding="utf-8", delete=False)
     try:
-        with tmp as f:
+        with open(path, "w") as f:
             if fmt == "toml":
                 try:
                     import tomli_w
@@ -98,10 +98,10 @@ def dump_credentials(path: str, data: Dict[str, Any], fmt: str) -> None:
                 except ModuleNotFoundError:
                     raise RuntimeError("Error: Need 'PyYAML' (package 'yaml') to write YAML.")
                 yaml_dump(data, f, sort_keys=True)
-        os.replace(tmp.name, path)
+        #os.replace(tmp.name, path)
     except Exception:
         print("Error writing data, removing temporary file.")
-        os.unlink(tmp.name)
+        #os.unlink(tmp.name)
         raise
 
 
@@ -186,7 +186,7 @@ def _read_ssh_key(key_path: str = None) -> tuple[bytes, str]:
     if not os.path.exists(key_path):
         raise FileNotFoundError(f"SSH key file not found: {key_path}")
 
-    with open(key_path, "rb") as f:
+    with open(os.path.expanduser(key_path), "rb") as f:
         key_data = f.read()
     if not key_data:
         raise ValueError("Error: SSH key file is empty.")

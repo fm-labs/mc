@@ -133,29 +133,43 @@ def build_ssh_pkey_from_buffer(key_data: bytes, passphrase: str) -> paramiko.PKe
 
 def ssh_agent_load_keys_from_vault(vaultfile: str, password_file: str) -> None:
     with open_vaultfile(vaultfile, passfile=password_file, mode="r") as vault_file:
-        creds = get_credentials(str(vault_file.name), None)
-        # iterate creds, find creds with "ssh_key_id" field
-        for cname, cdata in creds.items():
-            if "ssh_key_id" in cdata:
-                key_id = cdata["ssh_key_id"]
-                print(f"Found ssh credential {cname} with key_id {key_id}")
-                key_data = cdata.get("ssh_key") # bytes
-                passphrase = cdata.get("ssh_key_passphrase")
-                if not key_data:
-                    print(f"Skipping {cname}, no key data found")
-                    continue
+        ssh_agent_load_keys_from_credentials_file(str(vault_file.name))
 
-                try:
-                    pkey = build_ssh_pkey_from_buffer(key_data, passphrase)
-                    print(f"Pkey loaded. type: {type(pkey)}, fingerprint: {pkey.get_fingerprint().hex()}")
 
-                    key_file = tempfile.NamedTemporaryFile(mode="w+t")
-                    key_file.write(key_data.decode("utf-8"))
-                    key_file.flush()
-                    key_file.seek(0)
+def ssh_agent_load_keys_from_credentials_file(creds_file: str) -> None:
+    creds = get_credentials(creds_file, None)
+    # iterate creds, find creds with "ssh_key_id" field
+    for cname, cdata in creds.items():
+        if "ssh_key_id" in cdata:
+            key_id = cdata["ssh_key_id"]
+            key_name = cdata["ssh_key_name"]
+            print(f">>> Found ssh credential {cname} with key_id {key_id}")
+            key_data = cdata.get("ssh_key")  # bytes
+            passphrase = cdata.get("ssh_key_passphrase")
+            if not key_data:
+                print(f"Skipping {cname}, no key data found")
+                continue
 
-                    ssh_agent_add_key_file(key_file.name, passphrase)
-                    print(f"Added SSH key for {cname} with key_id {key_id}")
-                except Exception as e:
-                    print(f"Failed to load SSH key for {cname}: {e}")
-                    continue
+            try:
+                pkey = build_ssh_pkey_from_buffer(key_data, passphrase)
+                print(f"Pkey loaded. type: {type(pkey)}, fingerprint: {pkey.get_fingerprint().hex()}")
+
+                key_file_path = os.path.expanduser(f"~/.ssh/{key_name}")
+                os.makedirs(os.path.dirname(key_file_path), exist_ok=True)
+                if not os.path.exists(key_file_path):
+                    with open(key_file_path, "wb") as kf:
+                        kf.write(key_data)
+                    os.chmod(key_file_path, 0o600)
+                    print(f"Wrote SSH key to {key_file_path}")
+
+                #key_file = tempfile.NamedTemporaryFile(mode="w+t")
+                #key_file.write(key_data.decode("utf-8"))
+                #key_file.flush()
+                #key_file.seek(0)
+                #key_file_path = key_file.name
+
+                ssh_agent_add_key_file(key_file_path, passphrase)
+                print(f"Added SSH key for {cname} with key_id {key_id}")
+            except Exception as e:
+                print(f"Failed to load SSH key for {cname}: {e}")
+                continue

@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import time
 import shutil
 from typing import Dict, Any, Iterable, List, Union
@@ -279,8 +280,18 @@ if __name__ == "__main__":
     host_collection = get_mongo_collection("inventory", "host")
     hosts = host_collection.find({"properties.monitoring_enabled": True})
 
+    subset = "min"  # "all" or "min"
+    if len(sys.argv) > 1:
+        subset = sys.argv[1]
+        if subset not in ("all", "min"):
+            print("Usage: hostsfacts.py [all|min]")
+            sys.exit(1)
+
     ansible_hosts_content = "[all]\n"
     ansible_hosts_dict = {}
+
+    host_fact_check = {}
+
     for host in hosts:
         print(host)
         props = host.get("properties", {})
@@ -297,7 +308,12 @@ if __name__ == "__main__":
         ssh_hostname = props.get("ssh_hostname", hostname)
         ssh_user = props.get("ssh_user", "")
         ssh_port = props.get("ssh_port", "22")
-        ssh_key_path = props.get("ssh_key_path", "")
+
+        ssh_key_path = props.get("ssh_key_path", "") # deprecated
+        ssh_key_name = props.get("ssh_key_name", "")
+        if ssh_key_name:
+            ssh_key_path = f"~/.ssh/{ssh_key_name}"
+
         python_path = props.get("pythonPath", "/usr/bin/python3")
         # ansible_become_method = props.get("ansible_become_method", "sudo")
         ansible_become_user = props.get("ansible_become_user", "root")
@@ -318,6 +334,10 @@ if __name__ == "__main__":
             "ansible_become_password": ansible_become_password,
         }
 
+        host_fact_check[hostname] = {}
+
+
+
     print(ansible_hosts_content)
     print(ansible_hosts_dict)
 
@@ -335,7 +355,6 @@ if __name__ == "__main__":
     shutil.copyfile(f"{RESOURCES_DIR}/playbooks/facts-min.yml", f"{privdata_dir}/playbooks/facts-min.yml")
     os.makedirs(f"{privdata_dir}/data/ansible_cache", exist_ok=True)
 
-    subset = "all"  # "all" or "min"
     r = ansible_runner.run(
         private_data_dir=privdata_dir,
         inventory={'all': {'hosts': ansible_hosts_dict}},
@@ -349,7 +368,53 @@ if __name__ == "__main__":
 
     # Extract facts from the event stream (works for both gather_facts and setup)
     facts_by_host = {}
+    events = []
+    unreachable = []
     for ev in r.events:
+        events.append({
+            "event": ev.get("event"),
+            "event_data": ev.get("event_data", {}),
+        })
+
+        # handle unreached hosts
+        # {
+        #     "event": "runner_on_unreachable",
+        #     "event_data": {
+        #       "playbook": "playbooks/facts-all.yml",
+        #       "playbook_uuid": "d534485d-cbda-4075-a48f-48abe98c9320",
+        #       "play": "all",
+        #       "play_uuid": "1ed6cac1-f461-fd21-824d-000000000006",
+        #       "play_pattern": "all",
+        #       "task": "Gathering Facts",
+        #       "task_uuid": "1ed6cac1-f461-fd21-824d-00000000000c",
+        #       "task_action": "gather_facts",
+        #       "resolved_action": "ansible.builtin.gather_facts",
+        #       "task_args": "",
+        #       "task_path": "/data/privdir/playbooks/facts-all.yml:3",
+        #       "host": "myhost.example.com",
+        #       "remote_addr": "myhost.example.com",
+        #       "start": "2025-10-22T08:42:47.487786+00:00",
+        #       "end": "2025-10-22T08:42:47.799633+00:00",
+        #       "duration": 0.311847,
+        #       "res": {
+        #         "unreachable": true,
+        #         "exception": "(traceback unavailable)",
+        #         "msg": "Task failed: Failed to connect to the host via ssh: rootadmin@172.16.0.66: Permission denied (publickey,password).",
+        #         "changed": false,
+        #         "_ansible_no_log": false
+        #       },
+        #       "uuid": "4365bc18-4ba8-42c5-9a17-653501c8aea2"
+        #     }
+        #   },
+        if ev.get("event") == "runner_on_unreachable":
+            host = ev.get("event_data", {}).get("host", "")
+            msg = ev.get("event_data", {}).get("res", {}).get("msg", "Host unreachable")
+            host_fact_check[host] = {
+                "unreachable": True,
+                "message": msg,
+            }
+
+
         if ev.get("event") == "runner_on_ok":
             task = ev.get("event_data", {}).get("task", "")
             # Matches either the implicit "Gathering Facts" task or an explicit setup task
@@ -365,6 +430,7 @@ if __name__ == "__main__":
     for host, af in facts_by_host.items():
         issues = analyze_facts(af)
         print(f"Host: {host}, Issues found: {len(issues)}")
+        host_fact_check[host]["issues"] = len(issues)
         for issue in issues:
             print(f"  - [{issue['severity'].upper()}] {issue['check_name']}: {issue['message']}")
             add_host_fact_finding(
@@ -376,7 +442,51 @@ if __name__ == "__main__":
                 message=issue['message']
             )
 
+    for h, res in host_fact_check.items():
+        if res.get("unreachable", False):
+            msg = res.get("message", "Host unreachable")
+            add_host_fact_finding(
+                host_id=h,
+                host_name=h,
+                check_name="host_facts",
+                severity="critical",
+                details={"message": msg},
+                message=msg
+            )
+        elif h not in facts_by_host:
+            msg = "No facts gathered"
+            add_host_fact_finding(
+                host_id=h,
+                host_name=h,
+                check_name="host_facts",
+                severity="warning",
+                details={"message": msg},
+                message=msg
+            )
+        elif res.get("issues", 0) > 0:
+            msg = f"{res['issues']} issues detected in host facts"
+            add_host_fact_finding(
+                host_id=h,
+                host_name=h,
+                check_name="host_facts",
+                severity="warning",
+                details={"message": msg},
+                message=msg
+            )
+        else:
+            msg = "Facts gathered with no issues"
+            add_host_fact_finding(
+                host_id=h,
+                host_name=h,
+                check_name="host_facts",
+                severity="info",
+                details={"message": msg},
+                message=msg
+            )
+
     # Save facts to JSON file
+    with open(f"{DATA_DIR}/ansible_events.json", "w") as f:
+        json.dump(events, f, indent=2)
     with open(f"{DATA_DIR}/facts_by_host_{subset}.json", "w") as f:
         json.dump(facts_by_host, f, indent=2)
 

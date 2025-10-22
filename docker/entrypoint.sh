@@ -4,6 +4,8 @@
 PYTHON_PATH="/app/src:$PYTHON_PATH"
 export PYTHONPATH
 
+DEV_MODE=${DEV_MODE:-0}
+
 FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
 FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-admin}
 
@@ -11,27 +13,45 @@ FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-admin}
 # The pre-defined path is used in the Dockerfile to create socket and set permissions.
 SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-/ssh-agent/agent.sock}
 export SSH_AUTH_SOCK
+SSH_CONFIG=${SSH_CONFIG:-/data/ssh_config}
+export SSH_CONFIG
 
-VAULT_FILE=${VAULT_FILE:-/app/config/credentials.yml}
-VAULT_PASS_FILE=${VAULT_PASS_FILE:-/app/config/credentials.password.txt}
+VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
+VAULT_PASS_FILE=${VAULT_PASS_FILE:-/run/secrets/credentials_vault_pass}
 export VAULT_FILE
 export VAULT_PASS_FILE
+
+GIT_SSH_COMMAND="ssh -F $SSH_CONFIG"
+export GIT_SSH_COMMAND
+DOCKER_SSH_COMMAND="ssh -F $SSH_CONFIG"
+export DOCKER_SSH_COMMAND
+
 
 CMD=$1
 shift
 case $CMD in
   api)
     echo "Starting dev API server..."
-    exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
-    #exec $PYTHON_BIN uvicorn --app-dir /app/src orchestra.server:app
+    if [ "$DEV_MODE" -eq 1 ]; then
+      echo "Development mode is ON"
+      exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app --reload
+    else
+      echo "Development mode is OFF"
+      exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
+    fi
     ;;
 
 
   scan)
     echo "Running various inventory scans..."
+    sleep 30 # wait for other services to be ready
+    uv run /app/src/hostsping.py
+    uv run /app/src/hostsfacts.py all
+
+    # continuously run the scans every 5 minutes
     while true; do
       uv run /app/src/hostsping.py
-      uv run /app/src/hostsfacts.py
+      uv run /app/src/hostsfacts.py all
       sleep 300
     done
     ;;

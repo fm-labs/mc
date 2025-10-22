@@ -43,19 +43,6 @@ RUN mkdir -p /app && chown -R app:app /app && \
 RUN mkdir -p /ssh-agent && chown -R app:app /ssh-agent
 ENV SSH_AUTH_SOCK=/ssh-agent/agent.sock
 
-
-# Entry point script
-COPY docker/entrypoint.sh /entrypoint
-RUN ["chmod", "+x", "/entrypoint"]
-ENTRYPOINT ["/entrypoint"]
-
-# Healthcheck
-COPY docker/healthcheck.sh /usr/bin/healthcheck
-RUN ["chmod", "+x", "/usr/bin/healthcheck"]
-HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
-  CMD ["/usr/bin/healthcheck"]
-
-
 # Working directory
 WORKDIR /app
 
@@ -70,6 +57,27 @@ COPY ./src /app/src
 COPY ./resources /app/resources
 
 RUN chown -R app:app /app
+
+
+# Entry point script
+COPY docker/entrypoint.sh /entrypoint
+RUN ["chmod", "+x", "/entrypoint"]
+ENTRYPOINT ["/entrypoint"]
+
+# Healthcheck
+COPY docker/healthcheck.sh /usr/bin/healthcheck
+RUN ["chmod", "+x", "/usr/bin/healthcheck"]
+HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
+  CMD ["/usr/bin/healthcheck"]
+
+
+# create bash alias for ssh using a custom config file
+RUN echo "alias ssh='ssh -F /data/ssh_config'" >> /home/app/.bashrc && \
+    echo "alias scp='scp -F /data/ssh_config'" >> /home/app/.bashrc && \
+    echo "alias rsync='rsync -e \"ssh -F /data/ssh_config\"'" >> /home/app/.bashrc && \
+    chown app:app /home/app/.bashrc
+
+
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
