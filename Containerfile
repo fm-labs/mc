@@ -1,4 +1,4 @@
-FROM python:3.13.4-alpine3.22
+FROM python:3.13.9-alpine3.22
 
 
 RUN apk update && apk add --no-cache \
