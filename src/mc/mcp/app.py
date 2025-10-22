@@ -2,7 +2,7 @@ from fastmcp import FastMCP
 
 from mc.inventory.metadata import retrieve_inventory_json_schema, store_inventory_json_schema
 
-mcp = FastMCP("Kloudia MCP", version="1.0.0")
+mcp = FastMCP("MissionControl MCP", version="1.0.0")
 
 
 @mcp.tool

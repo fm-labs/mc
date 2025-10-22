@@ -11,7 +11,7 @@ async def init_mcp() -> 'FastMCP':
         from mc.mcp.app import mcp as mcp_app
         return mcp_app
     except ImportError:
-        print("Kloudia MCP not installed")
+        print("MissionControl MCP not installed")
         raise
 
 async def main():

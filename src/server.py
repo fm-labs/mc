@@ -58,8 +58,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 # FastAPI app with lifespan context
-#app = FastAPI(title="Kloudia API", version="0.1.0", lifespan=mcp_http_app.lifespan)
-app = FastAPI(title="Kloudia API", version="0.1.0", lifespan=lifespan)
+#app = FastAPI(title="MissionControl API", version="0.1.0", lifespan=mcp_http_app.lifespan)
+app = FastAPI(title="MissionControl API", version="0.1.0", lifespan=lifespan)
 
 app.mount("/mcp", mcp_http_app)
 
