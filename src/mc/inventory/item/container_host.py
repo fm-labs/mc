@@ -2,7 +2,7 @@ from pathlib import Path
 
 from mc.apps.compose_app import create_compose_app_from_template_dir
 from mc.config import RESOURCES_DIR
-from mc.plugin.docker.tasks import deploy_compose_project_to_container_host
+from mc.plugin.containers.tasks import deploy_compose_project_to_container_host
 
 def handle_container_host_deploy_template(item: dict, action_params: dict) -> dict:
     host_url = item.get("properties", {}).get("url")

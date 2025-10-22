@@ -5,7 +5,7 @@ from pathlib import Path
 import dotenv
 import yaml
 
-from mc.plugin.docker.tasks import deploy_compose_project_to_container_host
+from mc.plugin.containers.tasks import deploy_compose_project_to_container_host
 
 
 @dataclass(frozen=True)

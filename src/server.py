@@ -21,7 +21,7 @@ from starlette.responses import JSONResponse
 from mc.db.redis import get_redis_client
 from mc.mcp.app import mcp as mcp_app
 from mc.mcp.helper import init_mcp_http_app
-from mc.plugin.docker.manager import bootstrap_container_connection_manager, get_container_connection_manager
+from mc.plugin.containers.manager import bootstrap_container_connection_manager, get_container_connection_manager
 from mc.server.models import Problem
 from mc.server.router import app_router
 

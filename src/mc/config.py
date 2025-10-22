@@ -12,7 +12,7 @@ RESOURCES_DIR = os.environ.get("RESOURCES_DIR", os.getcwd() + "/resources")
 #TMP_DIR = os.environ.get("TMP_DIR", default=None) # None = use system temp dir
 TMP_DIR = os.path.join(DATA_DIR, "tmp")
 
-PLUGINS_ENABLED = ["tools", "xscan", "orchestra", "cloudscan", "demo", "docker", "aws"]
+PLUGINS_ENABLED = ["tools", "xscan", "orchestra", "cloudscan", "demo", "containers", "aws"]
 
 INTEGRATIONS_ENABLED = ["github", "dockerhub", "docker"]
 

@@ -111,7 +111,7 @@ async def bootstrap_container_connection_manager() -> None:
                 ssh_hostname = host.get("properties", {}).get("ssh_hostname", hostname)
                 ssh_port = host.get("properties", {}).get("ssh_port", 22)
                 ssh_user = host.get("properties", {}).get("ssh_user", "")
-                ssh_key_name = host.get("properties", {}).get("ssh_key_name", "")
+                #ssh_key_name = host.get("properties", {}).get("ssh_key_name", "")
 
                 url = f"ssh://"
                 if ssh_user:

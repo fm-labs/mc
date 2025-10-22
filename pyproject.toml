@@ -1,7 +1,7 @@
 [project]
-name = "mission-control"
+name = "mc"
 version = "0.1.0"
-description = "AI-powered Orchestration Platform"
+description = "MissionControl - Smart Infrastructure Orchestration Platform"
 requires-python = ">=3.13"
 dependencies = [
     "ansible>=11.5.0",

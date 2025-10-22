@@ -71,11 +71,8 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
   CMD ["/usr/bin/healthcheck"]
 
 
-# create bash alias for ssh using a custom config file
-RUN echo "alias ssh='ssh -F /data/ssh_config'" >> /home/app/.bashrc && \
-    echo "alias scp='scp -F /data/ssh_config'" >> /home/app/.bashrc && \
-    echo "alias rsync='rsync -e \"ssh -F /data/ssh_config\"'" >> /home/app/.bashrc && \
-    chown app:app /home/app/.bashrc
+# Touch and own /var/run/podman.sock
+RUN touch /var/run/podman.sock && chown app:app /var/run/podman.sock
 
 
 
