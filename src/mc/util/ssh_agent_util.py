@@ -116,7 +116,7 @@ def ssh_agent_add_key_file(key_file: str, key_passphrase: str):
         raise
 
 
-def build_ssh_pkey_from_buffer(key_data: bytes, passphrase: str) -> paramiko.PKey:
+def build_ssh_pkey_from_buffer(key_data: bytes, passphrase: str | None) -> paramiko.PKey:
     # Decode bytes to text
     key_str = key_data.decode("utf-8")
     key_stream = io.StringIO(key_str)
@@ -146,6 +146,10 @@ def ssh_agent_load_keys_from_credentials_file(creds_file: str) -> None:
             print(f">>> Found ssh credential {cname} with key_id {key_id}")
             key_data = cdata.get("ssh_key")  # bytes
             passphrase = cdata.get("ssh_key_passphrase")
+            if passphrase is not None:
+                if passphrase == "null" or passphrase == "":
+                    passphrase = None
+
             if not key_data:
                 print(f"Skipping {cname}, no key data found")
                 continue

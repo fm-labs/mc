@@ -40,6 +40,8 @@ def dump_ssh_and_ansible_config():
             f"\nHost {ssh_config['name']}\n"
             f"    HostName {ssh_config['hostname']}\n"
             f"    Port {ssh_config['port']}\n"
+            f"    StrictHostKeyChecking no\n" # disable hostkey checking
+            f"    UserKnownHostsFile /dev/null\n" # do not store hostkeys
         )
         if ssh_config["username"]:
             ssh_config_str += f"    User {ssh_config['username']}\n"

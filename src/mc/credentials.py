@@ -13,6 +13,7 @@ from typing import Any, Dict, Tuple
 
 import paramiko
 from paramiko import RSAKey, ECDSAKey, Ed25519Key, SSHException
+from paramiko.ssh_exception import PasswordRequiredException
 
 from mc.util.yaml_util import yaml_dump
 
@@ -167,12 +168,15 @@ def get_credentials(path: str, name: str | None) -> dict:
         return creds
 
 
-def _ssh_load_key_and_fingerprint(path, password=None) -> Tuple[paramiko.PKey, str]:
+def _ssh_load_key_and_fingerprint(path, password=None) -> Tuple[paramiko.PKey, str, Any]:
     for key_class in [RSAKey, ECDSAKey, Ed25519Key]:
         try:
             key = key_class.from_private_key_file(path, password=password)
             fingerprint = ':'.join(f'{b:02x}' for b in key.get_fingerprint())
-            return key, fingerprint
+            return key, fingerprint, key_class
+        except PasswordRequiredException:
+            print("Error: SSH key is encrypted but no passphrase was provided.")
+            raise
         except SSHException:
             continue
     raise ValueError("Unsupported or invalid key type.")
@@ -203,16 +207,19 @@ def add_ssh_key(path: str, name: str, key_path: str, key_passphrase: str = None)
     # Try to load the key to verify it's valid and get the key fingerprint
     try:
         ssh_key, ssh_key_id = _read_ssh_key(key_path)
-        pkey, fingerprint = _ssh_load_key_and_fingerprint(key_path, password=key_passphrase)
+        pkey, fingerprint, key_class = _ssh_load_key_and_fingerprint(key_path, password=key_passphrase)
         print(f"Loaded SSH key with fingerprint: {fingerprint}")
     except Exception as e:
         raise ValueError(f"Error loading SSH key: {e}")
 
     creds = {"ssh_key_name": name,
+             "ssh_key_type": key_class.__name__.lower()[:-3],  # e.g. RSAKey -> rsa
              "ssh_key_id": ssh_key_id,
              "ssh_key": ssh_key,
-             "ssh_key_passphrase": key_passphrase,
              "ssh_key_fingerprint": fingerprint, }
+    if key_passphrase:
+        creds["ssh_key_passphrase"] = key_passphrase
+
     cname = f"ssh-key-{ssh_key_id[:16]}"
     add_credentials(path, cname, creds)
 
@@ -222,8 +229,11 @@ def add_ssh_key(path: str, name: str, key_path: str, key_passphrase: str = None)
         # Decode bytes to text
         key_str = ssh_key.decode("utf-8")
         key_stream = io.StringIO(key_str)
-        pkey = RSAKey.from_private_key(key_stream, password=key_passphrase)
+        pkey = key_class.from_private_key(key_stream, password=key_passphrase)
         print(f"Test: reconstructed PKey from stored data, fingerprint: {pkey.get_fingerprint().hex()}")
+    except PasswordRequiredException:
+        print("Warning: could not reconstruct PKey from stored data: passphrase required.")
+        raise
     except Exception as e:
         print(f"Warning: could not reconstruct PKey from stored data: {e}")
         raise
