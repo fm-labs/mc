@@ -31,7 +31,7 @@ RUN addgroup -S app && \
 RUN adduser app ping
 
 # Set file and directory permissions
-RUN mkdir -p /app && chown -R app:app /app && \
+RUN mkdir -p /app && mkdir -p /app/config && chown -R app:app /app && \
     mkdir -p /data && \
     chown app:app /data && \
     mkdir -p /var/log/supervisor && \
