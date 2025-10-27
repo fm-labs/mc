@@ -13,7 +13,7 @@ FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-admin}
 # The pre-defined path is used in the Dockerfile to create socket and set permissions.
 SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-/ssh-agent/agent.sock}
 export SSH_AUTH_SOCK
-SSH_CONFIG=${SSH_CONFIG:-/data/ssh_config}
+SSH_CONFIG=${SSH_CONFIG:-/home/app/.ssh/config}
 export SSH_CONFIG
 
 VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
@@ -31,20 +31,24 @@ CMD=$1
 shift
 case $CMD in
   api)
-    echo "Starting dev API server..."
-    if [ "$DEV_MODE" -eq 1 ]; then
-      echo "Development mode is ON"
-      exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app --reload
-    else
-      echo "Development mode is OFF"
-      exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
-    fi
+    #echo "Starting dev API server..."
+    #if [ "$DEV_MODE" -eq 1 ]; then
+    #  echo "Development mode is ON"
+    #  exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app --reload
+    #else
+    #  echo "Development mode is OFF"
+    #  exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
+    #fi
+    echo "Starting API server: Waiting for other services ..."
+    sleep 15 # wait for other services to be ready
+    echo "Starting API server: Starting on 0.0.0.0:8000 ..."
+    exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
     ;;
 
 
   scan)
     echo "Running various inventory scans..."
-    sleep 30 # wait for other services to be ready
+    sleep 60 # wait for other services to be ready
     uv run /app/src/hostsping.py
     uv run /app/src/hostsfacts.py all
 
@@ -59,14 +63,14 @@ case $CMD in
 
   celery-worker)
     echo "Starting celery worker..."
-    sleep 3 # wait for other services to be ready
+    sleep 30 # wait for other services to be ready
     exec uv run celery --workdir /app/src -A celery_worker.celery worker --loglevel=INFO -E
     ;;
 
 
   celery-flower)
     echo "Starting celery flower..."
-    sleep 3 # wait for other services to be ready
+    sleep 30 # wait for other services to be ready
     exec uv run celery --workdir /app/src -A celery_worker.celery flower --loglevel=INFO --basic-auth=${FLOWER_USER_NAME}:${FLOWER_USER_PASSWORD}
     ;;
 
@@ -83,7 +87,13 @@ case $CMD in
     # load all keys from vault
     if ! uv run /app/src/ssh_load_keys.py ; then
       echo "WARNING! Failed to load SSH keys from vault"
+      rm -f /tmp/ssh-load-keys-success
+      touch /tmp/ssh-load-keys-failed
       #exit 1
+    else
+      echo "SSH keys loaded successfully from vault"
+      rm -f /tmp/ssh-load-keys-failed
+      touch /tmp/ssh-load-keys-success
     fi
 
     # delegate to a keepalive process to keep the agent alive

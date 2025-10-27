@@ -1,4 +1,12 @@
+secrets:
+  credentials_vault_pass:
+    file: ./config/credentials.password.txt
+#  credentials_vault_pass2:
+#    file: ~/credentials.password.txt
 
+configs:
+  my_other_config:
+    file: ./env.local
 
 services:
 
@@ -11,8 +19,11 @@ services:
       - "13555:5555"
     networks:
       - mc-net
+    secrets:
+      - credentials_vault_pass
+      #- credentials_vault_pass2
     volumes:
-      - ${PWD}/config/credentials.password.txt:/run/secrets/credentials_vault_pass:ro
+      #- ${PWD}/config/credentials.password.txt:/run/secrets/credentials_vault_pass:ro
       #- ${PWD}/config:/app/config:ro
       - ${PWD}/data:/data
       #- ${PWD}/resources:/app/resources:ro
@@ -25,27 +36,27 @@ services:
     #  - "localmachine:host-gateway"
     environment:
       #- SSH_AUTH_SOCK=/ssh-agent
+      #- SSH_CONFIG=/data/ssh_config
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
       - DEV_MODE=1
       - HOST_DATA_DIR=${PWD}/data
       - HOST_CONFIG_DIR=${PWD}/config
       - CONFIG_DIR=/app/config
       - RESOURCES_DIR=/app/resources
       - DATA_DIR=/data
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
-      - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
       - VAULT_FILE=/data/credentials.vault
       - VAULT_PASS_FILE=/run/secrets/credentials_vault_pass
-      - SSH_CONFIG=/data/ssh_config
-    env_file:
-      - .env.docker.local
+    #env_file:
+    #  - .env.docker.local
     depends_on:
       - redis
       - mongodb
     develop:
       watch:
-        - action: sync
+        - action: sync+exec
           path: ./src
           target: /app/src
           ignore:
@@ -53,6 +64,8 @@ services:
             - "*.pyc"
             - "*.egg-info/"
             - "x*.py"
+          exec:
+            command: ["supervisorctl", "restart", "api"]
         - action: sync
           path: ./resources
           target: /app/resources

@@ -142,7 +142,7 @@ def ssh_agent_load_keys_from_credentials_file(creds_file: str) -> None:
     for cname, cdata in creds.items():
         if "ssh_key_id" in cdata:
             key_id = cdata["ssh_key_id"]
-            key_name = cdata["ssh_key_name"]
+            key_name = "ssh-" + cdata["ssh_key_name"]
             print(f">>> Found ssh credential {cname} with key_id {key_id}")
             key_data = cdata.get("ssh_key")  # bytes
             passphrase = cdata.get("ssh_key_passphrase")

@@ -1,3 +1,4 @@
+import os
 from typing import Annotated
 
 from fastapi import Depends, HTTPException
@@ -14,7 +15,7 @@ def dep_container_connection(
 ) -> PodmanClient:
     c = manager.get(alias)
     if not c:
-       raise HTTPException(404, f"No Podman client named '{alias}'")
+       raise HTTPException(404, f"No container client registered named '{alias}'")
     # inventory = get_inventory_storage_instance()
     # item = inventory.get_item_by_name("container_host", alias)
     # if not item:
@@ -37,8 +38,20 @@ async def dep_container_connections_manager(
         refresh: Annotated[bool, Query()] = False,
         manager: ContainerClientsManager = Depends(get_container_connection_manager),
 ) -> ContainerClientsManager:
+    # check if refresh is needed, due to ssh key changes or similar
+    check_file = "/tmp/ssh-load-keys-success"
+    if os.path.exists(check_file):
+        print("!!! Detected SSH keys refresh, forcing container connections refresh")
+        refresh = True
+        os.remove(check_file)
+
+    check_file = "/tmp/ssh-load-keys-failed"
+    if os.path.exists(check_file):
+        print("!!! Detected FAILED SSH key load ... ")
+        # todo handle this case properly
+        os.remove(check_file)
+
     if refresh:
         print("Refreshing container connections")
-
         await bootstrap_container_connection_manager()
     return manager

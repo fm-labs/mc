@@ -3,8 +3,10 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv(".env.local")
 load_dotenv(".env")
+load_dotenv(".env.local")
+
+SSH_CONFIG = os.getenv("SSH_CONFIG", os.getcwd() + "/config/ssh_config")
 
 DATA_DIR = os.getenv("DATA_DIR", os.getcwd() + "/data")
 CONFIG_DIR = os.getenv("CONFIG_DIR", os.getcwd() + "/config")

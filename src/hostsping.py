@@ -29,7 +29,7 @@ if __name__ == "__main__":
     filters = {"properties.monitoring_enabled": True}
     hosts = host_collection.find(filters)
     for host in hosts:
-        print(host)
+        print(f"Pinging host: {host.get('name')}")
         ping_result = handle_host_ping(host, {})
         # props = host.get("properties", {})
         # hostname = props.get("hostname")

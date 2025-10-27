@@ -74,7 +74,13 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
 # Touch and own /var/run/podman.sock
 RUN touch /var/run/podman.sock && chown app:app /var/run/podman.sock
 
+# Prepare /etc/ssh/ssh_config
+RUN echo "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" >> /etc/ssh/ssh_config && \
+    chown app:app /etc/ssh/ssh_config && \
+    chmod 644 /etc/ssh/ssh_config
 
+# Prepare /home/app/.ssh directory
+RUN mkdir -p /home/app/.ssh && chown -R app:app /home/app/.ssh && chmod 700 /home/app/.ssh
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
@@ -87,3 +93,13 @@ USER app
 EXPOSE 8000
 # Flower port
 EXPOSE 5555
+
+
+# Metadata
+LABEL org.opencontainers.image.vendor="Kloudia Labs" \
+    org.opencontainers.image.url="https://kloudia.io" \
+    org.opencontainers.image.source="https://github.com/kloudia.io/mc" \
+    org.opencontainers.image.title="Mission Control" \
+    org.opencontainers.image.description="A powerful orchestration tool" \
+    org.opencontainers.image.version="v0.1.0" \
+    org.opencontainers.image.documentation="https://docs.kloudia.io"

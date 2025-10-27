@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from typing import List, Annotated, Any
 
 import anyio
@@ -15,6 +16,32 @@ from starlette.responses import StreamingResponse
 from mc.plugin.containers.deps import dep_container_connection, dep_container_connections_manager
 
 router = APIRouter()
+
+cache = {}
+
+def cached(cache_key, func, ttl=60):
+    global cache
+    def wrapper(*args, **kwargs):
+        key = cache_key
+        if key in cache:
+            _cached = cache[key]
+            if ttl > 0 and time.time() - _cached["timestamp"] < ttl:
+                print(f"Cache hit for key {key}")
+                return _cached["data"]
+            else:
+                print(f"Cache expired for key {key}")
+
+        result = func(*args, **kwargs)
+        cache[key] = {"data": result, "timestamp": time.time()}
+        print(f"Cache set for key {key}")
+        return result
+    return wrapper
+
+def clear_cache(cache_key):
+    global cache
+    if cache_key in cache:
+        del cache[cache_key]
+        print(f"Cache cleared for key {cache_key}")
 
 
 @router.get("/containers/hosts")
@@ -33,8 +60,10 @@ def get_docker_version(client=Depends(dep_container_connection)) -> dict:
 
 @router.get("/containers/{alias}/info")
 def get_docker_info(client=Depends(dep_container_connection)) -> dict:
-    info = client.info()
-    return jsonable_encoder(info)
+    def fetch_info():
+        _info = client.info()
+        return jsonable_encoder(_info)
+    return cached("info", fetch_info, ttl=120)()
 
 
 @router.get("/containers/{alias}/df")
@@ -47,27 +76,30 @@ def get_docker_info(client=Depends(dep_container_connection)) -> dict:
 
 
 @router.get("/containers/{alias}/containers")
-def list_docker_containers(client=Depends(dep_container_connection)) -> List[dict]:
-    collection = client.containers.list(all=True)
-    print("Containers", collection)
-    containers = []
-    for c in collection:
-        containers.append(c.attrs)
-    return jsonable_encoder(containers)
+def list_docker_containers(alias: str, client=Depends(dep_container_connection)) -> List[dict]:
+    def fetch_containers():
+        collection = client.containers.list(all=True)
+        print("Containers", collection)
+        _containers = []
+        for c in collection:
+            _containers.append(c.attrs)
+        return jsonable_encoder(_containers)
+    return cached(f"containers_{alias}", fetch_containers, ttl=30)()
 
 
 @router.get("/containers/{alias}/containers/{container_id}")
 def get_docker_container(container_id: str,
                          client=Depends(dep_container_connection)) -> dict:
-    container: Container = client.containers.get(container_id)
-    return jsonable_encoder(container.attrs)
+    def fetch_container():
+        _container: Container = client.containers.get(container_id)
+        return jsonable_encoder(_container.attrs)
+    return cached(f"container_{container_id}", fetch_container, ttl=30)()
 
 
 @router.post("/containers/{alias}/containers/{container_id}/actions/{action}")
-def post_docker_container_action(container_id: str, action: str,
+def post_docker_container_action(alias: str, container_id: str, action: str,
                                  client=Depends(dep_container_connection)) -> dict:
     container: Container = client.containers.get(container_id)
-
     try:
         if action == "start":
             container.start()
@@ -85,8 +117,16 @@ def post_docker_container_action(container_id: str, action: str,
             raise HTTPException(status_code=404, detail=f"Unknown action {action}")
 
         # refresh container state
-        #container.reload()
-        #return jsonable_encoder(container.attrs)
+        if action != "remove":
+            try:
+                container.reload()
+            except Exception as e:
+                pass
+        #cache  cleanup
+        cache_key = f"container_{container_id}"
+        if cache_key in cache:
+            del cache[cache_key]
+        cache_key = f"containers_{alias}"
         return {"action": action, "status": "ok", "message": f"Action {action} was successful"}
 
     except Exception as e:

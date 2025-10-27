@@ -12,16 +12,15 @@ creds_file = f"{encrypted_vault_file}.yaml"
 
 if __name__ == "__main__":
 
-    print("Starting SSH key loading process...")
-
-    print("Dumping SSH and Ansible configuration files...")
+    print("> Starting SSH key loading process...")
+    print("> Dumping SSH and Ansible configuration files...")
     dump_ssh_and_ansible_config()
 
-    print("Loading all ssh keys from vault and injecting into ssh-agent...")
+    print("> Loading all ssh keys from vault and injecting into ssh-agent...")
     if not ssh_agent_is_running():
-        print("SSH agent is not running.")
+        print("! SSH agent is not running.")
         if not ssh_agent_start():
-            print("Failed to start ssh-agent, exiting.")
+            print("! Failed to start ssh-agent, exiting.")
             exit(1)
 
     use_vault = os.environ.get("USE_VAULT", "false").lower() == "true"

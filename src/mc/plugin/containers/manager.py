@@ -99,16 +99,17 @@ async def bootstrap_container_connection_manager() -> None:
     for item in items:
         url = item.get("properties", {}).get("url")
         engine = item.get("properties", {}).get("engine", "docker").lower()
-        print("Found container host in inventory:", engine, url)
+        print("CCM: Found container host in inventory:", engine, url)
 
         # check if we have a host inventory record
         if url.startswith("ssh://"):
             hostname = url.split("://")[-1].split("/")[0]
-            print("Lookup host inventory record for:", hostname)
+            print("CCM: Lookup host inventory record for:", hostname)
             host = inventory.get_item_by_name("host", hostname)
             if host:
                 print("  Found host inventory record:", host.get("name"))
-                ssh_hostname = host.get("properties", {}).get("ssh_hostname", hostname)
+                #ssh_hostname = host.get("properties", {}).get("ssh_hostname", hostname)
+                ssh_hostname = hostname
                 ssh_port = host.get("properties", {}).get("ssh_port", 22)
                 ssh_user = host.get("properties", {}).get("ssh_user", "")
                 #ssh_key_name = host.get("properties", {}).get("ssh_key_name", "")
@@ -127,11 +128,11 @@ async def bootstrap_container_connection_manager() -> None:
         try:
             if engine == "docker" or engine == "podman":
                 await m.ensure(item.get("name", url), engine_url, test_ping=False)
-                print("Configured container host:", engine_url)
+                print("CCM: Configured container host:", engine_url)
             else:
-                print(f"Unknown container engine '{engine}' for host '{url}'")
+                print(f"CCM: Unknown container engine '{engine}' for host '{url}'")
         except Exception as e:
-            print(f"Failed to configure container host '{url}': {e}")
+            print(f"CCM: Failed to configure container host '{url}': {e}")
 
     #await m.ensure("local", "unix:///run/podman/podman.sock", test_ping=False)
 

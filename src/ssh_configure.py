@@ -1,12 +1,12 @@
 
-from mc.config import DATA_DIR
+from mc.config import SSH_CONFIG
 from mc.inventory.storage import get_inventory_storage_instance
 
 
 def dump_ssh_and_ansible_config():
 
     ssh_config_str = ""
-    ssh_config_file = f"{DATA_DIR}/ssh_config"
+    ssh_config_file = f"{SSH_CONFIG}"
 
     #ansible_hosts_str = ""
     #ansible_hosts_file = f"{DATA_DIR}/ansible_hosts"
@@ -61,22 +61,22 @@ def dump_ssh_and_ansible_config():
         # }
 
     # add default ssh config
-    # ssh_config_str += (
-    #     f"\nHost *\n"
-    #     f"    AddKeysToAgent yes\n"
-    #     f"    IdentityFile ~/.ssh/id_rsa\n"
-    #     f"    IdentitiesOnly yes\n"
-    #     f"    PreferredAuthentications publickey,password\n"
-    #     f"    AddressFamily inet\n"
-    #     f"    Protocol 2\n"
-    #     f"    Compression yes\n"
-    #     f"    ForwardAgent no\n"
-    #     f"    ServerAliveInterval 60\n"
-    #     f"    ServerAliveCountMax 5\n"
-    #     #f"    StrictHostKeyChecking no\n"
-    #     #f"    UserKnownHostsFile /dev/null\n"
-    #     f"    LogLevel INFO\n"
-    # )
+    ssh_config_str += (
+        f"\nHost *\n"
+        #f"    AddKeysToAgent yes\n"
+        #f"    IdentityFile ~/.ssh/id_rsa\n"
+        #f"    IdentitiesOnly yes\n"
+        #f"    PreferredAuthentications publickey,password\n"
+        #f"    AddressFamily inet\n"
+        #f"    Protocol 2\n"
+        #f"    Compression yes\n"
+        #f"    ForwardAgent no\n"
+        #f"    ServerAliveInterval 60\n"
+        #f"    ServerAliveCountMax 5\n"
+        f"    StrictHostKeyChecking no\n"
+        f"    UserKnownHostsFile /dev/null\n"
+        #f"    LogLevel INFO\n"
+    )
 
     # write ssh config file
     with open(ssh_config_file, "w") as f:

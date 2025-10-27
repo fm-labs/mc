@@ -293,15 +293,16 @@ if __name__ == "__main__":
     host_fact_check = {}
 
     for host in hosts:
-        print(host)
+        print("Checking facts for " + host.get("name"))
         props = host.get("properties", {})
         ssh_enabled = props.get("ssh_enabled", False)
         if not ssh_enabled:
+            print("Skipping: SSH not enabled")
             continue
 
         hostname = props.get("hostname")
         if not hostname:
-            print("Skipping host with no hostname")
+            print("Skipping: no hostname defined")
             continue
 
         ip_address = props.get("ip_address", props.get("public_ip"))
