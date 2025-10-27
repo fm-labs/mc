@@ -10,7 +10,6 @@ FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
 FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-admin}
 
 # Not recommended to change the socket path, but provided for flexibility.
-# The pre-defined path is used in the Dockerfile to create socket and set permissions.
 SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-/ssh-agent/agent.sock}
 export SSH_AUTH_SOCK
 SSH_CONFIG=${SSH_CONFIG:-/home/app/.ssh/config}
@@ -83,6 +82,34 @@ case $CMD in
     eval "$(ssh-agent -a "$SSH_AUTH_SOCK")"
     echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
     echo "SSH_AGENT_PID=$SSH_AGENT_PID"
+
+    # ensure the .ssh directory exists
+    mkdir -p /home/app/.ssh
+    chown app:app /home/app/.ssh
+    chmod 700 /home/app/.ssh
+
+
+    # check if the app user has a default ssh key, if not generate one
+    if [ ! -f /home/app/.ssh/id_rsa ]; then
+      echo "No default SSH key found for app user, generating one..."
+      ssh-keygen -t rsa -b 4096 -f /home/app/.ssh/id_rsa -N "" -C "app_default_key"
+      chown app:app /home/app/.ssh/id_rsa*
+      chmod 600 /home/app/.ssh/id_rsa
+
+      # display the public key to the user
+      echo "Generated SSH public key:"
+      cat /home/app/.ssh/id_rsa.pub
+    else
+      echo "Default SSH key found for app user."
+    fi
+
+    # add the default key to the agent
+    ssh-add /home/app/.ssh/id_rsa
+
+    # Ensure known_hosts file exists
+    touch /home/app/.ssh/known_hosts
+    chown app:app /home/app/.ssh/known_hosts
+    chmod 600 /home/app/.ssh/known_hosts
 
     # load all keys from vault
     if ! uv run /app/src/ssh_load_keys.py ; then
