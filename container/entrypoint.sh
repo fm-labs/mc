@@ -15,10 +15,10 @@ export SSH_AUTH_SOCK
 SSH_CONFIG=${SSH_CONFIG:-/home/app/.ssh/config}
 export SSH_CONFIG
 
-VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
-VAULT_PASS_FILE=${VAULT_PASS_FILE:-/run/secrets/credentials_vault_pass}
-export VAULT_FILE
-export VAULT_PASS_FILE
+#VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
+#VAULT_PASS_FILE=${VAULT_PASS_FILE:-/run/secrets/credentials_vault_pass}
+#export VAULT_FILE
+#export VAULT_PASS_FILE
 
 GIT_SSH_COMMAND="ssh -F $SSH_CONFIG"
 export GIT_SSH_COMMAND
