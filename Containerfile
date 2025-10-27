@@ -17,8 +17,8 @@ RUN apk update && apk add --no-cache \
 
 
 # Supervisor
-COPY ./docker/supervisor/supervisord.conf /etc/supervisord.conf
-COPY ./docker/supervisor/celery_worker.ini ./docker/supervisor/celery_flower.ini ./docker/supervisor/api.ini ./docker/supervisor/ssh-agent-keepalive.ini ./docker/supervisor/scan.ini /etc/supervisor.d/
+COPY ./container/supervisor/supervisord.conf /etc/supervisord.conf
+COPY ./container/supervisor/celery_worker.ini ./container/supervisor/celery_flower.ini ./container/supervisor/api.ini ./container/supervisor/ssh-agent-keepalive.ini ./container/supervisor/scan.ini /etc/supervisor.d/
 
 # Set a non-root user
 RUN addgroup -S app && \
@@ -60,12 +60,12 @@ RUN chown -R app:app /app
 
 
 # Entry point script
-COPY docker/entrypoint.sh /entrypoint
+COPY ./container/entrypoint.sh /entrypoint
 RUN ["chmod", "+x", "/entrypoint"]
 ENTRYPOINT ["/entrypoint"]
 
 # Healthcheck
-COPY docker/healthcheck.sh /usr/bin/healthcheck
+COPY ./container/healthcheck.sh /usr/bin/healthcheck
 RUN ["chmod", "+x", "/usr/bin/healthcheck"]
 HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
   CMD ["/usr/bin/healthcheck"]
@@ -96,10 +96,10 @@ EXPOSE 5555
 
 
 # Metadata
-LABEL org.opencontainers.image.vendor="Kloudia Labs" \
-    org.opencontainers.image.url="https://kloudia.io" \
-    org.opencontainers.image.source="https://github.com/kloudia.io/mc" \
+LABEL org.opencontainers.image.vendor="fmlabs" \
+    org.opencontainers.image.url="https://github.com/fm-labs/mc" \
+    org.opencontainers.image.source="https://github.com/fm-labs/mc" \
     org.opencontainers.image.title="Mission Control" \
-    org.opencontainers.image.description="A powerful orchestration tool" \
+    org.opencontainers.image.description="Smart orchestration tool" \
     org.opencontainers.image.version="v0.1.0" \
-    org.opencontainers.image.documentation="https://docs.kloudia.io"
+    org.opencontainers.image.documentation="https://github.com/fm-labs/mc"

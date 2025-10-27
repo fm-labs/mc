@@ -56,7 +56,7 @@ services:
           path: ./resources
           target: /app/resources
         - action: rebuild
-          path: ./docker
+          path: ./container
         - action: rebuild
           path: ./uv.lock
         - action: rebuild
