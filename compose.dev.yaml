@@ -1,15 +1,9 @@
 secrets:
   credentials_vault_pass:
-    file: ./config/credentials.password.txt
-#  credentials_vault_pass2:
-#    file: ~/credentials.password.txt
+    file: ./config/credentials.vault.pass
 
-configs:
-  my_other_config:
-    file: ./env.local
 
 services:
-
   server:
     build:
       context: .
@@ -19,29 +13,23 @@ services:
       - "13555:5555"
     networks:
       - mc-net
-    secrets:
-      - credentials_vault_pass
-      #- credentials_vault_pass2
-    volumes:
-      #- ${PWD}/config/credentials.password.txt:/run/secrets/credentials_vault_pass:ro
-      #- ${PWD}/config:/app/config:ro
-      - ${PWD}/data:/data
-      #- ${PWD}/resources:/app/resources:ro
-      #- ${HOME}/.ssh:/home/app/.ssh:ro
-      #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     #extra_hosts:
     #  - "host.docker.internal:host-gateway"
-    #  - "localmachine:host-gateway"
+    secrets:
+      - credentials_vault_pass
+    volumes:
+      #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
+      - ${PWD}/data:/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     environment:
       #- SSH_AUTH_SOCK=/ssh-agent
       #- SSH_CONFIG=/data/ssh_config
+      - DEV_MODE=0
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
       - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
-      - DEV_MODE=1
       - HOST_DATA_DIR=${PWD}/data
       - HOST_CONFIG_DIR=${PWD}/config
       - CONFIG_DIR=/app/config
@@ -49,8 +37,6 @@ services:
       - DATA_DIR=/data
       - VAULT_FILE=/data/credentials.vault
       - VAULT_PASS_FILE=/run/secrets/credentials_vault_pass
-    #env_file:
-    #  - .env.docker.local
     depends_on:
       - redis
       - mongodb
