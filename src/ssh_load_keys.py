@@ -13,10 +13,12 @@ creds_file = f"{encrypted_vault_file}.yaml"
 if __name__ == "__main__":
 
     print("> Starting SSH key loading process...")
+
     print("> Dumping SSH and Ansible configuration files...")
     dump_ssh_and_ansible_config()
 
     print("> Loading all ssh keys from vault and injecting into ssh-agent...")
+    print("> Using credentials file: " + creds_file)
     if not ssh_agent_is_running():
         print("! SSH agent is not running.")
         if not ssh_agent_start():

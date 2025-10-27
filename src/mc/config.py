@@ -34,8 +34,8 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
 
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
-VAULT_FILE = os.getenv("VAULT_FILE", f"{CONFIG_DIR}/credentials.yml")
-VAULT_PASS_FILE = os.getenv("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.password.txt")
+VAULT_FILE = os.getenv("VAULT_FILE", f"{CONFIG_DIR}/credentials.vault")
+VAULT_PASS_FILE = os.getenv("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vault.pass")
 
 
 def load_config_json(file_name: str) -> dict|list:

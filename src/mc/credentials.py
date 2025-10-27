@@ -203,7 +203,19 @@ def _calculate_ssh_key_hash(key_data: bytes) -> str:
     return hashlib.sha256(key_data).hexdigest()
 
 
-def add_ssh_key(path: str, name: str, key_path: str, key_passphrase: str = None) -> None:
+def add_ssh_key(path: str, name: str,
+                key_path: str | None = None, key_content: str | None = None, key_passphrase: str = None) -> None:
+
+    if not key_path and not key_content:
+        raise ValueError("Either key_path or key_content must be provided.")
+
+    if key_content:
+        # Write key content to a temporary file for processing
+        with NamedTemporaryFile(mode="w", delete=False) as tmp_key_file:
+            tmp_key_file.write(key_content)
+            tmp_key_file_path = tmp_key_file.name
+        key_path = tmp_key_file_path
+
     # Try to load the key to verify it's valid and get the key fingerprint
     try:
         ssh_key, ssh_key_id = _read_ssh_key(key_path)
