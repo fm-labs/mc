@@ -20,7 +20,7 @@ services:
     volumes:
       #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       - ${PWD}/.local/config:/app/config
-      - ${PWD}/.local/home:/home/app/
+      #- ${PWD}/.local/home:/home/app/
       - ${PWD}/data:/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro

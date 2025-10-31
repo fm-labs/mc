@@ -3,6 +3,7 @@ FROM python:3.13.9-alpine3.22
 
 RUN apk update && apk add --no-cache \
     openssh \
+    autossh \
     bash \
     supervisor \
     docker-cli \

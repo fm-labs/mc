@@ -60,8 +60,24 @@
     },
     "monitoring_enabled": {
       "type": "boolean",
-      "title": "Enable Monitoring",
+      "title": "Enable Monitoring (ping and fact gathering)",
       "default": false
+    },
+    "tunnel_enabled": {
+      "type": "boolean",
+      "title": "SSH Tunnel Enabled",
+      "default": false
+    },
+    "tunnel_autoconnect": {
+      "type": "boolean",
+      "title": "SSH Tunnel auto-connect",
+      "default": false
+    },
+    "tunnel_forward_specs": {
+      "type": "string",
+      "title": "Tunnel Forwarding Specifications",
+      "description": "Comma-separated list. Example: 'L8080:localhost:80,R8443:localhost:443'",
+      "default": ""
     }
   },
   "required": [

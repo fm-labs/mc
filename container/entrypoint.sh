@@ -39,7 +39,7 @@ case $CMD in
     #  exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
     #fi
     echo "Starting API server: Waiting for other services ..."
-    sleep 15 # wait for other services to be ready
+    sleep 30 # wait for other services to be ready
     echo "Starting API server: Starting on 0.0.0.0:8000 ..."
     exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
     ;;
@@ -48,6 +48,8 @@ case $CMD in
   scan)
     echo "Running various inventory scans..."
     sleep 60 # wait for other services to be ready
+    #rm -rf /home/app/.ansible/cp
+    #rm -rf /home/app/.ansible/tmp
     uv run /app/src/hostsping.py
     uv run /app/src/hostsfacts.py all
 
@@ -55,6 +57,7 @@ case $CMD in
     while true; do
       uv run /app/src/hostsping.py
       uv run /app/src/hostsfacts.py all
+      uv run /app/src/hoststunnel.py
       sleep 300
     done
     ;;
@@ -122,6 +125,10 @@ case $CMD in
       rm -f /tmp/ssh-load-keys-failed
       touch /tmp/ssh-load-keys-success
     fi
+
+    # start the hoststunnel process to maintain SSH tunnels
+    echo "Starting hoststunnel process..."
+    uv run /app/src/hoststunnel.py
 
     # delegate to a keepalive process to keep the agent alive
     exec "$0" ssh-agent-keepalive

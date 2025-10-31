@@ -13,3 +13,4 @@ dist
 docs
 data
 .env.local
+src/x*.py

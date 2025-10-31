@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
 import os
 from typing import Union, Any
+import secrets
 
 from jose import jwt
 
 def generate_random_jwt_secret_key(length: int = 32) -> str:
-    import secrets
     return secrets.token_urlsafe(length)
 
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 60 minutes
