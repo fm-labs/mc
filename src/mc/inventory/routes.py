@@ -76,7 +76,7 @@ async def delete_inventory_item(item_type: str, item_key: str) -> bool:
 @router.post("/inventory/{item_type}/{item_key}/action/{action_name}", response_model=dict)
 async def request_inventory_item_action(item_type: str, item_key: str, action_name: str, action_params: dict) -> dict:
     try:
-        return handle_inventory_item_action(item_type, item_key, action_name, action_params)
+        return await handle_inventory_item_action(item_type, item_key, action_name, action_params)
     except (ValueError, NotImplementedError, Exception) as e:
         print(e)
         # print stack trace

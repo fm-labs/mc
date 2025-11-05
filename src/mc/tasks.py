@@ -7,3 +7,4 @@ from mc.plugin.demo.tasks import *
 from mc.plugin.xscan.tasks import *
 from mc.plugin.cloudscan.tasks import *
 from mc.plugin.tools.tasks import *
+from mc.plugin.rx.tasks import *

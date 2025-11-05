@@ -60,12 +60,25 @@ def dump_ssh_and_ansible_config():
         #     "ansible_become_password": props.get("ssh_become_password", ""),
         # }
 
+    # github default ssh config
+
+    ssh_config_str += (
+        f"\nHost github.com\n"
+        f"    User git\n"
+        f"    HostName github.com\n"
+        f"    IdentityFile ~/.ssh/ssh-default\n"
+        f"    IdentitiesOnly yes\n"
+        f"    StrictHostKeyChecking no\n"  # disable hostkey checking
+        f"    UserKnownHostsFile /dev/null\n"  # do not store hostkeys
+    )
+
+
     # add default ssh config
     ssh_config_str += (
         f"\nHost *\n"
         #f"    AddKeysToAgent yes\n"
-        #f"    IdentityFile ~/.ssh/id_rsa\n"
-        #f"    IdentitiesOnly yes\n"
+        f"    IdentityFile ~/.ssh/ssh-default\n"
+        f"    IdentitiesOnly yes\n"
         #f"    PreferredAuthentications publickey,password\n"
         #f"    AddressFamily inet\n"
         #f"    Protocol 2\n"

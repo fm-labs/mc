@@ -14,7 +14,7 @@ RESOURCES_DIR = os.environ.get("RESOURCES_DIR", os.getcwd() + "/resources")
 #TMP_DIR = os.environ.get("TMP_DIR", default=None) # None = use system temp dir
 TMP_DIR = os.path.join(DATA_DIR, "tmp")
 
-PLUGINS_ENABLED = ["tools", "xscan", "orchestra", "cloudscan", "demo", "containers", "aws"]
+PLUGINS_ENABLED = ["tools", "xscan", "orchestra", "cloudscan", "demo", "containers", "aws", "mcpman"]
 
 INTEGRATIONS_ENABLED = ["github", "dockerhub", "docker"]
 
@@ -36,6 +36,14 @@ GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 
 VAULT_FILE = os.getenv("VAULT_FILE", f"{CONFIG_DIR}/credentials.vault")
 VAULT_PASS_FILE = os.getenv("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vault.pass")
+
+
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
+GITHUB_CALLBACK_URL = os.getenv("GITHUB_CALLBACK_URL")
+
+GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
+GITHUB_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token"
 
 
 def load_config_json(file_name: str) -> dict|list:

@@ -99,7 +99,11 @@ async def bootstrap_container_connection_manager() -> None:
     for item in items:
         url = item.get("properties", {}).get("url")
         engine = item.get("properties", {}).get("engine", "docker").lower()
+        auto_connect = item.get("properties", {}).get("autoconnect", False)
         print("CCM: Found container host in inventory:", engine, url)
+        if not auto_connect:
+            print("CCM: Skipping container host (auto_connect is false):", url)
+            continue
 
         # check if we have a host inventory record
         if url.startswith("ssh://"):

@@ -32,7 +32,8 @@ async def run_subprocess_stream_sse(command: list,
         )
 
         # Send initial event
-        yield f"data: {json.dumps({'type': 'start', 'message': f'Started command: {' '.join(command)}'})}\n\n"
+        command_str = ' '.join(command)
+        yield f"data: {json.dumps({'type': 'start', 'message': f'Started command: {command_str}'})}\n\n"
 
         # Stream the output
         while True:

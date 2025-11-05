@@ -131,6 +131,17 @@ def build_ssh_pkey_from_buffer(key_data: bytes, passphrase: str | None) -> param
     raise ValueError("Unsupported key type or incorrect passphrase")
 
 
+def pkey_to_openssh_publine(pkey, comment: str | None = None) -> str:
+    """
+    Return the OpenSSH public key line for a Paramiko PKey (RSA, ECDSA, Ed25519, etc.).
+    Example output: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@host"
+    """
+    keytype = pkey.get_name()      # e.g. "ssh-ed25519", "ssh-rsa", "ecdsa-sha2-nistp256"
+    b64 = pkey.get_base64()        # base64 of the public blob
+    suffix = f" {comment}" if comment else ""
+    return f"{keytype} {b64}{suffix}"
+
+
 def ssh_agent_load_keys_from_vault(vaultfile: str, password_file: str) -> None:
     with open_vaultfile(vaultfile, passfile=password_file, mode="r") as vault_file:
         ssh_agent_load_keys_from_credentials_file(str(vault_file.name))
@@ -157,6 +168,8 @@ def ssh_agent_load_keys_from_credentials_file(creds_file: str) -> None:
             try:
                 pkey = build_ssh_pkey_from_buffer(key_data, passphrase)
                 print(f"Pkey loaded. type: {type(pkey)}, fingerprint: {pkey.get_fingerprint().hex()}")
+                pubkey = pkey_to_openssh_publine(pkey, comment=cname)
+                print(f"Public key: {pubkey}")
 
                 key_file_path = os.path.expanduser(f"~/.ssh/{key_name}")
                 os.makedirs(os.path.dirname(key_file_path), exist_ok=True)
@@ -165,6 +178,12 @@ def ssh_agent_load_keys_from_credentials_file(creds_file: str) -> None:
                         kf.write(key_data)
                     os.chmod(key_file_path, 0o600)
                     print(f"Wrote SSH key to {key_file_path}")
+
+                    pubkey_file_path = os.path.expanduser(f"~/.ssh/{key_name}.pub")
+                    with open(pubkey_file_path, "w") as pkf:
+                        pkf.write(pubkey + "\n")
+                    os.chmod(pubkey_file_path, 0o644)
+                    print(f"Wrote SSH public key to {pubkey_file_path}")
 
                 #key_file = tempfile.NamedTemporaryFile(mode="w+t")
                 #key_file.write(key_data.decode("utf-8"))

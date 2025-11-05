@@ -1,11 +1,14 @@
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 import dotenv
 import yaml
 
+from mc.config import DATA_DIR
 from mc.plugin.containers.tasks import deploy_compose_project_to_container_host
+from mc.plugin.rx.tasks import update_project_from_git
 
 
 @dataclass(frozen=True)
@@ -20,7 +23,7 @@ class ComposeAppItem:
     template_url: str | None = None  # e.g. git://user/repo
     domain_name: str | None = None  # optional domain name for the app
     traefik_enabled: bool = False  # whether to auto-wire traefik labels
-    traefik_network_name: str | None = None # name of the docker network traefik is on
+    traefik_network_name: str | None = None  # name of the docker network traefik is on
     traefik_container_port: int | None = None  # port the app listens on, for traefik routing
     traefik_ssl_enabled: bool = False  # whether to enable SSL (https) for the app
 
@@ -32,13 +35,13 @@ class ComposeAppItem:
         if self.project_name is None or self.project_name == "":
             raise ValueError("ComposeAppItem 'project_name' cannot be empty")
 
-
-    #def __str__(self) -> str:
+    # def __str__(self) -> str:
     #    return f"ComposeAppItem(name={self.name}, app_dir={self.app_dir}, project_name={self.project_name}, version={self.version})"
 
     def compile(self):
         print("Compiling ComposeAppItem '{}'".format(self.name))
         pass
+
 
 def _build_app_dir_path(project_name: str, app_name: str) -> Path:
     base_dir = Path(f"data/projects/{project_name}/apps")
@@ -53,41 +56,42 @@ def _generate_random_secret(length: int = 32) -> str:
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
-def handle_compose_app_deploy(item: dict, action_params: dict) -> dict:
-
+def handle_compose_project_deploy(item: dict, action_params: dict) -> dict:
     item_name = item.get("name")
     props = item.get("properties", {})
-    project_name = props.get("project_name")
+    # project_name = props.get("project_name")
     source_url = props.get("source_url")
     target_url = props.get("target_url")
+    app_dir_prop = props.get("app_dir")
 
     if source_url is None or source_url == "":
         raise ValueError(f"Compose app '{item_name}' does not have a source_url defined for deployment")
     if target_url is None or target_url == "":
         raise ValueError(f"Compose app '{item_name}' does not have a target_url defined for deployment")
-    if project_name is None or project_name == "":
-        raise ValueError(f"Compose app '{item_name}' does not have a project_name defined in properties")
 
-    sschema, surl = source_url.split("://", 1)
-    if sschema == "file":
-        pass
-    elif sschema == "github":
-        # convert to git url
-        giturl = f"git://github.com/{surl}.git"
-        # @todo clone the repo if not already cloned
-        source_url = giturl
-    elif sschema in ["http", "https"]:
-        # @todo download and extract the archive if not already done
-        pass
-    else:
-        raise ValueError(f"Compose app '{item_name}' has unsupported source_url schema '{sschema}'")
-
-    app_dir = _build_app_dir_path(project_name, item_name)
+    # app_dir = _build_app_dir_path(project_name, item_name)
+    app_dir = Path(f"{DATA_DIR}/{app_dir_prop}")
     if not app_dir.exists() or not app_dir.is_dir():
         raise FileNotFoundError(f"Compose app directory '{app_dir}' does not exist")
 
+    # detect compose files in app_dir
+    compose_files = []
+    knownfiles_list = ["docker-compose.yml", "docker-compose.yaml",
+                       "docker-compose.prod.yml", "docker-compose.prod.yaml",
+                       "compose.yml", "compose.yaml",
+                       "compose.prod.yml", "compose.prod.yaml"]
+    for kf in knownfiles_list:
+        kf_path = app_dir / kf
+        if kf_path.exists() and kf_path.is_file():
+            compose_files.append(kf)
+
     result = deploy_compose_project_to_container_host(host_url=target_url,
-                                                      app_name=item_name, app_dir=str(app_dir.resolve()))
+                                                      app_name=item_name,
+                                                      app_dir=str(app_dir.resolve()),
+                                                      compose_args={
+                                                          "composefile": compose_files,
+                                                          "up_args": ["--build"]
+                                                      })
     return result
 
 
@@ -104,7 +108,7 @@ def _build_app_key(project_name: str, item_name: str, version: str) -> str:
     return f"{_normalize(project_name)}-{_normalize(item_name)}-{_normalize(version)}"
 
 
-def handle_compose_app_configure(item: dict, action_params: dict) -> dict:
+def handle_compose_project_configure(item: dict, action_params: dict) -> dict:
     item_name = item.get("name")
     props = item.get("properties", {})
 
@@ -115,7 +119,10 @@ def handle_compose_app_configure(item: dict, action_params: dict) -> dict:
     app_version = props.get("version", "0.0.0")
     app_hash = _build_app_hash(project_name, item_name, app_version)
     app_key = _build_app_key(project_name, item_name, app_version)
-    app_dir = _build_app_dir_path(project_name, item_name)
+
+    # app_dir = _build_app_dir_path(project_name, item_name)
+    app_dir_prop = props.get("app_dir")
+    app_dir = Path(f"{DATA_DIR}/{app_dir_prop}")
     if not app_dir.exists() or not app_dir.is_dir():
         raise FileNotFoundError(f"Compose app directory '{app_dir}' does not exist")
 
@@ -132,7 +139,7 @@ def handle_compose_app_configure(item: dict, action_params: dict) -> dict:
     domain_name = props.get("domain_name")
 
     # read template.json if exists
-    #env_schema = {}
+    # env_schema = {}
     env_props = {}
     template_file = app_dir / "template.json"
     if template_file.exists():
@@ -142,7 +149,9 @@ def handle_compose_app_configure(item: dict, action_params: dict) -> dict:
             env_schema = template_def.get("environment", {})
             env_props = env_schema.get("properties", {})
 
-    networks = {}
+    override_networks = {}
+    override_services = {}
+
     service_labels = [
         "io.mc.app.managed=true",
         f"io.mc.app.name={item_name}",
@@ -154,7 +163,7 @@ def handle_compose_app_configure(item: dict, action_params: dict) -> dict:
     service_networks = []
     if traefik_enabled:
         if traefik_network_name is None or traefik_network_name == "":
-            #raise ValueError(f"Compose app '{item_name}' has traefik_enabled but no traefik_network_name defined")
+            # raise ValueError(f"Compose app '{item_name}' has traefik_enabled but no traefik_network_name defined")
             traefik_network_name = "traefik-ssl"
         if traefik_container_port is None or traefik_container_port == "":
             raise ValueError(f"Compose app '{item_name}' has traefik_enabled but no traefik_container_port defined")
@@ -185,7 +194,7 @@ def handle_compose_app_configure(item: dict, action_params: dict) -> dict:
         # connect the service to the traefik network
         service_networks += [traefik_network_name]
         # ensure the traefik network is defined as external
-        networks[traefik_network_name] = {"external": True}
+        override_networks[traefik_network_name] = {"external": True}
 
         if _traefik_http_enabled:
             _router_name = f"{app_key}-http"
@@ -202,11 +211,15 @@ def handle_compose_app_configure(item: dict, action_params: dict) -> dict:
                 f"traefik.http.routers.{_router_name}.tls.certresolver=le",
             ]
 
-    service_override = {
-        "labels": service_labels,
-        "networks": service_networks,
+        override_services[_service_name] = {
+            "labels": service_labels,
+            "networks": service_networks,
+        }
+
+    overrides = {
+        "services": override_services,
+        "networks": override_networks
     }
-    overrides = {"services": {traefik_service_name: service_override}, "networks": networks}
 
     # write the overrides to a compose.override.yaml file
     if len(overrides) > 0:
@@ -249,7 +262,44 @@ def handle_compose_app_configure(item: dict, action_params: dict) -> dict:
     }
 
 
+def handle_compose_project_sync(item: dict, action_params: dict) -> dict:
+    item_name = item.get("name")
+    props = item.get("properties", {})
+
+    project_name = props.get("project_name")
+    if project_name is None or project_name == "":
+        raise ValueError(f"Compose app '{item_name}' does not have a project_name defined in properties")
+
+    app_dir_prop = props.get("app_dir")
+    app_dir = Path(f"{DATA_DIR}/{app_dir_prop}")
+    source_url = props.get("source_url")
+    if source_url is None or source_url == "":
+        raise ValueError(f"Compose app '{item_name}' does not have a source_url defined for sync")
+
+    sschema, surl = source_url.split("://", 1)
+    if sschema in ["git", "github"]:
+
+        source_ssh_key_file = None
+        source_ssh_key_name = props.get("source_ssh_key_name")
+        if source_ssh_key_name is not None and source_ssh_key_name != "":
+            source_ssh_key_file = os.path.expanduser(f"~/.ssh/{source_ssh_key_name}")
+            if not os.path.exists(source_ssh_key_file):
+                raise FileNotFoundError(
+                    f"SSH key file '{source_ssh_key_file}' for source_ssh_key_name '{source_ssh_key_name}' not found")
+
+        # return update_project_from_git(source_url, str(app_dir.resolve()), private_key_file=source_ssh_key_file)
+        task = update_project_from_git.delay(source_url, str(app_dir.resolve()), private_key_file=source_ssh_key_file)
+        return {"status": "syncing", "task_id": task.id}
+
+    elif sschema in ["http", "https"]:
+        task = update_project_from_git.delay(source_url, str(app_dir.resolve()))
+        return {"status": "syncing", "task_id": task.id}
+    else:
+        raise ValueError(f"Compose app '{item_name}' has unsupported source_url schema '{sschema}'")
+
+
 actions = {
-    "configure_compose_app": handle_compose_app_configure,
-    "deploy_compose_app": handle_compose_app_deploy,
+    "configure": handle_compose_project_configure,
+    "deploy": handle_compose_project_deploy,
+    "sync": handle_compose_project_sync,
 }

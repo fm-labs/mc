@@ -5,22 +5,20 @@ from rx.config import RunConfig, GlobalContext, Config, Metadata
 from rx.plugin.docker_compose import handle_docker_compose_run, ssh_params_from_url
 
 
-def deploy_compose_project_to_container_host(host_url: str, app_name: str, app_dir: str):
+def deploy_compose_project_to_container_host(host_url: str, app_name: str, app_dir: str, compose_args: dict = None) -> dict:
 
     print(f"Deploying compose project '{app_name}' from dir {app_dir} to host '{host_url}'")
-
+    if compose_args is None:
+        compose_args = {}
     ssh_args = ssh_params_from_url(host_url)
-    compose_args = {}
-    # compose file is assumed to be in the app_dir
-    # compose_args["composefile"] = str(Path(app_dir) / "compose.yaml")
-    # look for traefik or override files
 
     run_cfg = RunConfig(
         src=f"file://{app_dir}",
         dest=host_url,
         extra={
             "ssh": ssh_args,
-            "compose": compose_args
+            "compose": compose_args,
+            "exclude": ".dockerignore" # exclude PATTERNS from .dockerignore file, if exists
         }
     )
     ctx = GlobalContext(
@@ -34,6 +32,7 @@ def deploy_compose_project_to_container_host(host_url: str, app_name: str, app_d
             run={}
         ),
     )
-    handle_docker_compose_run(run_cfg, ctx)
-
-    return {"status": "success", "message": f"App {app_name} deployed to {host_url}"}
+    stdout, stderr, rc = handle_docker_compose_run(run_cfg, ctx)
+    return {"status": "success",
+            "message": f"App {app_name} deployed to {host_url}",
+            "stdout": stdout, "stderr": stderr, "return_code": rc}

@@ -1,3 +1,5 @@
+import asyncio
+
 from mc.inventory.storage import get_inventory_storage_instance
 
 def get_inventory_item_action_handler(item_type: str, action_name: str):
@@ -24,7 +26,7 @@ def get_inventory_item_action_handler(item_type: str, action_name: str):
         raise NotImplementedError(f"Module for action '{action_name}' on item type '{item_type}' could not be loaded") from e
 
 
-def handle_inventory_item_action(item_type: str, item_key: str, action_name: str, action_params: dict) -> dict:
+async def handle_inventory_item_action(item_type: str, item_key: str, action_name: str, action_params: dict) -> dict:
     """
     Handle an action request for a specific inventory item.
 
@@ -43,5 +45,21 @@ def handle_inventory_item_action(item_type: str, item_key: str, action_name: str
         raise ValueError(f"Item '{item_key}' of type '{item_type}' not found.")
 
     method = get_inventory_item_action_handler(item_type, action_name)
-    return method(item, action_params)
+    action_params = action_params or {}
+
+    # if the method is async, await it directly
+    print("Action method type:", type(method))
+    if asyncio.iscoroutinefunction(method):
+        print("Handling async action method")
+        result = await method(item, action_params)
+        print("Action result:", result)
+        return result
+
+    # if the method is sync, run in thread pool
+    print("Handling sync action method in async context")
+    loop = asyncio.get_running_loop()
+    result = await loop.run_in_executor(None, method, item, action_params)
+    #result = {"status": "error", "error": "Synchronous action methods are not supported yet"}
+    print("Action result:", result)
+    return result
 

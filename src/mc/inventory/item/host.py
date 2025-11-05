@@ -1,5 +1,11 @@
 import subprocess
+from pathlib import Path
+import shutil
 
+from mc.config import DATA_DIR
+from mc.inventory.item.compose_project import handle_compose_project_configure, handle_compose_project_deploy
+from mc.inventory.items import create_inventory_item
+from mc.inventory.storage import get_inventory_storage_instance
 from orchestra.tasks import task_run_ansible_playbook
 
 
@@ -65,8 +71,84 @@ def handle_host_ssh_probe(item: dict, action_params: dict) -> dict:
         return {"status": "error", "error": str(e)}
 
 
+def handle_host_setup_container_host(item: dict, action_params: dict) -> dict:
+    # todo run the appropriate ansible playbook to setup container host
+    return {"status": "error", "message": "Setup container host action is not implemented yet."}
+
+
+def handle_host_setup_webstack(item: dict, action_params: dict) -> dict:
+    # todo run the appropriate compose project template to setup web host
+
+    host_name = item.get("properties", {}).get("hostname")
+    if not host_name:
+        raise ValueError("Hostname not found in item properties.")
+
+    project_name = action_params.get("project_name")
+    if not project_name:
+        raise ValueError("Parameter 'project_name' is required.")
+
+    webstack_enabled = item.get("properties", {}).get("webstack_enabled", True)
+    if not webstack_enabled:
+        raise ValueError("Parameter 'webstack_enabled' is required.")
+
+    app_name = f"traefik-ssl-{host_name}"
+
+    # 1. create a compose project from template
+    # check if compose project already exists
+    storage = get_inventory_storage_instance()
+    existing_cp = storage.get_item_by_name("compose_project", app_name)
+    if existing_cp:
+        cp_item = existing_cp
+    else:
+        template_dir = "resources/compose-templates/traefik-ssl"
+        app_dir = f"projects/{project_name}/apps/{app_name}"
+        target_dir = f"{DATA_DIR}/{app_dir}"
+        create_compose_project_app_dir_from_template(template_dir, target_dir)
+
+        cp = {
+            "source_url": f"file://{template_dir}",
+            "target_url": f"ssh://{host_name}",
+            "domain_name": "",
+            "project_name": project_name,
+            "app_name": app_name,
+            "app_dir": app_dir,
+            "template_url": f"file://{template_dir}",
+            "description": "Traefik SSL Web Host",
+            "version": "1.0.0"
+        }
+        cp_item = {
+            "name": app_name,
+            "properties": cp
+        }
+        #storage.save_item("compose_project", cp_item)
+        cp_item = create_inventory_item("compose_project", cp_item)
+
+    # 2. configure the compose project to run on the host
+    handle_compose_project_configure(cp_item, {})
+    # 3. deploy the compose project to the host
+    return handle_compose_project_deploy(cp_item, {})
+
+
+
+
+def create_compose_project_app_dir_from_template(template_dir: str, target_dir: str) -> None:
+    # check if target_dir exists
+    target_path = Path(target_dir)
+    if target_path.exists():
+        raise FileExistsError(f"Target directory '{target_dir}' already exists.")
+
+    template_path = Path(template_dir)
+    if not template_path.exists():
+        raise FileNotFoundError(f"Template directory '{template_dir}' does not exist.")
+
+    # copy template directory to target directory
+    shutil.copytree(template_dir, target_dir)
+
+
 actions = {
     "ping": handle_host_ping,
     "run_playbook": handle_host_run_ansible_playbook,
     "ssh_connect": handle_host_ssh_probe,
+    "setup_container_host": handle_host_setup_container_host,
+    "setup_webstack": handle_host_setup_webstack,
 }
