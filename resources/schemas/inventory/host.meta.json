@@ -113,6 +113,32 @@
           "playbook"
         ]
       }
+    },
+    {
+      "id": "setup_container_host",
+      "name": "Setup container host",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
+      "id": "setup_webstack",
+      "name": "Setup Webstack",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_name": {
+            "type": "string",
+            "title": "Project Name",
+            "description": "Name of the related project (deprecated)"
+          }
+        },
+        "required": ["project_name"]
+      }
     }
   ]
 }

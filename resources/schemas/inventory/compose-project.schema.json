@@ -10,6 +10,10 @@
       "format": "uri",
       "description": "Optional source URL."
     },
+    "source_ssh_key_name": {
+      "type": "string",
+      "description": "Optional SSH private key for accessing the source URL."
+    },
     "target_url": {
       "type": ["string", "null"],
       "format": "uri",

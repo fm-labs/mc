@@ -14,3 +14,9 @@ docs
 data
 .env.local
 src/x*.py
+ui/.venv
+ui/node_modules
+ui/.idea
+ui/.vscode
+ui/.git
+ui/src-tauri

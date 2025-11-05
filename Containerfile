@@ -1,7 +1,17 @@
-FROM python:3.13.9-alpine3.22
+## UI Build stage
+FROM node:24-alpine AS ui-builder
+RUN npm install -g bun
+WORKDIR /builder
+COPY ui/package.json ui/bun.lock ./
+RUN bun install
+COPY ui/ .
+RUN bun run build
 
+
+FROM python:3.13.9-alpine3.22 AS final
 
 RUN apk update && apk add --no-cache \
+    file \
     openssh \
     autossh \
     bash \
@@ -14,12 +24,16 @@ RUN apk update && apk add --no-cache \
     curl \
     rsync \
     iputils \
-    libc-utils
+    libc-utils \
+    nginx
 
 
-# Supervisor
-COPY ./container/supervisor/supervisord.conf /etc/supervisord.conf
-COPY ./container/supervisor/celery_worker.ini ./container/supervisor/celery_flower.ini ./container/supervisor/api.ini ./container/supervisor/ssh-agent-keepalive.ini ./container/supervisor/scan.ini /etc/supervisor.d/
+# Install the MCP Gateway CLI (docker-mcp) to the Docker plugin path
+RUN mkdir -p /root/.docker/cli-plugins \
+ && curl -fL -o /root/.docker/cli-plugins/docker-mcp \
+      https://github.com/docker/mcp-gateway/releases/download/v0.25.0/docker-mcp-linux-amd64.tar.gz \
+ && tar -xzf /root/.docker/cli-plugins/docker-mcp -C /usr/local/bin/ \
+ && chmod +x /usr/local/bin/docker-mcp
 
 # Set a non-root user
 RUN addgroup -S app && \
@@ -30,6 +44,12 @@ RUN addgroup -S app && \
 # Add user to docker group (gid = 999)
 # on alpine the group is 'ping' with gid 999
 RUN adduser app ping
+
+
+# Install the MCP Gateway CLI (docker-mcp) to the Docker plugin path
+#RUN cp -r /root/.docker /home/app/.docker && \
+#    chown -R app:app /home/app/.docker
+
 
 # Set file and directory permissions
 RUN mkdir -p /app && mkdir -p /app/config && chown -R app:app /app && \
@@ -83,6 +103,27 @@ RUN echo "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" 
 # Prepare /home/app/.ssh directory
 RUN mkdir -p /home/app/.ssh && chown -R app:app /home/app/.ssh && chmod 700 /home/app/.ssh
 
+# UI
+# Copy from the builder stage and configure nginx
+COPY --from=ui-builder /builder/dist/ /var/www/html/
+COPY ./container/nginx/site.default.conf /etc/nginx/http.d/default.conf
+
+
+# Supervisor
+COPY ./container/supervisord.conf /etc/supervisord.conf
+COPY ./container/supervisor/* /etc/supervisor.d/
+
+# Change ownership to non-root user
+RUN mkdir -p /etc/nginx/ssl/ && \
+    mkdir -p /var/log/nginx/ && \
+    mkdir -p /var/lib/nginx/logs && \
+    touch /var/lib/nginx/logs/error.log && \
+    touch /var/lib/nginx/logs/access.log && \
+    chown -R app:app /var/lib/nginx/logs/error.log && \
+    chown -R app:app /var/lib/nginx/logs/access.log && \
+    chown -R app:app /var/lib/nginx /var/lib/nginx/logs /run/nginx
+
+
 # Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
@@ -90,8 +131,10 @@ ENV PYTHONPATH=/app/src
 CMD ["supervisor"]
 USER app
 
+# Nginx port
+EXPOSE 80
 # API port
-EXPOSE 8000
+EXPOSE 5000
 # Flower port
 EXPOSE 5555
 

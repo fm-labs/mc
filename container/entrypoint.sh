@@ -29,21 +29,26 @@ export DOCKER_SSH_COMMAND
 CMD=$1
 shift
 case $CMD in
+
   api)
     #echo "Starting dev API server..."
     #if [ "$DEV_MODE" -eq 1 ]; then
     #  echo "Development mode is ON"
-    #  exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app --reload
+    #  exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app --reload
     #else
     #  echo "Development mode is OFF"
-    #  exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
+    #  exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
     #fi
     echo "Starting API server: Waiting for other services ..."
-    sleep 30 # wait for other services to be ready
-    echo "Starting API server: Starting on 0.0.0.0:8000 ..."
-    exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 8000 server:app
+    sleep 15 # wait for other services to be ready
+    echo "Starting API server: Starting on 0.0.0.0:5000 ..."
+    exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
     ;;
 
+  nginx)
+    echo "Starting nginx..."
+    exec nginx -g "daemon off;"
+    ;;
 
   scan)
     echo "Running various inventory scans..."

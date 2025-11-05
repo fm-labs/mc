@@ -9,8 +9,9 @@ services:
       context: .
       dockerfile: Containerfile
     ports:
-      - "13080:8000"
-      - "13555:5555"
+      - "13080:80" # Nginx
+      - "13500:5000" # API
+      - "13555:5555" # Flower
     networks:
       - mc-net
     #extra_hosts:
@@ -23,7 +24,7 @@ services:
       #- ${PWD}/.local/home:/home/app/
       - ${PWD}/data:/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
+      #- /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     environment:
       #- SSH_AUTH_SOCK=/ssh-agent
       #- SSH_CONFIG=/data/ssh_config
@@ -39,6 +40,8 @@ services:
       - DATA_DIR=/data
       #- VAULT_FILE=/app/config/credentials.vault
       - VAULT_PASS_FILE=/run/secrets/credentials_vault_pass
+    env_file:
+      - ./.env.docker.local
     depends_on:
       - redis
       - mongodb
@@ -53,7 +56,7 @@ services:
             - "*.egg-info/"
             - "x*.py"
           exec:
-            command: ["supervisorctl", "restart", "api"]
+            command: ["supervisorctl", "restart", "all"]
         - action: sync
           path: ./resources
           target: /app/resources
@@ -63,6 +66,8 @@ services:
           path: ./uv.lock
         - action: rebuild
           path: Containerfile
+        - action: restart
+          path: ./.env.docker.local
 
   redis:
     image: redis:latest

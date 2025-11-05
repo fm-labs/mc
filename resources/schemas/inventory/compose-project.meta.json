@@ -1,8 +1,30 @@
 {
   "actions": [
     {
-      "id": "configure_compose_app",
-      "name": "Configure App",
+      "id": "sync",
+      "name": "Sync Project",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "force": {
+            "type": "boolean",
+            "default": false,
+            "description": "Force synchronization even if there are no detected changes.",
+            "title": "Force"
+          },
+          "reset": {
+            "type": "boolean",
+            "default": false,
+            "description": "Reset the repo. This will discard local changes.",
+            "title": "Reset"
+          }
+        }
+      }
+    },
+    {
+      "id": "configure",
+      "name": "Configure Project",
       "type": "form",
       "inputSchema": {
         "type": "object",
@@ -17,8 +39,8 @@
       }
     },
     {
-      "id": "deploy_compose_app",
-      "name": "Deploy App",
+      "id": "deploy",
+      "name": "Deploy Project",
       "type": "form",
       "inputSchema": {
         "type": "object",

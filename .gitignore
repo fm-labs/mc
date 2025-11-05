@@ -9,6 +9,7 @@ templates/
 tmp/
 src/oapp/
 src/x*.py
+ui/
 projects.json
 .env.local
 .env.docker.local

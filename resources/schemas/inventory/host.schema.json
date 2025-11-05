@@ -78,6 +78,30 @@
       "title": "Tunnel Forwarding Specifications",
       "description": "Comma-separated list. Example: 'L8080:localhost:80,R8443:localhost:443'",
       "default": ""
+    },
+    "container_host_enabled": {
+      "type": "boolean",
+      "title": "Enable Container Host",
+      "default": false
+    },
+    "container_engine": {
+      "type": "string",
+      "title": "Container Engine",
+      "enum": [
+        "docker",
+        "podman"
+      ],
+      "default": "docker"
+    },
+    "webstack_enabled": {
+      "type": "boolean",
+      "title": "Enable Webstack",
+      "default": false
+    },
+    "webstack_traefik_enabled": {
+      "type": "boolean",
+      "title": "Enable Traefik on Webstack",
+      "default": false
     }
   },
   "required": [
