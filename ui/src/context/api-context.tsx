@@ -1,5 +1,6 @@
 import React from "react";
 import { buildApiClient } from "@/lib/api-client.ts";
+import {MC_API_BASE_URL} from "@/constants.ts";
 
 type ApiContextType = {
     apiBaseUrl: string,
@@ -10,14 +11,14 @@ type ApiContextType = {
 export const ApiContext = React.createContext<ApiContextType | undefined>(undefined);
 
 export const ApiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [apiBaseUrl, setApiBaseUrl] = React.useState<string>(localStorage.getItem("mc_api_base_url") || "");
+    const [apiBaseUrl, setApiBaseUrl] = React.useState<string>(/*localStorage.getItem("mc_api_base_url") ||*/ MC_API_BASE_URL);
     const api = React.useMemo(() => {
         return buildApiClient(apiBaseUrl);
     }, [apiBaseUrl]);
 
-    React.useEffect(() => {
-        localStorage.setItem("mc_api_base_url", apiBaseUrl);
-    }, [apiBaseUrl]);
+    // React.useEffect(() => {
+    //     localStorage.setItem("mc_api_base_url", apiBaseUrl);
+    // }, [apiBaseUrl]);
 
     // if (!apiBaseUrl) {
     //     return (<div style={{ padding: "2rem" }}>

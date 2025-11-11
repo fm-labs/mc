@@ -34,7 +34,7 @@ export const DockerContainerProvider = ({
     };
 
     const buildLogStreamUrl = (containerId: string) => {
-        return `${apiBaseUrl}api/containers/${config.hostId}/containers/${containerId}/logs/stream`
+        return `${apiBaseUrl}/api/containers/${config.hostId}/containers/${containerId}/logs/stream`
     }
 
     return (<DockerContainerContext.Provider value={{

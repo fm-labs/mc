@@ -31,16 +31,17 @@ import {
     IconTool,
     IconUsers, IconSkull,
     IconTrendingDown, IconTrendingUp, IconNetwork, IconReport, IconWebhook, IconWorldDollar, IconWorld, IconCube,
-    IconDatabase, IconCube3dSphere, IconCubeOff, IconCubeSpark,
+    IconDatabase, IconCube3dSphere, IconCubeOff, IconCubeSpark, IconShieldBolt, IconAlertTriangle,
+    IconAlertTriangleFilled, IconInfoCircle, IconRocket, IconFolderCode, IconLayersOff,
 } from "@tabler/icons-react";
 import { type SVGProps } from "react";
 import { IconPodman } from "@/assets/brand-icons/icon-podman.tsx";
-import { HatGlassesIcon, Share2Icon } from "lucide-react";
+import {HatGlassesIcon, Layers2Icon, LayersIcon, SearchCodeIcon, Share2Icon, ShieldAlertIcon} from "lucide-react";
 
 const appIconsMap: {[key: string]: any} = {
     // navigation
     "dashboard": IconDashboard,
-    "findings": HatGlassesIcon,
+    "findings": SearchCodeIcon,
     "tool": IconTool,
     "kitchensink": IconTool,
     "integrations": IconTool,
@@ -66,6 +67,9 @@ const appIconsMap: {[key: string]: any} = {
     "tasks": IconListDetails,
     "report": IconReport,
     "domain": IconWorld,
+    "warning": IconAlertTriangle,
+    "error": ShieldAlertIcon,
+    "info": IconInfoCircle,
 
     // brands
     "discord": IconDiscord,
@@ -101,8 +105,11 @@ const appIconsMap: {[key: string]: any} = {
     "console": IconSkull,
     "trend-up": IconTrendingUp,
     "trend-down": IconTrendingDown,
+    "rocket": IconRocket,
     // inventory
-    "repository": IconBook,
+    "stacks": LayersIcon,
+    "layers": Layers2Icon,
+    "repository": IconFolderCode,
     "host": IconCloud,
     "host-network": IconNetwork,
     "container-host": IconDocker,

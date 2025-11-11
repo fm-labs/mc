@@ -12,6 +12,7 @@
         "@faker-js/faker": "^10.1.0",
         "@hookform/resolvers": "^5.2.2",
         "@microlink/react-json-view": "^1.27.0",
+        "@paypal/react-paypal-js": "^8.9.2",
         "@radix-ui/react-avatar": "^1.1.10",
         "@radix-ui/react-checkbox": "^1.3.3",
         "@radix-ui/react-collapsible": "^1.1.12",
@@ -28,36 +29,36 @@
         "@radix-ui/react-toggle": "^1.1.10",
         "@radix-ui/react-toggle-group": "^1.1.11",
         "@radix-ui/react-tooltip": "^1.2.8",
-        "@rjsf/core": "^6.0.0-beta.21",
-        "@rjsf/shadcn": "^6.0.0-beta.10",
-        "@rjsf/utils": "^6.0.0-beta.21",
-        "@rjsf/validator-ajv8": "^6.0.0-beta.21",
+        "@rjsf/core": "^6.0.1",
+        "@rjsf/shadcn": "^6.0.1",
+        "@rjsf/utils": "^6.0.1",
+        "@rjsf/validator-ajv8": "^6.0.1",
         "@tabler/icons-react": "^3.35.0",
-        "@tailwindcss/vite": "^4.1.15",
+        "@tailwindcss/vite": "^4.1.16",
         "@tanstack/react-table": "^8.21.3",
         "@tauri-apps/api": "^2.9.0",
-        "@tauri-apps/plugin-opener": "^2.5.0",
+        "@tauri-apps/plugin-opener": "^2.5.2",
         "add": "^2.0.6",
-        "axios": "^1.12.2",
+        "axios": "^1.13.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
         "date-fns": "^4.1.0",
         "lucide-react": "^0.546.0",
-        "mermaid": "^11.12.0",
+        "mermaid": "^11.12.1",
         "next-themes": "^0.4.6",
         "react": "^19.2.0",
         "react-day-picker": "^9.11.1",
         "react-dom": "^19.2.0",
         "react-hook-form": "^7.65.0",
         "react-masonry-css": "^1.0.16",
-        "react-router": "^7.9.4",
+        "react-router": "^7.9.5",
         "react-simple-maps": "^3.0.0",
         "react-toastify": "^11.0.5",
         "recharts": "2.15.4",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.3.1",
-        "tailwindcss": "^4.1.15",
+        "tailwindcss": "^4.1.16",
         "vaul": "^1.1.2",
         "xterm": "^5.3.0",
         "xterm-addon-fit": "^0.8.0",
@@ -65,15 +66,15 @@
         "zod": "^4.1.12",
       },
       "devDependencies": {
-        "@tauri-apps/cli": "^2.9.0",
-        "@types/node": "^24.9.1",
+        "@tauri-apps/cli": "^2.9.2",
+        "@types/node": "^24.9.2",
         "@types/react": "^19.2.2",
         "@types/react-dom": "^19.2.2",
         "@types/react-simple-maps": "^3.0.6",
-        "@vitejs/plugin-react": "^5.0.4",
+        "@vitejs/plugin-react": "^5.1.0",
         "tw-animate-css": "^1.4.0",
         "typescript": "^5.9.3",
-        "vite": "^7.1.11",
+        "vite": "^7.1.12",
       },
     },
   },
@@ -253,6 +254,12 @@
     "@mermaid-js/parser": ["@mermaid-js/parser@0.6.3", "", { "dependencies": { "langium": "3.3.1" } }, "sha512-lnjOhe7zyHjc+If7yT4zoedx2vo4sHaTmtkl1+or8BRTnCtDmcTpAjpzDSfCZrshM5bCoz0GyidzadJAH1xobA=="],
 
     "@microlink/react-json-view": ["@microlink/react-json-view@1.27.0", "", { "dependencies": { "react-base16-styling": "~0.9.0", "react-lifecycles-compat": "~3.0.4", "react-textarea-autosize": "~8.5.7" }, "peerDependencies": { "react": ">= 15", "react-dom": ">= 15" } }, "sha512-/IwWmMuRR2edvxrRYRBJzjyi4vGvIn/ltM8wqesz+HLZsoGKIUgwiwEkblOLZqXj8BGWmeRnyAdCqf0uACqRFw=="],
+
+    "@paypal/paypal-js": ["@paypal/paypal-js@9.0.1", "", { "dependencies": { "promise-polyfill": "^8.3.0" } }, "sha512-6A5hkyYBSuloO7rPwnoPoy/0PPNH0pZZ1TBSTuEaSVqJ9h9t13PiP1ZarffirsO/e5t4hKjUmUORjgKV9sTMLw=="],
+
+    "@paypal/react-paypal-js": ["@paypal/react-paypal-js@8.9.2", "", { "dependencies": { "@paypal/paypal-js": "^9.0.0", "@paypal/sdk-constants": "^1.0.122" }, "peerDependencies": { "react": "^16.8.0 || ^17 || ^18 || ^19", "react-dom": "^16.8.0 || ^17 || ^18 || ^19" } }, "sha512-z1GoA7KAkhFCSmpIsRxe9aseXRvfOMgF6vCJ2Mym0VOSYJm8bZSC3Ui4SjONnglfV8S4P8djpe5QB7FtKsDXrQ=="],
+
+    "@paypal/sdk-constants": ["@paypal/sdk-constants@1.0.157", "", { "dependencies": { "hi-base32": "^0.5.0" } }, "sha512-BjxWT9rK6dM1AOffSpvHYY47/8BY775jgEYYiwH6eL4YaqU5Epcw7zOtwQ8L4UaEn4FCAjZ2EWxaS83dCN7SpA=="],
 
     "@radix-ui/number": ["@radix-ui/number@1.1.1", "", {}, "sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g=="],
 
@@ -790,6 +797,8 @@
 
     "hasown": ["hasown@2.0.2", "", { "dependencies": { "function-bind": "^1.1.2" } }, "sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ=="],
 
+    "hi-base32": ["hi-base32@0.5.1", "", {}, "sha512-EmBBpvdYh/4XxsnUybsPag6VikPYnN30td+vQk+GI3qpahVEG9+gTkG0aXVxTjBqQ5T6ijbWIu77O+C5WFWsnA=="],
+
     "hoist-non-react-statics": ["hoist-non-react-statics@3.3.2", "", { "dependencies": { "react-is": "^16.7.0" } }, "sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw=="],
 
     "iconv-lite": ["iconv-lite@0.6.3", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw=="],
@@ -921,6 +930,8 @@
     "points-on-path": ["points-on-path@0.2.1", "", { "dependencies": { "path-data-parser": "0.1.0", "points-on-curve": "0.2.0" } }, "sha512-25ClnWWuw7JbWZcgqY/gJ4FQWadKxGWk+3kR/7kD0tCaDtPPMj7oHu2ToLaVhfpnHrZzYby2w6tUA0eOIuUg8g=="],
 
     "postcss": ["postcss@8.5.6", "", { "dependencies": { "nanoid": "^3.3.11", "picocolors": "^1.1.1", "source-map-js": "^1.2.1" } }, "sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg=="],
+
+    "promise-polyfill": ["promise-polyfill@8.3.0", "", {}, "sha512-H5oELycFml5yto/atYqmjyigJoAo3+OXwolYiH7OfQuYlAqhxNvTfiNMbV9hsC6Yp83yE5r2KTVmtrG6R9i6Pg=="],
 
     "prop-types": ["prop-types@15.8.1", "", { "dependencies": { "loose-envify": "^1.4.0", "object-assign": "^4.1.1", "react-is": "^16.13.1" } }, "sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg=="],
 

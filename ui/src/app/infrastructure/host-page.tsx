@@ -20,7 +20,7 @@ const HostPage = () => {
     const [streamUrl, setStreamUrl] = React.useState<string | null>(null);
 
     const handleStreamLogs = (logType: string) => {
-        const url = `${apiBaseUrl}api/infrastructure/host/${host.item_key}/logs/stream?type=${logType}`;
+        const url = `${apiBaseUrl}/api/infrastructure/host/${host.item_key}/logs/stream?type=${logType}`;
         if (streamUrl===url) {
             // If the same log type is clicked again, stop streaming
             setStreamUrl(null);

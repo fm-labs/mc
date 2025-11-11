@@ -77,7 +77,7 @@ const OrchestraJobsPage = () => {
     const [job, setJob] = React.useState<Job | null>(null);
 
     const jobEventSourceUrl = React.useMemo(() => job
-        ? `${apiBaseUrl}api/ansible/runs/${job.run_id}/sse`:null
+        ? `${apiBaseUrl}/api/ansible/runs/${job.run_id}/sse`:null
     , [job]);
 
     const handleJobClick = async (jobId: string) => {

@@ -8,6 +8,7 @@ import useDialog from "@/hooks/use-dialog.tsx";
 import InventoryActionForm from "@/app/inventory/components/inventory-action-form.tsx";
 import { InventoryDialogs } from "@/app/inventory/components/inventory-dialogs.tsx";
 import { RJSFSchema } from "@rjsf/utils";
+import InventoryViewForm from "@/app/inventory/components/inventory-view-form.tsx";
 
 type InventoryDialogType = "create" | "update" | "delete" | "import"
 
@@ -26,15 +27,16 @@ type InventoryContextType<T> = {
     setCurrentItem: React.Dispatch<React.SetStateAction<InventoryItem<T> | null>>
     dialog: ReactNode
     setDialog: React.Dispatch<React.SetStateAction<ReactNode | undefined>>
-    openItemActionDialog: (action: InventoryActionDef) => (item: InventoryItem<any>) => Promise<void>
+    handleAction: (action: InventoryActionDef) => (item: InventoryItem<any>) => Promise<void>
 }
 
 export const InventoryContext = React.createContext<InventoryContextType<any> | null>(null);
 
 
-export function InventoryProvider<T>({ itemType, data, children }: {
+export function InventoryProvider<T>({ itemType, data, item, children }: {
     itemType: string,
     children: React.ReactNode,
+    item?: InventoryItem<any>, // current item
     data?: InventoryItem<T>[]
 }) {
     const { api } = useApi();
@@ -42,7 +44,7 @@ export function InventoryProvider<T>({ itemType, data, children }: {
 
     const [open, setOpen] = useDialogState<InventoryDialogType>(null);
     const [items, setItems] = React.useState<InventoryItem<T>[]>(data || []);
-    const [currentItem, setCurrentItem] = React.useState<InventoryItem<T> | null>(null);
+    const [currentItem, setCurrentItem] = React.useState<InventoryItem<T> | null>(item || null);
     const [inputSchema, setInputSchema] = React.useState<object | null>(null);
     const [columns, setColumns] = React.useState<any[]>([]);
     //const [actions, setActions] = React.useState<InventoryActionDef[]>([]);
@@ -101,9 +103,15 @@ export function InventoryProvider<T>({ itemType, data, children }: {
 
         if (def.type === "form") {
             setDialog(createDrawer({
-            children: <InventoryActionForm def={def} item={item} />,
-            onClose: () => setDialog(undefined),
-        }))
+                children: <InventoryActionForm def={def} item={item}/>,
+                onClose: () => setDialog(undefined),
+            }))
+            return;
+        } else if (def.type === "view") {
+            setDialog(createDrawer({
+                children: <InventoryViewForm def={def} item={item}/>,
+                onClose: () => setDialog(undefined),
+            }))
             return;
         } else if (def.type === "link") {
             if (def.href) {
@@ -150,13 +158,13 @@ export function InventoryProvider<T>({ itemType, data, children }: {
                     accessorKey: "name",
                     header: "name",
                     cell: ({ row }) => {
-                        return <code className="font-mono" onClick={() => {
+                        return <span className={"font-bold"} onClick={() => {
                             console.log("Clicked on item name:", row.original);
                             setCurrentItem(row.original);
                             setOpen("update");
                         }}>
                             {row.original.name}
-                        </code>;
+                        </span>;
                     },
                 },
             ];
@@ -203,7 +211,7 @@ export function InventoryProvider<T>({ itemType, data, children }: {
         setOpen,
         dialog,
         setDialog,
-        openItemActionDialog: handleAction
+        handleAction
     };
 
     return (

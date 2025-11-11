@@ -14,7 +14,7 @@ import {NavigationItem} from "@/components/layout/data/types.ts";
 import {Link} from "react-router";
 import {Badge} from "@/components/ui/badge.tsx";
 
-export function NavSecondary({
+export function NavFindings({
                                  items,
                                  ...props
                              }: {
@@ -37,6 +37,7 @@ export function NavSecondary({
                                         </span>
                                     </div>
                                     <div>
+                                        <Badge className={""}>0</Badge>
                                     </div>
                                 </div>
                             </SidebarMenuButton>

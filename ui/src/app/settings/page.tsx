@@ -4,6 +4,7 @@ import MainContent from "@/components/layout/main-content.tsx";
 import { Outlet } from "react-router";
 import { SettingsNav } from "@/app/settings/components/settings-nav.tsx";
 import { FEAT_SETTINGS_ENABLED } from "@/constants.ts";
+import {IconPigMoney} from "@tabler/icons-react";
 
 const sidebarNavItems = [
     // {
@@ -20,6 +21,11 @@ const sidebarNavItems = [
         title: "Security",
         href: "/settings/security",
         icon: <ShieldIcon size={18} />,
+    },
+    {
+        title: "Credits",
+        href: "/settings/credits",
+        icon: <IconPigMoney size={18} />,
     },
     // {
     //   title: 'Appearance',

@@ -24,28 +24,29 @@ const InventoryActionForm = ({def, item}: {def: InventoryActionDef, item: Invent
 
     const handleFormSubmit = async ({formData}: any) => {
         console.log("Action Form submitted:", formData);
+        const timeout = def?.timeout || 30000;
         try {
-            const p = api.post(`/api/inventory/${itemType}/${item.item_key}/action/${def.id}`, formData)
+            const p = api.post(`/api/inventory/${itemType}/${item.item_key}/action/${def.id}`, formData, { timeout: 60000 })
                 .then((res: any) => {
                     setResponse(res);
                     return res;
                 })
-                .catch((err: any) => {
-                    console.error("Error executing action:", err);
-                    //toast.error(`Error executing action "${def.id}" on "${item.name}": ${err.message || err}`);
-                    throw err;
-                })
+                // .catch((err: any) => {
+                //     console.error("Error executing action:", err);
+                //     //toast.error(`Error executing action "${def.id}"": ${err.message || err}`);
+                //     throw err;
+                // })
 
             const response: any = await toast.promise(p, {
-                pending: `Executing action "${def.id}" on "${item.name}"...`,
-                success: `Action "${def.id}" executed on "${item.name}"`,
-                error: `Error executing action "${def.id}" on "${item.name}"`,
+                pending: `Executing action "${def.id}""...`,
+                success: `Action "${def.id}" executed"`,
+                error: `Error executing action "${def.id}""`,
             })
             console.log("Action executed successfully:", response);
 
             // check if response contains an "error" field
             if (response && response.error) {
-                toast.error(`Error executing action "${def.id}" on "${item.name}": ${response.error}`);
+                toast.error(`Error executing action "${def.id}"": ${response.error}`);
                 return;
             }
 
@@ -58,10 +59,10 @@ const InventoryActionForm = ({def, item}: {def: InventoryActionDef, item: Invent
                 toast.info(`Action "${def.id}" is being processed as task ${taskId}`);
             }
 
-            toast.success(`Action "${def.id}" executed on "${item.name}"`);
-        } catch (error) {
+            //toast.success(`Action "${def.id}" executed"`);
+        } catch (error: any) {
             console.error("Error executing action:", error);
-            toast.error(`Error executing action "${def.id}" on "${item.name}"`);
+            toast.error(`Error": ${error?.response?.data?.error || error?.message || "Unknown error"}`);
         }
     }
 
@@ -76,7 +77,7 @@ const InventoryActionForm = ({def, item}: {def: InventoryActionDef, item: Invent
             </div>
 
             <Form
-                schema={def.inputSchema}
+                schema={def?.inputSchema || {}}
                 uiSchema={def?.uiSchema as UiSchema || {}}
                 onSubmit={handleFormSubmit}
                 onChange={handleFormChange}

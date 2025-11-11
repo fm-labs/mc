@@ -27,12 +27,15 @@ export type InventoryMetaData = {
 export type InventoryActionDef = {
     id: string
     name: string
-    type?: "form" | "link" | "separator"
+    type?: "form" | "link" | "separator" | "view"
     variant?: "destructive" | "default"
     href?: string
     inputSchema?: object | null
     uiSchema?: object | null
+    timeout?: number
 }
+
+export type InventoryViewDef = InventoryActionDef
 
 export type Repository = {
     url: string;

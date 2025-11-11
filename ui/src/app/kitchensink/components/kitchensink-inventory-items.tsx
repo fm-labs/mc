@@ -14,11 +14,11 @@ const Item = ({ item, onClick }: { item: any, isActive: boolean, onClick: () => 
     const widgets = getItemTypeWidgets(itemType);
     const [isActive, _setIsActive] = React.useState(true);
 
-    const { metadata, setDialog, openItemActionDialog } = useInventory();
+    const { metadata, setDialog, handleAction } = useInventory();
 
     const handleActionClick = (action: InventoryActionDef) => (item: any) => {
         console.log(`Action "${action}" clicked for item:`, item);
-        openItemActionDialog(action)(item);
+        handleAction(action)(item);
     };
 
     const handleEditItemClick = () => {
@@ -55,7 +55,7 @@ const Item = ({ item, onClick }: { item: any, isActive: boolean, onClick: () => 
                 className={""}>
                 {/*<pre>{JSON.stringify(item, null, 2)}</pre>*/}
                 <div className={"flex flex-wrap items-center space-x-2"}>
-                    <Data useButton={false} data={item} />
+                    <Data asButton={false} data={item} />
                     <span className={"cursor-pointer hover:underline"} onClick={handleEditItemClick}>Edit</span>
 
                     {metadata?.actions && metadata?.actions

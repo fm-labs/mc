@@ -32,12 +32,17 @@ const SettingsPage = await import('@/app/settings/page.tsx').then(mod => mod.Set
 const SettingsProfile = await import('@/app/settings/profile').then(mod => mod.SettingsProfile);
 const SettingsAccount = await import('@/app/settings/account').then(mod => mod.SettingsAccount);
 const SettingsSecurity = await import('@/app/settings/security').then(mod => mod.SettingsSecurity);
+const SettingsCredits = await import('@/app/settings/credits').then(mod => mod.SettingsCredits);
 const WelcomePage = await import('@/app/welcome/welcome-page.tsx').then(mod => mod.default);
 const LoginPage = await import('@/app/auth/login-page.tsx').then(mod => mod.default);
 const GithubLoginPage = await import('@/app/auth/github-login-page.tsx').then(mod => mod.default);
 const RegisterPage = await import('@/app/auth/register-page.tsx').then(mod => mod.default);
 const DashboardPage = await import('@/app/dashboard/page.tsx').then(mod => mod.default);
 const KitchensinkPage = await import('@/app/kitchensink/page.tsx').then(mod => mod.default);
+const PortainerTemplatesPage = await import('@/app/app-stacks/portainer-templates-page.tsx').then(mod => mod.default);
+const AppLaunchPage = await import('@/app/app-stacks/app-launch-page.tsx').then(mod => mod.default);
+const AppStacksPage = await import('@/app/app-stacks/app-stacks-page.tsx').then(mod => mod.default);
+const AppStackDetailsPage = await import('@/app/app-stacks/app-stack-details-page.tsx').then(mod => mod.default);
 
 const ApiRouter = () => {
     const { api: apiClient } = useApi()
@@ -68,6 +73,34 @@ const ApiRouter = () => {
                                     index: true,
                                     Component: DashboardPage,
                                 }
+                            ]
+                        },
+                        {
+                            path: "stacks", // secops
+                            Component: MainLayout,
+                            children: [
+                                {
+                                    index: true,
+                                    Component: AppStacksPage,
+                                    // loader: () => {
+                                    //     return apiClient.getInventoryItems("app-stack");
+                                    // },
+                                },
+                                {
+                                    path: "details/:stackId",
+                                    Component: AppStackDetailsPage,
+                                    loader: ({ params }) => {
+                                        return apiClient.getInventoryItem("app-stack", params.stackId!);
+                                    },
+                                },
+                                {
+                                    path: "launch",
+                                    Component: AppLaunchPage,
+                                },
+                                {
+                                    path: "portainer",
+                                    Component: PortainerTemplatesPage,
+                                },
                             ]
                         },
                         {
@@ -171,10 +204,6 @@ const ApiRouter = () => {
                                 }
                             ],
                         },
-                        // {
-                        //     path: "settings/:section",
-                        //     Component: SettingsPage,
-                        // },
                         {
                             path: "settings",
                             Component: SettingsPage,
@@ -182,6 +211,7 @@ const ApiRouter = () => {
                                 { path: "profile", Component: SettingsProfile },
                                 { path: "account", Component: SettingsAccount },
                                 { path: "security", Component: SettingsSecurity },
+                                { path: "credits", Component: SettingsCredits },
                             ]
                         },
                         {
@@ -189,7 +219,6 @@ const ApiRouter = () => {
                             Component: AdminLayout,
                             children: [
                                 {
-                                    //path: "kitchensink",
                                     index: true,
                                     Component: KitchensinkPage,
                                 },
@@ -219,13 +248,6 @@ const ApiRouter = () => {
                                 {
                                     path: "inventory",
                                     children: [
-                                        // {
-                                        //     path: "apps",
-                                        //     Component: InventoryPage,
-                                        //     loader: () => {
-                                        //         return apiClient.getInventoryItems("compose-app");
-                                        //     },
-                                        // },
                                         {
                                             path: ":itemType",
                                             Component: InventoryPage,

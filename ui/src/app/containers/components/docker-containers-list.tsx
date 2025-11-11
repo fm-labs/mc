@@ -120,7 +120,7 @@ const DockerContainersList = () => {
     //const [autorefreshInterval, setAutoRefreshInterval] = React.useState<number | null>(30000);
 
     const containerLogStreamUrl = React.useMemo(() => selectedContainer
-            ? `${apiBaseUrl}api/containers/${config.hostId}/containers/${selectedContainer}/logs/stream`:null,
+            ? `${apiBaseUrl}/api/containers/${config.hostId}/containers/${selectedContainer}/logs/stream`:null,
         [selectedContainer, config.hostId, apiBaseUrl]);
 
     const groupedData = React.useMemo(() => {

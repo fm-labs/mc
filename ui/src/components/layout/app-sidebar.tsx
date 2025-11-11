@@ -11,6 +11,8 @@ import {
 import { navigationData } from "@/components/layout/data/app-navigation-data.ts";
 import { TeamSwitcher } from "@/components/layout/team-switcher.tsx";
 import { appSidebarData } from "@/components/layout/data/app-sidebar-data.ts";
+import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
+import {NavFindings} from "@/components/layout/nav-findings.tsx";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
@@ -35,6 +37,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={navigationData?.navMain as any[]} />
+                <NavFindings items={navigationData?.navFindings} />
             </SidebarContent>
             <SidebarFooter>
                 <NavUser />

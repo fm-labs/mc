@@ -10,6 +10,7 @@ import validator from "@rjsf/validator-ajv8";
 import Form from "@rjsf/shadcn";
 import React from "react";
 import InventorySchemaForm from "@/app/inventory/components/inventory-schema-form.tsx";
+import InventoryDebug from "@/app/inventory/components/inventory-debug.tsx";
 
 
 const InventoryPage = () => {
@@ -46,10 +47,7 @@ const InventoryPage = () => {
                 </Header>
                 {/*<InventorySchemaForm />*/}
                 <InventoryDataTable />
-                <DevOnly>
-                    <hr />
-                    {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
-                </DevOnly>
+                <InventoryDebug />
             </MainContent>
         </InventoryProvider>
     );
