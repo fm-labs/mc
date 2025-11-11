@@ -1,0 +1,25 @@
+{
+  "actions": [
+    {
+      "id": "login",
+      "name": "Login",
+      "description": "Authenticate to the container registry using the provided credentials",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "store": {
+            "type": "boolean",
+            "default": true,
+            "description": "Store credentials in the system's secure credential store"
+          },
+          "remote_login_host": {
+            "type": "string",
+            "title": "Remote Login Host",
+            "description": "If specified, perform the login on this remote host instead of the local system"
+          }
+        }
+      }
+    }
+  ]
+}

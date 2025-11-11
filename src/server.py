@@ -80,8 +80,11 @@ app.add_middleware(
 # Global exception handlers that emit Problem JSON responses
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_: Request, exc: HTTPException):
-    problem = Problem(title=exc.detail or exc.status_code, status=exc.status_code)
-    return JSONResponse(status_code=exc.status_code, content=problem.model_dump(),
+    problem = Problem(error=exc.detail or exc.status_code,
+                      status=exc.status_code,
+                      detail=str(exc.detail))
+    return JSONResponse(status_code=exc.status_code,
+                        content=problem.model_dump(),
                         media_type="application/json")
 
 # @app.exception_handler(NotFoundError)
@@ -90,16 +93,16 @@ async def http_exception_handler(_: Request, exc: HTTPException):
 #     return JSONResponse(status_code=404, content=problem.model_dump(),
 #                         media_type="application/problem+json")
 
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(_: Request, exc: RequestValidationError):
-    problem = Problem(
-        title="Validation Error",
-        status=422,
-        detail="Request validation failed.",
-        errors={"details": exc.errors()}
-    )
-    return JSONResponse(status_code=422, content=problem.model_dump(),
-                        media_type="application/problem+json")
+# @app.exception_handler(RequestValidationError)
+# async def validation_exception_handler(_: Request, exc: RequestValidationError):
+#     problem = Problem(
+#         error="Request validation error",
+#         status=422,
+#         detail="Request validation failed.",
+#         #errors={"details": exc.errors()}
+#     )
+#     return JSONResponse(status_code=422, content=problem.model_dump(),
+#                         media_type="application/problem+json")
 
 # Reusable OpenAPI error responses (show up on every route that includes them)
 problem_response_ref = {"model": Problem, "description": "Problem Details (RFC 7807)",

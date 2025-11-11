@@ -2,7 +2,7 @@
   "actions": [
     {
       "id": "sync",
-      "name": "Sync Project",
+      "name": "Sync Template",
       "type": "form",
       "inputSchema": {
         "type": "object",
@@ -12,35 +12,31 @@
             "default": false,
             "description": "Force synchronization even if there are no detected changes.",
             "title": "Force"
-          },
-          "reset": {
-            "type": "boolean",
-            "default": false,
-            "description": "Reset the repo. This will discard local changes.",
-            "title": "Reset"
           }
         }
       }
     },
     {
       "id": "configure",
-      "name": "Configure Project",
+      "name": "Configure Environment",
       "type": "form",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "confirm": {
-            "type": "boolean",
-            "default": true,
-            "description": "Confirm updating this item.",
-            "title": "Confirm"
+          "environment": {
+            "type": "object",
+            "title": "Override Environment Variables",
+            "description": "Set environment variables for the application stack.",
+            "additionalProperties": {
+              "type": "string"
+            }
           }
         }
       }
     },
     {
       "id": "deploy",
-      "name": "Deploy Project",
+      "name": "Deploy Stack",
       "type": "form",
       "inputSchema": {
         "type": "object",
@@ -53,6 +49,11 @@
           }
         }
       }
+    },
+    {
+      "id": "template",
+      "name": "View Template",
+      "type": "view"
     }
   ]
 }

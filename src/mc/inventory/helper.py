@@ -41,9 +41,9 @@ def default_inventory_item_meta_lookup(item_type: str) -> dict:
         return {}
 
 
-def get_schema_handler(item_type: str):
+def lookup_inventory_schema(item_type: str):
     return default_inventory_item_schema_lookup(item_type)
 
 
-def get_meta_handler(item_type: str):
+def lookup_inventory_metadata(item_type: str):
     return default_inventory_item_meta_lookup(item_type)

@@ -1,6 +1,90 @@
 {
   "actions": [
     {
+      "id": "configure_aws_profile",
+      "name": "Configure AWS Profile",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "region": {
+            "type": "string",
+            "description": "Primary AWS region for this profile",
+            "default": "us-east-1"
+          },
+          "aws_access_key_id": {
+            "type": "string",
+            "description": "aws_access_key_id"
+          },
+          "aws_secret_access_key": {
+            "type": "string",
+            "description": "aws_secret_access_key"
+          },
+          "role_arn": {
+            "type": "string",
+            "description": "ARN of the role to assume"
+          },
+          "role_session_name": {
+            "type": "string",
+            "description": "Session name for role assumption",
+            "default": ""
+          },
+          "external_id": {
+            "type": "string",
+            "description": "External ID for role assumption",
+            "default": ""
+          },
+          "mfa_serial": {
+            "type": "string",
+            "description": "MFA device serial number",
+            "default": ""
+          },
+          "mfa_token": {
+            "type": "string",
+            "description": "MFA token code",
+            "default": ""
+          }
+        }
+      }
+    },
+    {
+      "id": "configure_aws_sso_profile",
+      "name": "Configure AWS SSO Profile",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sso_start_url": {
+            "type": "string",
+            "description": "SSO start URL"
+          },
+          "sso_region": {
+            "type": "string",
+            "description": "SSO region"
+          },
+          "sso_account_id": {
+            "type": "string",
+            "description": "SSO account ID"
+          },
+          "sso_role_name": {
+            "type": "string",
+            "description": "SSO role name"
+          },
+          "region": {
+            "type": "string",
+            "description": "Primary AWS region for this profile",
+            "default": "us-east-1"
+          }
+        },
+        "required": [
+          "sso_start_url",
+          "sso_region",
+          "sso_account_id",
+          "sso_role_name"
+        ]
+      }
+    },
+    {
       "id": "scan",
       "name": "Scan",
       "type": "form",

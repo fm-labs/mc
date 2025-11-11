@@ -1,7 +1,7 @@
 from typing import List
 
 
-from mc.inventory.helper import gen_inventory_key, get_schema_handler, get_meta_handler
+from mc.inventory.helper import gen_inventory_key, lookup_inventory_schema, lookup_inventory_metadata
 from mc.inventory.storage import get_inventory_storage_instance
 
 
@@ -11,7 +11,7 @@ def get_inventory_schema(item_type: str) -> dict:
     Get the JSON schema for a specific inventory item type.
     The schema files are located in "mc.inventory" module under "schemas" directory.
     """
-    schema = get_schema_handler(item_type)
+    schema = lookup_inventory_schema(item_type)
     if not schema or len(schema) == 0:
         raise RuntimeError(f"Schema for item type '{item_type}' not found.")
     return schema
@@ -22,7 +22,7 @@ def get_inventory_metadata(item_type: str) -> dict:
     Get metadata for a specific inventory item type.
     The metadata files are located in "mc.inventory" module under "schemas" directory.
     """
-    metadata = get_meta_handler(item_type)
+    metadata = lookup_inventory_metadata(item_type)
     if not metadata or len(metadata) == 0:
         raise RuntimeError(f"Metadata for item type '{item_type}' not found.")
     return metadata

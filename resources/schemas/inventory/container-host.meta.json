@@ -8,7 +8,8 @@
         "type": "object",
         "properties": {},
         "required": []
-      }
+      },
+      "timeout": 10000
     },
     {
       "id": "info",

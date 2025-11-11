@@ -9,7 +9,7 @@
                 "docker",
                 "run",
                 "--rm",
-                "kloudia-xscan:latest",
+                "fmlabs/xscan:latest",
                 "xscan"
             ],
             "env": {},
@@ -63,8 +63,7 @@
                     }
                 },
                 "required": [
-                    "image_name",
-                    "output_dir"
+                    "image_name"
                 ]
             },
             "output_schema": {

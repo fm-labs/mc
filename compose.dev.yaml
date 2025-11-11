@@ -19,12 +19,15 @@ services:
     secrets:
       - credentials_vault_pass
     volumes:
-      #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       - ${PWD}/.local/config:/app/config
-      #- ${PWD}/.local/home:/home/app/
+      - ${PWD}/.local/aws_config.local:/home/app/.aws/config:ro
       - ${PWD}/data:/data
+      - ../mc-templates:/mc-templates:ro
+      - ../fm-templates:/fm-templates:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      #- /Users/phil/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
+      #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
+      #- ${PWD}/.local/home:/home/app/
+      #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     environment:
       #- SSH_AUTH_SOCK=/ssh-agent
       #- SSH_CONFIG=/data/ssh_config
@@ -64,6 +67,8 @@ services:
           path: ./container
         - action: rebuild
           path: ./uv.lock
+        #- action: rebuild
+        #  path: ./ui
         - action: rebuild
           path: Containerfile
         - action: restart

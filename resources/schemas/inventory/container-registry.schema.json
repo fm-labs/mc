@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "title": "Container Registry",
+  "description": "Container registry inventory item",
+  "version": "1.0.0",
+  "properties": {
+    "registry_url": {
+      "type": "string",
+      "title": "Registry URL"
+    },
+    "private": {
+      "type": "boolean",
+      "title": "Private registry (requires authentication)",
+      "default": false
+    },
+    "username": {
+      "type": "string",
+      "title": "Username",
+      "default": ""
+    },
+    "password": {
+      "type": "string",
+      "title": "Password",
+      "default": ""
+    }
+  },
+  "required": [
+    "registry_url"
+  ]
+}

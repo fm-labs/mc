@@ -12,21 +12,22 @@
         "azure",
         "gcp",
         "digitalocean",
-        "linode"
+        "linode",
+        "hetzner"
       ]
     },
-    "accountId": {
+    "account_id": {
       "type": "string",
-      "title": "Account ID"
+      "title": "Vendor Account ID"
     },
     "regions": {
       "type": "array",
-      "title": "Regions",
+      "title": "Vendor Regions",
       "items": {
         "type": "string"
       }
     },
-    "syncInterval": {
+    "sync_interval": {
       "type": "integer",
       "title": "Sync Interval (minutes)",
       "default": 60

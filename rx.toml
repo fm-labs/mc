@@ -16,7 +16,7 @@ dockerhub_repo = "fmlabs/mc:latest"
 [build]
 [build.app]
 what = "python-app"
-command_before = "cp -f ../rx/dist/rx*.whl ./libs/ && uv sync --upgrade"
+#command_before = "cp -f ../rx/dist/rx*.whl ./libs/ && uv sync --upgrade"
 command = "uv build"
 
 [build.wheel]

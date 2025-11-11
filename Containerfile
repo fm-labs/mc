@@ -25,13 +25,16 @@ RUN apk update && apk add --no-cache \
     rsync \
     iputils \
     libc-utils \
-    nginx
+    nginx \
+    aws-cli \
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
 
 
 # Install the MCP Gateway CLI (docker-mcp) to the Docker plugin path
 RUN mkdir -p /root/.docker/cli-plugins \
  && curl -fL -o /root/.docker/cli-plugins/docker-mcp \
-      https://github.com/docker/mcp-gateway/releases/download/v0.25.0/docker-mcp-linux-amd64.tar.gz \
+      https://github.com/docker/mcp-gateway/releases/download/v0.27.0/docker-mcp-linux-amd64.tar.gz \
  && tar -xzf /root/.docker/cli-plugins/docker-mcp -C /usr/local/bin/ \
  && chmod +x /usr/local/bin/docker-mcp
 
@@ -44,11 +47,6 @@ RUN addgroup -S app && \
 # Add user to docker group (gid = 999)
 # on alpine the group is 'ping' with gid 999
 RUN adduser app ping
-
-
-# Install the MCP Gateway CLI (docker-mcp) to the Docker plugin path
-#RUN cp -r /root/.docker /home/app/.docker && \
-#    chown -R app:app /home/app/.docker
 
 
 # Set file and directory permissions

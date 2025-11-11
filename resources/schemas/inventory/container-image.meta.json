@@ -7,6 +7,12 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "container_host": {
+            "type": "string",
+            "title": "Target container host",
+            "default": "localdocker",
+            "description": "The host where the container image will be pulled to"
+          },
           "tag": {
             "type": "string",
             "title": "Tag",
@@ -22,7 +28,8 @@
           }
         },
         "required": []
-      }
+      },
+      "timeout": 120000
     },
     {
       "id": "scan",

@@ -20,5 +20,10 @@ secrets/
 .DS_Store
 *.log
 *.tmp
-
+*.pass
+*.password
+*.secret
+*.vault
+*.vault.*
+*.local
 .env*
