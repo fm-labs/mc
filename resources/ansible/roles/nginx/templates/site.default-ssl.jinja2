@@ -1,0 +1,23 @@
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name _;
+
+    root   /var/www/html;
+    index  index.html;
+
+    access_log /var/log/nginx/access-ssl.log;
+    error_log /var/log/nginx/error-ssl.log;
+
+    # Using snakeoil certs for unknown server names for now
+    #include snippets/snakeoil.conf;
+
+    ssl_certificate {{ ssl_certificate }};
+    ssl_certificate_key {{ ssl_certificate_key }};
+
+    location / {
+        return 404;
+    }
+}
+

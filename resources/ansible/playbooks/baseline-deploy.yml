@@ -1,0 +1,72 @@
+---
+
+- name: Baseline setup for Debian-based servers
+  hosts: '{{ target }}'
+  gather_facts: no
+
+  vars:
+    deploy_user: "deploy"
+    deploy_home: "/home/deploy"
+    deploy_pubkey: ""
+
+  tasks:
+
+    - name: Create deploy group
+      group:
+        name: "{{deploy_user}}"
+        state: present
+        system: no
+        gid: 30000
+  
+    - name: Create deploy user
+      user:
+        name: "{{deploy_user}}"
+        group: "deploy"
+        state: present
+        shell: /bin/bash
+        createhome: yes
+        home: "{{deploy_home}}"
+        move_home: yes
+        system: no
+        uid: 30000
+        password_lock: yes
+
+    - name: Ensure deploy user home directory has correct ownership (no world access)
+      file:
+        path: "{{deploy_home}}"
+        state: directory
+        owner: "{{deploy_user}}"
+        group: "{{deploy_user}}"
+        mode: "0750"
+
+    - name: Check if docker group exists
+      command: getent group docker
+      register: docker_group_check
+      ignore_errors: yes
+
+    - name: Add deploy user to docker group
+      user:
+        name: "{{deploy_user}}"
+        groups: "docker"
+        append: yes
+      when: docker_group_check.rc == 0
+
+
+#    - name: Add deploy user to podman group
+#      user:
+#        name: "{{deploy_user}}"
+#        groups: "podman"
+#        append: yes
+        
+    - name: Install SSH keys for deploy user
+      authorized_key:
+        user: "{{deploy_user}}"
+        key: "{{deploy_pubkey}}"
+        state: present
+        manage_dir: yes
+        exclusive: no
+        #path: "{{deploy_home}}/.ssh/authorized_keys"
+        #comment: "{{ key.comment }}"
+      when:
+        - deploy_pubkey is defined
+        - deploy_pubkey != ""

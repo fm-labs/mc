@@ -1,0 +1,63 @@
+server {
+    listen 80;
+    server_name {{ domain_name }} {{ domain_aliases }};
+    return 301 https://{{ domain_name }}$request_uri;
+}
+
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name {{ domain_name }};
+
+    root /srv/www/{{ domain_name }}/www;
+
+    access_log /var/log/nginx/access-{{ domain_name }}.log;
+    error_log /var/log/nginx/error-{{ domain_name }}.log;
+
+    ssl_certificate {{ domain_ssl_certificate }};
+    ssl_certificate_key {{ domain_ssl_certificate_key }};
+
+    # redirect to www
+    return 301 https://www.{{ domain_name }}$request_uri;
+}
+
+
+
+
+# the subdomain mappings
+{% for domain_mapping in domain_mappings %}
+
+# {{ domain_mapping.subdomain }}.{{ domain_name }}
+server {
+    listen 80;
+    server_name {{ domain_mapping.subdomain }}.{{ domain_name }};
+    return 301 https://{{ domain_mapping.subdomain }}.{{ domain_name }}$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name {{ domain_mapping.subdomain }}.{{ domain_name }};
+
+    root /srv/www/{{ domain_name }}/{{ domain_mapping.subdomain }};
+
+    access_log /var/log/nginx/access-{{ domain_mapping.subdomain }}.{{ domain_name }}.log;
+    error_log /var/log/nginx/error-{{ domain_mapping.subdomain }}.{{ domain_name }}.log;
+
+    ssl_certificate {{ domain_ssl_certificate }};
+    ssl_certificate_key {{ domain_ssl_certificate_key }};
+
+    {% if domain_mapping.proxy_pass %}
+    location ^~ / {
+        proxy_pass {{ domain_mapping.proxy_pass }};
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    {% endif %}
+
+}
+{% endfor %}
