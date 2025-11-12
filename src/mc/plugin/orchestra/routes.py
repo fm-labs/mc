@@ -75,8 +75,8 @@ async def get_ansible_run_records() -> list[KoAnsibleRunModel]:
     """
     collection = get_ansible_runs_collection()
     records = (collection
-               .find({}, {"_id": 0, "stdout": 0, "stderr": 0, "events": 0, "stats": 0})
-               .sort("created_at", -1).limit(100))
+               .find({}, {"_id": 0, "stdout": 0, "stderr": 0, "events": 0})
+               .sort("created_at", -1).limit(50))
 
     if not records:
         #raise HTTPException(status_code=404, detail="No records found")

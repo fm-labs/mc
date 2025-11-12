@@ -22,15 +22,14 @@ services:
       - ${PWD}/.local/config:/app/config
       - ${PWD}/.local/aws_config.local:/home/app/.aws/config:ro
       - ${PWD}/data:/data
-      - ../mc-templates:/mc-templates:ro
-      - ../fm-templates:/fm-templates:ro
+      - ../mc-templates:/templates/mc:ro
+      - ../fm-templates:/templates/fm:ro
+      - ../../amatic/javang-git/gsmc:/templates/gsmc:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
       #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       #- ${PWD}/.local/home:/home/app/
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     environment:
-      #- SSH_AUTH_SOCK=/ssh-agent
-      #- SSH_CONFIG=/data/ssh_config
       - DEV_MODE=0
       - REDIS_HOST=redis
       - REDIS_PORT=6379
@@ -38,11 +37,15 @@ services:
       - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
       - HOST_DATA_DIR=${PWD}/data
       - HOST_CONFIG_DIR=${PWD}/config
-      - CONFIG_DIR=/app/config
-      - RESOURCES_DIR=/app/resources
-      - DATA_DIR=/data
+      - FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
+      - FLOWER_USER_PASS=${FLOWER_USER_PASS:-password}
+      #- CONFIG_DIR=/app/config
+      #- RESOURCES_DIR=/app/resources
+      #- DATA_DIR=/data
       #- VAULT_FILE=/app/config/credentials.vault
       - VAULT_PASS_FILE=/run/secrets/credentials_vault_pass
+      #- SSH_AUTH_SOCK=/ssh-agent
+      #- SSH_CONFIG=/data/ssh_config
     env_file:
       - ./.env.docker.local
     depends_on:

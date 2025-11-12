@@ -10,6 +10,14 @@ RUN bun run build
 
 FROM python:3.13.9-alpine3.22 AS final
 
+LABEL org.opencontainers.image.vendor="fmlabs" \
+    org.opencontainers.image.title="mission control 🚀" \
+    org.opencontainers.image.description="Smart orchestration tool" \
+    org.opencontainers.image.version="v0.1.0" \
+    org.opencontainers.image.url="https://github.com/fm-labs/mc" \
+    org.opencontainers.image.source="https://github.com/fm-labs/mc" \
+    org.opencontainers.image.documentation="https://github.com/fm-labs/mc"
+
 RUN apk update && apk add --no-cache \
     file \
     openssh \
@@ -126,6 +134,10 @@ RUN mkdir -p /etc/nginx/ssl/ && \
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 
+ENV CONFIG_DIR=/app/config
+ENV RESOURCES_DIR=/app/resources
+ENV DATA_DIR=/data
+
 CMD ["supervisor"]
 USER app
 
@@ -136,12 +148,3 @@ EXPOSE 5000
 # Flower port
 EXPOSE 5555
 
-
-# Metadata
-LABEL org.opencontainers.image.vendor="fmlabs" \
-    org.opencontainers.image.url="https://github.com/fm-labs/mc" \
-    org.opencontainers.image.source="https://github.com/fm-labs/mc" \
-    org.opencontainers.image.title="Mission Control" \
-    org.opencontainers.image.description="Smart orchestration tool" \
-    org.opencontainers.image.version="v0.1.0" \
-    org.opencontainers.image.documentation="https://github.com/fm-labs/mc"

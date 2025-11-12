@@ -28,7 +28,7 @@ def handle_rsync_run(run_cfg: RunConfig, ctx: GlobalContext, mkdir=True):
         raise FileNotFoundError(f"Source path '{srcpath}' does not exist.")
 
     _src: str = str(srcpath.absolute())
-    rsync_args = ["-a", "-v"]
+    rsync_args = ["-r", "-t", "-z", "-v", "-c"] # recursive, times, compress, verbose, checksum
     #cmd += ["--delete"]
 
     [destschema, dhostpath] = split_url(dest)

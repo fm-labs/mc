@@ -38,7 +38,7 @@ class KoAnsibleHostModel(BaseModel):
 
 class KoAnsibleRunModel(BaseModel):
     run_id: str
-    project_id: Optional[str] = None
+    project_path: Optional[str] = None
     playbook: Optional[str] = None
     status: Optional[str] = None
     rc: Optional[int] = None
@@ -52,5 +52,5 @@ class KoAnsibleRunModel(BaseModel):
 
     def __str__(self):
         return (f"AnsibleRun(run_id={self.run_id}, status={self.status}, rc={self.rc}, "
-                f"project_id={self.project_id}, playbook={self.playbook}, "
+                f"project_path={self.project_path}, playbook={self.playbook}, "
                 f"stdout={self.stdout}, stderr={self.stderr})")

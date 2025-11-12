@@ -1,12 +1,56 @@
 import subprocess
-from pathlib import Path
-import shutil
 
-from mc.config import DATA_DIR
-from mc.inventory.item.compose_project import handle_compose_project_configure, handle_compose_project_deploy
+from mc.config import RESOURCES_DIR
+from mc.inventory.item.app_stack import handle_app_stack_action_prepare, handle_app_stack_action_deploy, \
+    handle_app_stack_action_sync
 from mc.inventory.items import create_inventory_item
 from mc.inventory.storage import get_inventory_storage_instance
-from orchestra.tasks import task_run_ansible_playbook
+from orchestra.tasks import task_run_ansible_playbook, task_run_ansible_playbook_from_repository
+
+
+def host_item_to_ansible_host(host: dict, return_as: str = "dict") -> str | dict:
+    """
+    Convert a host inventory item to Ansible host format.
+
+    :param host: Host inventory item dictionary.
+    :param return_as: 'str' to return as Ansible inventory string, 'dict' to return as dictionary of Ansible variables.
+    :return: Ansible host representation as string or dictionary.
+    """
+    props = host.get("properties", {})
+    hostname = props.get("hostname")
+    ip_address = props.get("ip_address", props.get("public_ip"))
+    ssh_hostname = props.get("ssh_hostname", hostname)
+    ssh_user = props.get("ssh_user", "")
+    ssh_port = props.get("ssh_port", "22")
+
+    ssh_key_path = props.get("ssh_key_path", "")  # deprecated
+    ssh_key_name = props.get("ssh_key_name", "")
+    if ssh_key_name:
+        ssh_key_path = f"~/.ssh/{ssh_key_name}"
+
+    python_path = props.get("pythonPath", "/usr/bin/python3")
+    # ansible_become_method = props.get("ansible_become_method", "sudo")
+    ansible_become_user = props.get("ansible_become_user", "root")
+    ansible_become_password = props.get("ansible_become_password", "")
+    ansible_become = props.get("ansible_become", "false")
+
+    if return_as == "str":
+        return f"{hostname} ansible_connection=ssh ansible_host={ssh_hostname} ansible_user={ssh_user} ansible_ssh_private_key_file={ssh_key_path} ansible_port={ssh_port} ansible_become={ansible_become} ansible_become_user={ansible_become_user} ansible_python_interpreter={python_path} \n"
+
+    if return_as == "dict":
+        return {
+            "ansible_connection": "ssh",
+            "ansible_host": ssh_hostname,
+            "ansible_user": ssh_user,
+            "ansible_ssh_private_key_file": ssh_key_path,
+            "ansible_port": ssh_port,
+            "ansible_python_interpreter": python_path,
+            "ansible_become": ansible_become,
+            "ansible_become_user": ansible_become_user,
+            "ansible_become_password": ansible_become_password,
+        }
+
+    raise ValueError(f"Unsupported return_as {return_as} (must be 'str' or 'dict')")
 
 
 def handle_host_ping(item: dict, action_params: dict) -> dict:
@@ -19,6 +63,7 @@ def handle_host_ping(item: dict, action_params: dict) -> dict:
     #    raise ValueError("IP address not found in item properties.")
     ping_target = props.get("ssh_hostname", props.get("ip_address", props.get("hostname", item.get("name"))))
     try:
+        print("Ping: ", ping_target)
         packet_count = action_params.get("count", "1")
         output = subprocess.check_output(["ping", "-c", packet_count, "-W", "1", ping_target], universal_newlines=True)
 
@@ -35,35 +80,37 @@ def handle_host_ping(item: dict, action_params: dict) -> dict:
 
 
 def handle_host_run_ansible_playbook(item: dict, action_params: dict) -> dict:
-    #host_name = item.get("properties", {}).get("hostname")
-    #if not host_name:
-    #    raise ValueError("Hostname not found in item properties.")
-    if not action_params.get("project"):
-        raise ValueError("Parameter 'project' is required.")
-    if not action_params.get("target"):
-        raise ValueError("Parameter 'target' is required.")
+    hostname = item.get("properties", {}).get("ssh_hostname")
+    if not hostname:
+        raise ValueError("Hostname not found in item properties.")
     if not action_params.get("playbook"):
         raise ValueError("Parameter 'playbook' is required.")
 
     task = task_run_ansible_playbook.apply_async(kwargs={
-        "project": action_params.get("project"),
-        "target": action_params.get("target"),
-        "playbook": action_params.get("playbook"),
-        "cmdline": action_params.get("cmdline", ""),
+        "project_path": f"{RESOURCES_DIR}/ansible",
+        "target": hostname,
+        "playbook": "playbooks/" + action_params.get("playbook"),
         "check": action_params.get("check", False),
     })
+    # task = task_run_ansible_playbook_from_repository.apply_async(kwargs={
+    #     "repository_url": f"file://{RESOURCES_DIR}",
+    #     "project_dir": "ansible/",
+    #     "target": hostname,
+    #     "playbook": "playbooks/" + action_params.get("playbook"),
+    #     "check": action_params.get("check", False),
+    # })
     return {"task_id": task.id}
 
 
 def handle_host_ssh_probe(item: dict, action_params: dict) -> dict:
-    host_name = item.get("properties", {}).get("hostname")
-    if not host_name:
+    hostname = item.get("properties", {}).get("hostname")
+    if not hostname:
         raise ValueError("Hostname not found in item properties.")
     import socket
     port = action_params.get("port", 22)
     timeout = action_params.get("timeout", 5)
     try:
-        with socket.create_connection((host_name, port), timeout=timeout):
+        with socket.create_connection((hostname, port), timeout=timeout):
             return {"status": "open", "port": port}
     except (socket.timeout, ConnectionRefusedError):
         return {"status": "closed", "port": port}
@@ -79,8 +126,8 @@ def handle_host_setup_container_host(item: dict, action_params: dict) -> dict:
 def handle_host_setup_webstack(item: dict, action_params: dict) -> dict:
     # todo run the appropriate compose project template to setup web host
 
-    host_name = item.get("properties", {}).get("hostname")
-    if not host_name:
+    hostname = item.get("properties", {}).get("hostname")
+    if not hostname:
         raise ValueError("Hostname not found in item properties.")
 
     project_name = action_params.get("project_name")
@@ -91,58 +138,48 @@ def handle_host_setup_webstack(item: dict, action_params: dict) -> dict:
     if not webstack_enabled:
         raise ValueError("Parameter 'webstack_enabled' is required.")
 
-    app_name = f"traefik-ssl-{host_name}"
+    app_name = f"traefik-ssl-{hostname}"
 
-    # 1. create a compose project from template
-    # check if compose project already exists
+    # 1. create an app stack item if not exists
     storage = get_inventory_storage_instance()
-    existing_cp = storage.get_item_by_name("compose_project", app_name)
-    if existing_cp:
-        cp_item = existing_cp
+    existing_stack = storage.get_item_by_name("app_stack", app_name)
+    if existing_stack:
+        stack_item = existing_stack
     else:
-        template_dir = "resources/compose-templates/traefik-ssl"
-        app_dir = f"projects/{project_name}/apps/{app_name}"
-        target_dir = f"{DATA_DIR}/{app_dir}"
-        create_compose_project_app_dir_from_template(template_dir, target_dir)
-
-        cp = {
-            "source_url": f"file://{template_dir}",
-            "target_url": f"ssh://{host_name}",
-            "domain_name": "",
-            "project_name": project_name,
-            "app_name": app_name,
-            "app_dir": app_dir,
-            "template_url": f"file://{template_dir}",
-            "description": "Traefik SSL Web Host",
-            "version": "1.0.0"
-        }
-        cp_item = {
+        stack_item = {
             "name": app_name,
-            "properties": cp
+            "properties": {
+                "template_repository": f"file://{RESOURCES_DIR}/compose-templates",
+                "stackfile": "traefik-ssl/compose.yaml",
+                "container_host": hostname,
+                "domain_name": "",
+                "description": "Traefik SSL Web Host",
+                "version": "1.0.0"
+            }
         }
-        #storage.save_item("compose_project", cp_item)
-        cp_item = create_inventory_item("compose_project", cp_item)
+        stack_item = create_inventory_item("app_stack", stack_item) # assigns ID
 
-    # 2. configure the compose project to run on the host
-    handle_compose_project_configure(cp_item, {})
-    # 3. deploy the compose project to the host
-    return handle_compose_project_deploy(cp_item, {})
+    # 2. sync the compose project from template repository
+    handle_app_stack_action_sync(stack_item, {"background": False})
+    # 3. configure the compose project to run on the host
+    handle_app_stack_action_prepare(stack_item, {"background": False})
+    # 4. deploy the compose project to the host
+    return handle_app_stack_action_deploy(stack_item, {"background": True})
 
 
 
-
-def create_compose_project_app_dir_from_template(template_dir: str, target_dir: str) -> None:
-    # check if target_dir exists
-    target_path = Path(target_dir)
-    if target_path.exists():
-        raise FileExistsError(f"Target directory '{target_dir}' already exists.")
-
-    template_path = Path(template_dir)
-    if not template_path.exists():
-        raise FileNotFoundError(f"Template directory '{template_dir}' does not exist.")
-
-    # copy template directory to target directory
-    shutil.copytree(template_dir, target_dir)
+# def create_compose_project_app_dir_from_template(template_dir: str, target_dir: str) -> None:
+#     # check if target_dir exists
+#     target_path = Path(target_dir)
+#     if target_path.exists():
+#         raise FileExistsError(f"Target directory '{target_dir}' already exists.")
+#
+#     template_path = Path(template_dir)
+#     if not template_path.exists():
+#         raise FileNotFoundError(f"Template directory '{template_dir}' does not exist.")
+#
+#     # copy template directory to target directory
+#     shutil.copytree(template_dir, target_dir)
 
 
 actions = {

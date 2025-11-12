@@ -16,6 +16,7 @@ import {KeyValueTable} from "@/components/key-value-table.tsx";
 import InventoryItemActionButtons from "@/app/inventory/components/inventory-item-action-buttons.tsx";
 import MyForm from "@/components/rjsf/my-form.tsx";
 import AppStackConfig from "@/app/app-stacks/components/app-stack-config.tsx";
+import AppStackStackfile from "@/app/app-stacks/components/app-stack-stackfile.tsx";
 
 const networkConfigSchema = {
     title: "Network Configuration",
@@ -286,7 +287,17 @@ const AppStackDetailsPage = () => {
                 </div>
 
                 <div className={""}>
-                    <AppStackConfig />
+
+                    <h4 className={"h4 font-bold mb-1"}>Stack configuration</h4>
+                    <div className={"border p-2 mb-4 rounded-lg"}>
+                        <AppStackConfig />
+                    </div>
+
+                    <h4 className={"h4 font-bold mb-1"}>Stack file</h4>
+                    <div className={"border p-2 mb-4 rounded-lg"}>
+                        <AppStackStackfile />
+                    </div>
+
 
                     {/*<MyForm schema={networkConfigSchema} />*/}
                     {/*<MyForm schema={stackNetworkConfigSchema} />*/}

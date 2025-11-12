@@ -5,7 +5,7 @@ from orchestra.celery import celery
 
 
 @celery.task(bind=True)
-def checkout_or_update_git_repo(self, repo_url: str, checkout_dir: str, private_key_file=None) -> dict:
+def clone_or_update_git_repo(self, repo_url: str, checkout_dir: str, private_key_file=None) -> dict:
 
     stdout, stderr, rc = "", "", -1
     msg = ""

@@ -173,13 +173,15 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
                     && Array.isArray((inputSchema as any).required)
                     && (inputSchema as any).required.includes(key);
 
+                const hiddenByDefault = !isRequired && idx >= 10;
+
                 return {
                     accessorKey: key,
                     accessorFn: (row: any) => row.properties ? row.properties[key]:undefined,
                     header: key,
                     enableColumnFilter: true,
                     enableHiding: true,
-                    meta: { schema: props[key], isProperty: true, keyName: key, hiddenByDefault: idx >= 5 && !isRequired }
+                    meta: { schema: props[key], isProperty: true, keyName: key, hiddenByDefault: hiddenByDefault }
                 };
             });
 

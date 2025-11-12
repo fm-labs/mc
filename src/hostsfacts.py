@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import tempfile
 import time
 import shutil
 from typing import Dict, Any, Iterable, List, Union
@@ -9,6 +10,7 @@ import ansible_runner
 
 from mc.config import DATA_DIR, RESOURCES_DIR
 from mc.db.mongodb import get_mongo_collection
+from mc.inventory.item.host import host_item_to_ansible_host
 
 # ---------- Tunable thresholds ----------
 THRESHOLDS = {
@@ -273,13 +275,19 @@ def add_host_fact_finding(host_id: str, host_name: str, check_name: str, severit
         },
         upsert=True,
     )
+    
 
 
 if __name__ == "__main__":
 
+    # prepare data directories
+    os.makedirs(f"{DATA_DIR}/ansible", exist_ok=True)
+
+    # fetch hosts with monitoring enabled
     host_collection = get_mongo_collection("inventory", "host")
     hosts = host_collection.find({"properties.monitoring_enabled": True})
 
+    # determine subset from command line
     subset = "min"  # "all" or "min"
     if len(sys.argv) > 1:
         subset = sys.argv[1]
@@ -287,11 +295,10 @@ if __name__ == "__main__":
             print("Usage: hostsfacts.py [all|min]")
             sys.exit(1)
 
+    # generate ansible inventory
     ansible_hosts_content = "[all]\n"
     ansible_hosts_dict = {}
-
     host_fact_check = {}
-
     for host in hosts:
         print("Checking facts for " + host.get("name"))
         props = host.get("properties", {})
@@ -305,64 +312,42 @@ if __name__ == "__main__":
             print("Skipping: no hostname defined")
             continue
 
-        ip_address = props.get("ip_address", props.get("public_ip"))
-        ssh_hostname = props.get("ssh_hostname", hostname)
-        ssh_user = props.get("ssh_user", "")
-        ssh_port = props.get("ssh_port", "22")
-
-        ssh_key_path = props.get("ssh_key_path", "") # deprecated
-        ssh_key_name = props.get("ssh_key_name", "")
-        if ssh_key_name:
-            ssh_key_path = f"~/.ssh/{ssh_key_name}"
-
-        python_path = props.get("pythonPath", "/usr/bin/python3")
-        # ansible_become_method = props.get("ansible_become_method", "sudo")
-        ansible_become_user = props.get("ansible_become_user", "root")
-        ansible_become_password = props.get("ansible_become_password", "")
-        ansible_become = props.get("ansible_become", "false")
-
-        ansible_hosts_content += f"{hostname} ansible_connection=ssh ansible_host={ssh_hostname} ansible_user={ssh_user} ansible_ssh_private_key_file={ssh_key_path} ansible_port={ssh_port} ansible_become={ansible_become} ansible_become_user={ansible_become_user} ansible_python_interpreter={python_path} \n"
-
-        ansible_hosts_dict[hostname] = {
-            "ansible_connection": "ssh",
-            "ansible_host": ssh_hostname,
-            "ansible_user": ssh_user,
-            "ansible_ssh_private_key_file": ssh_key_path,
-            "ansible_port": ssh_port,
-            "ansible_python_interpreter": python_path,
-            "ansible_become": ansible_become,
-            "ansible_become_user": ansible_become_user,
-            "ansible_become_password": ansible_become_password,
-        }
-
+        ansible_hosts_content += host_item_to_ansible_host(host, return_as="str")
+        ansible_hosts_dict[hostname] = host_item_to_ansible_host(host, return_as="dict")
         host_fact_check[hostname] = {}
-
-
 
     print(ansible_hosts_content)
     print(ansible_hosts_dict)
 
-    with open(f"{DATA_DIR}/ansible_hosts", "w") as f:
+    with open(f"{DATA_DIR}/ansible/ansible_hosts", "w") as f:
         f.write(ansible_hosts_content)
 
-    with open(f"{DATA_DIR}/ansible_hosts.json", "w") as f:
+    with open(f"{DATA_DIR}/ansible/ansible_hosts.json", "w") as f:
         json.dump(ansible_hosts_dict, f)
 
-    privdata_dir = f"{DATA_DIR}/privdir"
+    # run facts gathering playbook with ansible-runner in a temporary privatedata dir (will be deleted after run)
+    # copy playbook from resources to privdata_dir/project
+    tmp_privdata_dir = tempfile.TemporaryDirectory(prefix="hostfacts-privdata-", dir=f"{DATA_DIR}/ansible")
+    privdata_dir = tmp_privdata_dir.name
+
     os.makedirs(privdata_dir, exist_ok=True)
-    # copy playbook from resources to privdata_dir/playbooks
-    os.makedirs(f"{privdata_dir}/playbooks", exist_ok=True)
-    shutil.copyfile(f"{RESOURCES_DIR}/playbooks/facts-all.yml", f"{privdata_dir}/playbooks/facts-all.yml")
-    shutil.copyfile(f"{RESOURCES_DIR}/playbooks/facts-min.yml", f"{privdata_dir}/playbooks/facts-min.yml")
-    os.makedirs(f"{privdata_dir}/data/ansible_cache", exist_ok=True)
+    os.makedirs(f"{privdata_dir}/project", exist_ok=True)
+    shutil.copyfile(f"{RESOURCES_DIR}/ansible/playbooks/facts-all.yml", f"{privdata_dir}/project/facts-all.yml")
+    shutil.copyfile(f"{RESOURCES_DIR}/ansible/playbooks/facts-min.yml", f"{privdata_dir}/project/facts-min.yml")
 
     r = ansible_runner.run(
         private_data_dir=privdata_dir,
         inventory={'all': {'hosts': ansible_hosts_dict}},
-        playbook=f"playbooks/facts-{subset}.yml",
+        playbook=f"facts-{subset}.yml",
         extravars={"target": "all"},
-        envvars={"ANSIBLE_GATHERING": "smart", "ANSIBLE_GATHER_TIMEOUT": "10", "ANSIBLE_CACHE_PLUGIN": "jsonfile",
-                 "ANSIBLE_CACHE_PLUGIN_CONNECTION": "data/ansible_cache"},
+        envvars={"ANSIBLE_GATHERING": "smart", 
+                 "ANSIBLE_GATHER_TIMEOUT": "10", 
+                 "ANSIBLE_CACHE_PLUGIN": "jsonfile",
+                 "ANSIBLE_CACHE_PLUGIN_CONNECTION": f"{DATA_DIR}/ansible/ansible_cache",
+                 "ANSIBLE_NOCOLOR": "1",
+                 "ANSIBLE_NOCOWS": "1",
+                 "ANSIBLE_ROLES_PATH": f"./roles:{RESOURCES_DIR}/ansible/roles"
+                 },
     )
 
     print("status:", r.status, "rc:", r.rc)
@@ -486,9 +471,9 @@ if __name__ == "__main__":
             )
 
     # Save facts to JSON file
-    with open(f"{DATA_DIR}/ansible_events.json", "w") as f:
+    with open(f"{DATA_DIR}/ansible/ansible_events.json", "w") as f:
         json.dump(events, f, indent=2)
-    with open(f"{DATA_DIR}/facts_by_host_{subset}.json", "w") as f:
+    with open(f"{DATA_DIR}/ansible/facts_by_host_{subset}.json", "w") as f:
         json.dump(facts_by_host, f, indent=2)
 
     # # save facts to MongoDB

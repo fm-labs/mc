@@ -1,7 +1,9 @@
 import json
+import os.path
 from dataclasses import dataclass
 from pathlib import Path
 import shutil
+import re
 
 import dotenv
 import yaml
@@ -9,7 +11,7 @@ import yaml
 from mc.config import DATA_DIR
 from mc.inventory.storage import get_inventory_storage_instance
 from mc.plugin.containers.tasks import deploy_compose_project_to_container_host
-from mc.tasks import checkout_or_update_git_repo
+from mc.tasks import clone_or_update_git_repo
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,15 @@ class AppStackItem:
             raise ValueError("AppStackItem 'name' cannot be empty")
 
     @property
+    def slug(self) -> str:
+        # normalize app_name
+        # normalize with regex to only allow alphanumeric and hyphens
+        slug = (self.name.lower().replace(" ", "-").replace("_", "-")
+                    .replace("/", "-"))
+        slug = re.sub(r"[^a-z0-9\-]", "", slug)
+        return slug
+
+    @property
     def app_dir_path(self) -> Path:
         return _build_app_dir_path(app_name=self.name)
 
@@ -59,6 +70,21 @@ class AppStackItem:
             template_config = json.load(f)
         return template_config
 
+    def read_stackfile(self) -> str:
+        """
+        Read and return the stackfile (e.g. docker-compose.yml) content for the app stack.
+        The stackfile is expected to be in the app directory.
+        Raises FileNotFoundError if the stackfile does not exist.
+        """
+        app_dir = self.app_dir_path
+        stackfile_name = os.path.basename(self.template_stackfile) or "compose.yaml"
+        stackfile_path = app_dir / stackfile_name
+        if not stackfile_path.exists() or not stackfile_path.is_file():
+            raise FileNotFoundError(
+                f"Stackfile '{stackfile_path}' does not exist for container app '{self.name}'")
+        with stackfile_path.open("r") as f:
+            stackfile_content = f.read()
+        return stackfile_content
 
     def sync_from_template_repository(self):
         """
@@ -287,6 +313,7 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
     if not template_repository:
         raise ValueError(f"App stack '{app.name}' does not have a template_repository defined for sync")
 
+    background = action_params.get("background", False)
     sschema, surl = template_repository.split("://", 1)
     if sschema in ["git", "github", "http", "https"]:
 
@@ -300,9 +327,11 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
         # return update_project_from_git(template_repository, str(app_dir.resolve()), private_key_file=source_ssh_key_file)
 
         template_repo_path = _build_template_repo_dir_path(template_repository)
-        task = checkout_or_update_git_repo.delay(template_repository, str(template_repo_path.resolve()))
-        return {"status": "syncing", "task_id": task.id}
-
+        if background:
+            task = clone_or_update_git_repo.delay(template_repository, str(template_repo_path.resolve()))
+            return {"status": "syncing", "task_id": task.id}
+        else:
+            return clone_or_update_git_repo(template_repository, str(template_repo_path.resolve()))
     else:
         raise ValueError(f"App stack '{app.name}' has unsupported template_repository schema '{sschema}'")
 
@@ -339,7 +368,7 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
             compose_files.append(kf)
 
     result = deploy_compose_project_to_container_host(host_url=container_host_url,
-                                                      app_name=item_name,
+                                                      app_name=app.slug,
                                                       app_dir=str(app_dir.resolve()),
                                                       compose_args={
                                                           "composefile": compose_files,
@@ -349,9 +378,20 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
 
 
 def handle_app_stack_view_template_config(item: dict, view_params: dict) -> dict:
+    """
+    Return the content of the template.json configuration for the app stack.
+    """
     app = AppStackItem.from_item_dict(item)
-    template = app.read_template_config()
-    return template
+    return app.read_template_config()
+
+
+def handle_app_stack_view_stackfile(item: dict, view_params: dict) -> dict:
+    """
+    Return the content of the stackfile (e.g. docker-compose.yml) for the app stack.
+    """
+    app = AppStackItem.from_item_dict(item)
+    content = app.read_stackfile()
+    return {"content": content}
 
 
 actions = {
@@ -362,4 +402,5 @@ actions = {
 
 views = {
     "template": handle_app_stack_view_template_config,
+    "stackfile": handle_app_stack_view_stackfile,
 }

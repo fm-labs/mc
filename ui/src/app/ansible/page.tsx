@@ -5,17 +5,20 @@ import { formatDistanceToNow } from "date-fns";
 import { EventSourceReader } from "@/components/event-source-reader.tsx";
 import { FEAT_ANSIBLE_ENABLED } from "@/constants.ts";
 import { useApi } from "@/context/api-context.tsx";
+import AnsibleRunnerStats from "@/app/ansible/components/ansible-runner-stats.tsx";
+import {Badge} from "@/components/ui/badge.tsx";
 
 
 type Job = {
     run_id: string;
-    project_id: string;
+    project_path: string;
     playbook: string;
     created_at: number; // unix
     status: "successful" | "failed" | "initialized" | "running" | string;
     events?: any[];
     stdout?: string;
     stderr?: string;
+    stats?: any
 };
 
 const statusClasses = (status: string) => {
@@ -33,13 +36,14 @@ const statusClasses = (status: string) => {
 };
 
 const JobStatus = ({ status }: { status: string }) => (
-    <span
-        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${statusClasses(
+    <Badge
+        variant={"outline"}
+        className={`text-sm ${statusClasses(
             status,
         )}`}
     >
     {status}
-  </span>
+  </Badge>
 );
 
 const JobEvent = ({ event }: { event: any }) => {
@@ -147,21 +151,21 @@ const OrchestraJobsPage = () => {
                                         onClick={() => handleJobClick(j.run_id)}
                                         className="cursor-pointer px-4 py-3 hover:bg-gray-200 dark:hover:bg-gray-800"
                                     >
-                                        <div className="text-xs">{j.project_id}</div>
-
-                                        <div className="mt-0.5 flex items-center gap-1 font-medium">
+                                        <div className="text-xs">{j.project_path}</div>
+                                        <div className="mb-1 flex items-center gap-1 font-medium">
                                             <AppIcon icon={"book"} className="h-4 w-4" />
-                                            <span className="text-sm">{j.playbook}</span>
+                                            <span className="text-sm">{j.playbook.replace("playbooks/", "")}</span>
                                         </div>
-
-                                        <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                                        <div className="mb-1 flex items-center gap-1 text-xs text-muted-foreground">
                                             <AppIcon icon={"clock"} className="h-4 w-4" />
                                             <span>{formatDistanceToNow(j.created_at * 1000)} ago</span>
                                         </div>
-
-                                        <div className="mt-1">
+                                        {/*<div className="mt-1">
                                             <JobStatus status={j.status} />
-                                        </div>
+                                        </div>*/}
+                                        {j?.stats && <div className={"mb-1"}>
+                                            <AnsibleRunnerStats stats={j.stats} />
+                                        </div>}
                                     </li>
                                 ))}
                             </ul>

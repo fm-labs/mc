@@ -181,7 +181,7 @@ def handle_docker_compose_run(run_cfg: RunConfig, ctx: GlobalContext) -> tuple[s
 
 
     local_compose_dir = (ctx.cwd / shostpath).resolve()
-    remote_compose_dir = f"~/.rx/compose/{ctx.config.metadata.name}"
+    remote_compose_dir = f"~/.compose/{ctx.config.metadata.name}"
 
 
     compose_files = []

@@ -4,7 +4,7 @@ from orchestra.datamodels import KoAnsibleRunModel
 from orchestra.mongodb_helper import get_ansible_runs_collection
 
 
-def insert_ansible_run_record(run_id: str, project: str, playbook: str) -> KoAnsibleRunModel:
+def insert_ansible_run_record(run_id: str, project_path: str, playbook: str) -> KoAnsibleRunModel:
     """
     Initialize an Ansible run record in MongoDB.
     """
@@ -12,7 +12,7 @@ def insert_ansible_run_record(run_id: str, project: str, playbook: str) -> KoAns
     collection = get_ansible_runs_collection()
     new_run = KoAnsibleRunModel(
         run_id=run_id,
-        project_id=project,
+        project_path=project_path,
         playbook=playbook,
         status="initialized",
         stdout=None,
