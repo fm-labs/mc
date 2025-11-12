@@ -20,7 +20,7 @@ def ko_playbook_run(project_path: str, playbook: str, **kwargs):
 
     # verify input parameters
     if not os.path.exists(project_path):
-        raise Exception(f"Project directory does not exist in {project_path}")
+        raise Exception(f"Project directory does not exist: {project_path}")
     if not playbook:
         raise Exception("Playbook is required")
     if not os.path.exists(playbook_path):

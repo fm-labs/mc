@@ -10,7 +10,7 @@ import ansible_runner
 
 from mc.config import DATA_DIR, RESOURCES_DIR
 from mc.db.mongodb import get_mongo_collection
-from mc.inventory.item.host import host_item_to_ansible_host
+from mc.inventory.item.host_helper import host_item_to_ansible_host
 
 # ---------- Tunable thresholds ----------
 THRESHOLDS = {

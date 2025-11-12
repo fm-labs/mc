@@ -47,6 +47,10 @@ class InventoryStorage(abc.ABC):
     def get_item(self, inventory_type: str, item_key: str) -> dict:
         pass
 
+    @abc.abstractmethod
+    def delete_item(self, inventory_type: str, item_key: str) -> bool:
+        pass
+
     def get_item_by_name(self, inventory_type: str, name: str) -> dict:
         items = self.list_items(inventory_type)
         for item in items:
@@ -77,6 +81,12 @@ class FileBasedInventoryStorage(InventoryStorage):
             if item["item_key"] == item_key:
                 return item
         return {}
+
+    def delete_item(self, inventory_type: str, item_key: str) -> bool:
+        items = self.list_items(inventory_type)
+        items = [item for item in items if item["item_key"] != item_key]
+        save_config_json(inventory_type, items)
+        return True
 
 
 class MongoDBInventoryStorage(InventoryStorage):
@@ -109,6 +119,11 @@ class MongoDBInventoryStorage(InventoryStorage):
             item.pop('_id', None)
         return item if item else None
 
+    def delete_item(self, inventory_type: str, item_key: str) -> bool:
+        collection = get_mongo_collection('inventory', inventory_type)
+        result = collection.delete_one({'item_key': item_key})
+        return result.deleted_count > 0
+
 
 class RedisInventoryStorage(InventoryStorage):
 
@@ -132,3 +147,8 @@ class RedisInventoryStorage(InventoryStorage):
         key = f"{inventory_type}:{item_key}"
         item = self.redis_client.hgetall(key)
         return {k.decode('utf-8'): v.decode('utf-8') for k, v in item.items()} if item else {}
+
+    def delete_item(self, inventory_type: str, item_key: str) -> bool:
+        key = f"{inventory_type}:{item_key}"
+        result = self.redis_client.delete(key)
+        return result > 0

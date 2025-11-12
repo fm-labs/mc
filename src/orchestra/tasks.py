@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from mc.config import DATA_DIR
-from mc.inventory.item.host import host_item_to_ansible_host
+from mc.inventory.item.host_helper import host_item_to_ansible_host
 from mc.inventory.storage import get_inventory_storage_instance
 from mc.tasks import clone_or_update_git_repo
 from orchestra.celery import celery

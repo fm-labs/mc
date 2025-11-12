@@ -3,9 +3,6 @@
 .local/
 bak/
 config/
-data/
-docs/
-templates/
 tmp/
 src/x*.py
 projects.json
@@ -16,6 +13,10 @@ _*.json
 rx.json
 .DS_Store
 x*.sh
+
+/data/
+/docs/
+/templates/
 
 ### Python template
 # Byte-compiled / optimized / DLL files

@@ -1,9 +1,8 @@
 import os
-import subprocess
 
 from mc import config
-from mc.credentials import add_ssh_key
-from xvault.vault import open_vaultfile
+from mc.credentials import add_ssh_key, remove_ssh_key
+from mc.inventory.storage import get_inventory_storage_instance
 
 
 def handle_credential_configure(item: dict, action_params: dict) -> dict:
@@ -39,7 +38,34 @@ def handle_credential_configure(item: dict, action_params: dict) -> dict:
     return {"message": f"Credential '{item['name']}' configured with SSH key '{key_name}'."}
 
 
+def handle_credential_destroy(item: dict, action_params: dict) -> dict:
+    props = item.get("properties", {})
+
+    key_name = props.get("ssh_key_name", item['name'])
+    key_path = f"~/.ssh/{key_name}"
+
+    expanded_key_path = os.path.expanduser(key_path)
+    if os.path.exists(expanded_key_path):
+        os.remove(expanded_key_path)
+        print(f"Removed SSH private key file: {expanded_key_path}")
+    else:
+        print(f"SSH private key file not found, skipping removal: {expanded_key_path}")
+
+    creds_file = config.VAULT_FILE + ".yaml"
+    # Remove the credential from the credentials file
+    try:
+        remove_ssh_key(str(creds_file), key_name, expanded_key_path)
+        print(f"Removed credential '{key_name}' from credentials file.")
+    except Exception as e:
+        print(f"Failed to remove credential '{key_name}': {e}")
+
+    storage = get_inventory_storage_instance()
+    storage.delete_item("credential", item['item_key'])
+
+    return {"message": f"Credential '{item['name']}' destroyed."}
+
 
 actions = {
     "configure": handle_credential_configure,
+    "destroy": handle_credential_destroy,
 }

@@ -251,6 +251,19 @@ def add_ssh_key(path: str, name: str,
         raise
 
 
+def remove_ssh_key(path: str, name: str, key_path: str | None = None) -> None:
+    if not key_path:
+        raise ValueError("Error: SSH key path not provided.")
+
+    _, key_id = _read_ssh_key(key_path)
+    cname = f"ssh-key-{key_id[:16]}"
+
+    if cname != name:
+        raise ValueError(f"Error: provided credential name '{name}' does not match key ID derived name '{cname}'.")
+
+    remove_credentials(path, cname)
+
+
 def lookup_ssh_key_passphrase(path: str, key_path: str = None, key_id=None) -> str | None:
     if not key_path and not key_id:
         raise ValueError("Either key_path or key_id must be provided.")
