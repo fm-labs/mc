@@ -1,0 +1,22 @@
+import { RJSFSchema } from "@rjsf/utils";
+
+const repoSchema: RJSFSchema = {
+    "type": "object",
+    "properties": {
+        "name": { "type": "string", "title": "Name" },
+        "url": { "type": "string", "title": "URL" },
+        "branch": { "type": "string", "title": "Branch" },
+        "authType": {
+            "type": "string",
+            "title": "Authentication Type",
+            "enum": ["none", "ssh", "https"],
+        },
+        "sshKey": { "type": "string", "title": "SSH Key" },
+        "username": { "type": "string", "title": "Username" },
+        "password": { "type": "string", "title": "Password" },
+    },
+    "required": ["name", "url"],
+};
+
+export default repoSchema;
+
