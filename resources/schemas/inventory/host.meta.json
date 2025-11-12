@@ -45,21 +45,6 @@
             "title": "Username",
             "description": "Username for SSH authentication"
           },
-          "password": {
-            "type": "string",
-            "title": "Password",
-            "description": "Password for SSH authentication"
-          },
-          "private_key": {
-            "type": "string",
-            "title": "Private Key",
-            "description": "SSH private key for authentication"
-          },
-          "passphrase": {
-            "type": "string",
-            "title": "Passphrase",
-            "description": "Passphrase for the private key, if applicable"
-          },
           "timeout": {
             "type": "integer",
             "title": "Timeout (seconds)",
@@ -76,29 +61,19 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "project": {
-            "type": "string",
-            "title": "Project",
-            "description": "The Ansible project containing the playbook"
-          },
-          "target": {
-            "type": "string",
-            "title": "Target",
-            "description": "The host or group of hosts to run the playbook against"
-          },
           "playbook": {
             "type": "string",
             "title": "Playbook",
-            "description": "Path to the Ansible playbook to run",
+            "description": "Name of built-in playbook to run",
             "enum": [
-              "builtin/baseline-debian",
-              "builtin/baseline-debian-security",
-              "builtin/dockerhost-debian",
-              "builtin/podmanhost-debian",
-              "builtin/facts-all",
-              "builtin/facts-diskusage",
-              "builtin/hello-world",
-              "builtin/wireguard-server"
+              "baseline-debian",
+              "baseline-debian-security",
+              "dockerhost-debian",
+              "podmanhost-debian",
+              "facts-all",
+              "facts-diskusage",
+              "hello-world",
+              "wireguard-server"
             ]
           },
           "extra_vars": {
@@ -108,8 +83,6 @@
           }
         },
         "required": [
-          "project",
-          "target",
           "playbook"
         ]
       }
@@ -120,7 +93,17 @@
       "type": "form",
       "inputSchema": {
         "type": "object",
-        "properties": {},
+        "properties": {
+          "container_runtime": {
+            "type": "string",
+            "title": "Container Runtime",
+            "description": "Container runtime to install",
+            "enum": [
+              "docker",
+              "podman"
+            ]
+          }
+        },
         "required": []
       }
     },
@@ -137,7 +120,9 @@
             "description": "Name of the related project (deprecated)"
           }
         },
-        "required": ["project_name"]
+        "required": [
+          "project_name"
+        ]
       }
     }
   ]

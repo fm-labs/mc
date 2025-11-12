@@ -54,6 +54,11 @@
       "id": "template",
       "name": "View Template",
       "type": "view"
+    },
+    {
+      "id": "stackfile",
+      "name": "View Stackfile",
+      "type": "view"
     }
   ]
 }
