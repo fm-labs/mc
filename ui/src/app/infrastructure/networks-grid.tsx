@@ -1,8 +1,6 @@
-import { IconNetwork } from "@tabler/icons-react";
 import { InventoryItem } from "@/features/inventory/inventory.types.ts";
 import { NetworkProvider } from "@/app/infrastructure/network/network-provider.tsx";
 import NetworkHosts from "@/app/infrastructure/network/network-hosts.tsx";
-import NetworkArchMermaid from "@/app/infrastructure/network/network-arch-mermaid.tsx";
 import React from "react";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Share2Icon } from "lucide-react";
@@ -61,7 +59,6 @@ const NetworksGrid = ({ networks }: { networks: InventoryItem<any>[] }) => {
                                     <Badge variant={"secondary"}>{network?.properties?.visibility}</Badge>
                                 </div>
                                 <NetworkHosts />
-                                {selectedNetwork && selectedNetwork.name===network.name && <NetworkArchMermaid />}
                             </div>
                         </NetworkProvider>
                     </li>

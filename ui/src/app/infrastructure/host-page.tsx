@@ -6,7 +6,6 @@ import MainContent from "@/components/layout/main-content.tsx";
 import Header from "@/components/header.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import ReactJson from "@microlink/react-json-view";
-import NetworkArchMermaid from "@/app/infrastructure/network/network-arch-mermaid.tsx";
 import { EventSourceReader } from "@/components/event-source-reader.tsx";
 import HostServices from "@/app/infrastructure/host/host-services.tsx";
 import { HostProvider } from "@/app/infrastructure/host/host-provider.tsx";
@@ -68,7 +67,7 @@ const HostPage = () => {
                                                displayDataTypes={false} />
                                 </div>
                                 <div className={"w-1/2"}>
-                                    <NetworkArchMermaid />
+                                    {/*<NetworkArchMermaid />*/}
                                 </div>
                             </div>
                         </TabsContent>

@@ -14,40 +14,34 @@ import DockerContainerEnvTable from "@/app/containers/components/docker-containe
 import DockerContainerNetworksTable from "@/app/containers/components/docker-container-networks-table.tsx";
 import DockerContainerPathsTable from "@/app/containers/components/docker-container-paths-table.tsx";
 import DockerContainerExec from "@/app/containers/components/docker-container-exec.tsx";
-import { useApi } from "@/context/api-context.tsx";
 import { Layers } from "lucide-react";
 import DockerContainerInspect from "@/app/containers/components/docker-container-inspect.tsx";
 import DockerContainerUptime from "@/app/containers/components/docker-container-uptime.tsx";
 
-// const logMessageFormatter = (message: string) => {
-//     try {
-//         const logEntry = JSON.parse(message);
-//         const { log } = logEntry;
-//         //return `${line} | ${log}`;
-//         return log;
-//     } catch (e) {
-//         return message;
-//     }
-// };
+const logMessageFormatter = (message: string) => {
+    try {
+        const logEntry = JSON.parse(message);
+        const { log } = logEntry;
+        //return `${line} | ${log}`;
+        return log;
+    } catch (e) {
+        return message;
+    }
+};
 
 export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
     const { container, buildLogStreamUrl } = useDockerContainer()
-    const [selectedContainerId, setSelectedContainerId] = React.useState<string | null>(open ? container.Id : null);
     const containerLogStreamUrl = buildLogStreamUrl(container?.Id);
+    const [showDetails, setShowDetails] = React.useState(open || false);
 
-    return <div>
+    return <div className={showDetails ? "py-1 pl-1 bg-accent border-b":"py-1 pl-1"}>
         <div className={"flex flex-start space-x-2"}>
             <div className={"flex space-x-1"}>
                 <DockerContainerStatus status={container.State?.Status} />
-                <span className={selectedContainerId===container.Id ? "font-bold":""}
-                      onClick={() => {
-                          if (selectedContainerId===container.Id) {
-                              setSelectedContainerId(null);
-                              return;
-                          }
-                          setSelectedContainerId(container.Id);
-                      }}>{container?.Name?.substring(1) || "Unknown name"}
-                                            </span>
+                <span className={showDetails ? "font-bold":""}
+                      onClick={() =>  setShowDetails(!showDetails)}>
+                    {container?.Name?.substring(1) || "Unknown name"}
+                </span>
             </div>
             <div className={"flex items-center space-x-1"}>
                 <div className={"text-muted-foreground text-xs ml-1"}>
@@ -58,12 +52,12 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                 <Data data={container} />
             </div>
         </div>
-        {selectedContainerId===container.Id
-            && <>
+        {showDetails
+            && <div className={"px-1"}>
                 <div className={"text-muted-foreground text-xs ml-6"}><DockerContainerPorts
                     ports={container?.NetworkSettings?.Ports} /></div>
 
-                <Tabs defaultValue="logs" className={"mt-2"}>
+                <Tabs defaultValue="logs" className={"mt-1"}>
                     <div className={"flex justify-between items-center"}>
                         <TabsList>
                             <TabsTrigger value="logs">Logs</TabsTrigger>
@@ -77,7 +71,7 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                         </TabsList>
                         <DockerContainerControlIcons />
                     </div>
-                    <div className={"border border-t-0 rounded-b p-2 max-h-[400px] overflow-auto bg-background shadow"}>
+                    <div className={"border border-t-0 rounded-b p-1 max-h-[400px] overflow-auto bg-background shadow"}>
                         <TabsContent value="labels">
                             <DockerContainerLabelsTable />
                         </TabsContent>
@@ -103,25 +97,17 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                             {containerLogStreamUrl}
                             {containerLogStreamUrl
                                 && (<EventSourceReader url={containerLogStreamUrl}
-                                    /*logFormatter={logMessageFormatter}*/ />)}
+                                    logFormatter={logMessageFormatter} />)}
                         </TabsContent>
                     </div>
                 </Tabs>
-            </>}
+            </div>}
     </div>
 }
 
 
 const DockerHostContainers = () => {
-    const { config, containers, fetchContainers } = useContainerHost();
-    const {apiBaseUrl} = useApi()
-    const [selectedContainer, setSelectedContainer] = React.useState<string | null>(null);
-
-    //const [autorefreshInterval, setAutoRefreshInterval] = React.useState<number | null>(30000);
-
-    const containerLogStreamUrl = React.useMemo(() => selectedContainer
-            ? `${apiBaseUrl}/api/containers/${config.hostId}/containers/${selectedContainer}/logs/stream`:null,
-        [selectedContainer, config.hostId, apiBaseUrl]);
+    const { containers } = useContainerHost();
 
     const groupedData = React.useMemo(() => {
         if (!containers) return {};
@@ -136,26 +122,6 @@ const DockerHostContainers = () => {
             Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)),
         );
     }, [containers]);
-
-    // React.useEffect(() => {
-    //     // Auto-refresh
-    //     let intervalId: any;
-    //     if (autorefreshInterval && autorefreshInterval > 0) {
-    //         // modifying the interval withing a range to avoid too much parallel requests
-    //         // if many hosts are monitored at the same time
-    //         const min_interval = Math.max(5000, autorefreshInterval - 2000);
-    //         const max_interval = autorefreshInterval + 2000;
-    //         const _interval = Math.floor(Math.random() * (max_interval - min_interval + 1)) + min_interval;
-    //         console.log("Docker AutorefreshInterval (without/with jitter):", autorefreshInterval, _interval);
-    //         intervalId = setInterval(fetchContainers, _interval);
-    //     }
-    //
-    //     return () => {
-    //         if (intervalId) {
-    //             clearInterval(intervalId);
-    //         }
-    //     };
-    // }, []);
 
     if (!containers || containers.length === 0) {
         return <p>No containers running.</p>;
@@ -172,7 +138,7 @@ const DockerHostContainers = () => {
                     <ul>
                         {_containers.map((container: any) => (
                             <li key={container.Id}
-                                className={`cursor-pointer pb-1 pl-1 pt-1 border-l-4 hover:border-l-amber-400 ${selectedContainer===container.Id ? "bg-accent pb-2":""}`}>
+                                className={`cursor-pointer border-l-4 hover:border-l-amber-400`}>
                                 <DockerContainerProvider container={container}>
                                     <DockerHostContainersListItem />
                                 </DockerContainerProvider>
