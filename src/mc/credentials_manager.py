@@ -79,11 +79,12 @@ def remove_credentials(path: str, name: str) -> None:
 
 
 def get_credentials(path: str, name: str | None) -> dict|str|None:
-    data, _ = load_credentials(path)
+    data = load_credentials(path)
+    if not data:
+        return None
     if name:
         return data.get(name)
-    else:
-        return data
+    return data
 
 
 @contextmanager

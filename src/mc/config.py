@@ -30,7 +30,7 @@ REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
 
 # Vault settings
-VAULT_ENABLED = os.getenv("VAULT_ENABLED", "false").lower() == "true"
+VAULT_ENABLED = os.getenv("VAULT_ENABLED", "true").lower() == "true"
 VAULT_FILE = os.getenv("VAULT_FILE", f"{CONFIG_DIR}/credentials.vault")
 VAULT_PASS_FILE = os.getenv("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vault.pass")
 

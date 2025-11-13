@@ -1,7 +1,7 @@
-import os
 import tempfile
 
 from mc import config
+from mc.credentials_manager import credentials
 from mc.sshkey_manager import add_ssh_key
 
 def handle_credential_configure(item: dict, action_params: dict) -> dict:
@@ -26,8 +26,11 @@ def handle_credential_configure(item: dict, action_params: dict) -> dict:
     #os.chmod(expanded_key_path, 0o600)
     #print(f"Wrote SSH private key to {expanded_key_path}")
 
-    credsfile = config.VAULT_FILE + ".yaml"
-    add_ssh_key(str(credsfile), key_name, str(expanded_key_path), key_passphrase=pkey_passphrase)
+    vaultfile = config.VAULT_FILE
+    vaultpassfile = config.VAULT_PASS_FILE
+    with credentials(mode="w", vaultfile=vaultfile, vaultpassfile=vaultpassfile, encrypt=True) as f:
+        add_ssh_key(f.name, key_name,
+                    key_file=str(expanded_key_path), key_passphrase=pkey_passphrase, allow_overwrite=pkey_overwrite)
     return {"message": f"Credential '{item['name']}' configured with SSH key '{key_name}'."}
 
 

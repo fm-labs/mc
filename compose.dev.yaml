@@ -1,6 +1,6 @@
-secrets:
-  credentials_vault_pass:
-    file: ./config/credentials.vault.pass
+#secrets:
+#  credentials_vault_pass:
+#    file: ./config/credentials.vault.pass
 
 
 services:
@@ -16,21 +16,20 @@ services:
       - mc-net
     #extra_hosts:
     #  - "host.docker.internal:host-gateway"
-    secrets:
-      - credentials_vault_pass
+    #secrets:
+    #  - credentials_vault_pass
     volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${PWD}/.local/config:/app/config
       - ${PWD}/.local/aws_config.local:/home/app/.aws/config:ro
       - ${PWD}/data:/data
       - ../mc-templates:/templates/mc:ro
       - ../fm-templates:/templates/fm:ro
       - ../../amatic/javang-git/gsmc:/templates/gsmc:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       #- ${PWD}/.local/home:/home/app/
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     environment:
-      - DEV_MODE=0
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
@@ -43,7 +42,7 @@ services:
       #- RESOURCES_DIR=/app/resources
       #- DATA_DIR=/data
       #- VAULT_FILE=/app/config/credentials.vault
-      - VAULT_PASS_FILE=/run/secrets/credentials_vault_pass
+      #- VAULT_PASS_FILE=/run/secrets/credentials_vault_pass
       #- SSH_AUTH_SOCK=/ssh-agent
       #- SSH_CONFIG=/data/ssh_config
     env_file:
