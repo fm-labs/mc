@@ -2,25 +2,26 @@ from mc.plugin.containers.compose_runner import LocalDockerComposeStackRunner, R
 from orchestra.celery import celery
 
 @celery.task(bind=True)
-def task_deploy_compose_stack(self, project_name: str, project_dir: str, host_url: str):
+def task_deploy_compose_stack(self, project_name: str, project_dir: str, stackfile: str, host_url: str):
     if host_url.startswith("unix://"):
         compose_runner = LocalDockerComposeStackRunner(
             project_name=project_name,
             local_dir=project_dir,
+            stackfile=stackfile,
             docker_host=host_url
         )
     elif host_url.startswith("ssh://"):
         compose_runner = RemoteDockerComposeStackRunner(
             project_name=project_name,
             local_dir=project_dir,
+            stackfile=stackfile,
             docker_host=host_url
         )
     else:
         raise ValueError(f"Unsupported host URL scheme: {host_url}")
 
+    compose_runner.stop()
     compose_runner.sync()
-    #compose_runner.run_hooks("pre_up")
-    compose_runner.up()
 
     stdout, stderr, rc = compose_runner.up()
     return {"status": "success",

@@ -35,7 +35,7 @@ def create_app_stack(stack_name: str, src: str, stackfile: str, **kwargs) -> dic
 
     if src.startswith("file://"):
         template_dir = src[len("file://"):]
-        _item = create_app_stack_from_template_dir(stack_name, app_dir, template_dir)
+        _item = create_app_stack_from_template_dir(app_dir, template_dir)
         item.update(_item)
 
     elif src.startswith("git://") or (src.startswith("https://") and src.endswith(".git")):
@@ -46,24 +46,23 @@ def create_app_stack(stack_name: str, src: str, stackfile: str, **kwargs) -> dic
             repo_part = url_part
             branch = "main"
 
-        _item = create_app_stack_from_git_repo(stack_name, app_dir, repo_part, branch)
+        _item = create_app_stack_from_git_repo(app_dir, repo_part, branch)
         item.update(_item)
 
     elif src.startswith("https://") and (src.endswith(".zip") or src.endswith(".tar.gz") or src.endswith(".tgz")):
         template_url = src
-        _item = create_app_stack_from_url_template(stack_name, app_dir, template_url)
+        _item = create_app_stack_from_url_template(app_dir, template_url)
         item.update(_item)
     else:
         raise ValueError(f"Unsupported source URL scheme: {src}")
     return item
 
 
-def create_app_stack_from_template_dir(stack_name: str, app_dir: str, template_dir: str) -> dict:
+def create_app_stack_from_template_dir(app_dir: str, template_dir: str) -> dict:
     """
     Create a Docker Compose application from a local template directory.
 
     Args:
-        stack_name (str): Name of the application.
         app_dir (str): Directory where the application will be created.
         template_dir (str): Path to the local template directory.
     """
@@ -72,19 +71,18 @@ def create_app_stack_from_template_dir(stack_name: str, app_dir: str, template_d
         raise FileExistsError(f"Application directory already exists: {app_dir}")
 
     shutil.copytree(template_dir, app_path)
-    print(f"Created application '{stack_name}' from template directory '{template_dir}' at '{app_dir}'")
+    print(f"Created application from template directory '{template_dir}' at '{app_dir}'")
 
     return {
         "template_repository": f"file://{template_dir}",
     }
 
 
-def create_app_stack_from_git_repo(stack_name: str, app_dir: str, git_repo: str, git_branch: str = None) -> dict:
+def create_app_stack_from_git_repo(app_dir: str, git_repo: str, git_branch: str = None) -> dict:
     """
     Create a Docker Compose application by cloning a git repository.
 
     Args:
-        stack_name (str): Name of the application.
         app_dir (str): Directory where the application will be created.
         git_repo (str): GitHub repository in the format "user/repo".
         git_branch (str): Branch to clone. Default is "main".
@@ -142,12 +140,11 @@ def create_app_stack_from_git_repo(stack_name: str, app_dir: str, git_repo: str,
 #     }
 
 
-def create_app_stack_from_url_template(stack_name: str, app_dir: str, template_url: str) -> dict:
+def create_app_stack_from_url_template(app_dir: str, template_url: str) -> dict:
     """
     Create a Docker Compose application by downloading a template from a URL (zip or tar.gz).
 
     Args:
-        stack_name (str): Name of the application.
         app_dir (str): Directory where the application will be created.
         template_url (str): URL to the zip or tar.gz archive containing the template.
     """
@@ -185,7 +182,7 @@ def create_app_stack_from_url_template(stack_name: str, app_dir: str, template_u
         else:
             shutil.copytree(Path(tmpdir), app_path)
 
-        print(f"Created application '{stack_name}' from URL template '{template_url}' at '{app_dir}'")
+        print(f"Created application from URL template '{template_url}' at '{app_dir}'")
 
     return {
         "template_repository": template_url,

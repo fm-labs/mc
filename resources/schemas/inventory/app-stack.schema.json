@@ -5,6 +5,12 @@
   "type": "object",
   "additionalProperties": true,
   "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "Optional project name for the application stack. Leaves blank to auto-generate. Only lowercase alphanumeric characters, dashes, and underscores are allowed.",
+      "minLength": 1,
+      "pattern": "^[a-z0-9_-]+$"
+    },
     "template_repository": {
       "type": "string",
       "format": "uri",

@@ -207,7 +207,7 @@ def ssh_execute_command(client, command: str, timeout: int = None, environment: 
     try:
         print("Executing command via SSH: {}".format(command))
         stdin, stdout, stderr = client.exec_command(command,
-                                                    get_pty=True,
+                                                    get_pty=False,
                                                     timeout=timeout,
                                                     environment=environment)
         exit_status = stdout.channel.recv_exit_status()

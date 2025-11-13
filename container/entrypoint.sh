@@ -5,8 +5,8 @@ set -ex
 PYTHON_PATH="/app/src:$PYTHON_PATH"
 export PYTHONPATH
 
-FLOWER_USER_NAME=${FLOWER_USER_NAME:-flower}
-FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-flower}
+FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
+FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-admin}
 
 # Not recommended to change the socket path, but provided for flexibility.
 SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-/ssh-agent/agent.sock}

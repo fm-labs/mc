@@ -14,6 +14,8 @@ from mc.plugin.xscan.tasks import *
 # flake8: noqa
 from mc.plugin.cloudscan.tasks import *
 # flake8: noqa
+from mc.plugin.containers.tasks import *
+# flake8: noqa
 from mc.plugin.tools.tasks import *
 
 

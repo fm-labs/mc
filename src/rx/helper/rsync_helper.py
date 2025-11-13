@@ -4,21 +4,24 @@ from rx.helper.subprocess_helper import rx_subprocess
 from rx.util import split_url, toolcmd
 
 
-def rsync_execute(src: str, dest: str, mkdir=True, ssh_config: dict = None, exclude: list = None, ):
-
+def rsync_execute(src: str, dest: str, mkdir=True, delete=False, exclude: list = None, ssh_config: dict = None, ):
     # validate required fields
     [srcschema, src_hostpath] = split_url(src)
     if srcschema == "":
         srcschema = "file"
     if srcschema not in ["file"]:
         raise ValueError("Source URL must start with file://")
+
+    if src_hostpath == "" or src_hostpath is None or src_hostpath == "/":
+        raise ValueError("Source path is empty.")
     srcpath = Path(src_hostpath).resolve()
     if not srcpath.exists():
         raise FileNotFoundError(f"Source path '{srcpath}' does not exist.")
 
     _src: str = str(srcpath.absolute())
     rsync_args = ["-r", "-t", "-z", "-v", "-c"] # recursive, times, compress, verbose, checksum
-    #cmd += ["--delete"]
+    if delete:
+        rsync_args += ["--delete"]
 
     [destschema, dhostpath] = split_url(dest)
     # local rsync

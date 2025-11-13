@@ -16,9 +16,10 @@ from mc.tasks import clone_or_update_git_repo
 
 @dataclass(frozen=True)
 class AppStackItem:
-    name: str
+    name: str  # e.g. my-namespace/my-app (local unique path-like namespaced name)
+    project_name: str | None = None  # e.g. my-app-project (compose project name label)
     description: str | None = None
-    version: str | None = None
+    version: str | None = None  # e.g. 1.0.0 or latest (for tagging purposes)
     deployment_method: str | None = None  # e.g. git://user/repo
     template_repository: str | None = None  # e.g. git://user/repo
     template_stackfile: str | None = None  # e.g. path/to/docker-compose.yml
@@ -345,6 +346,7 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     Deploy the app stack to the specified container host using Docker Compose.
     Raises ValueError if required properties are missing.
     """
+    background = action_params.get("background", False)
     handle_app_stack_action_prepare(item, {})  # ensure app is prepared
 
     app = AppStackItem.from_item_dict(item)
@@ -357,8 +359,17 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     if not app_dir.exists() or not app_dir.is_dir():
         raise FileNotFoundError(f"App stack directory '{app_dir}' does not exist")
 
-    return task_deploy_compose_stack(project_name=app.slug, project_dir=str(app_dir.resolve()),
-                                       host_url=container_host_url,)
+    if background:
+        task = task_deploy_compose_stack.delay(project_name=app.project_name,
+                                               project_dir=str(app_dir.resolve()),
+                                               stackfile=os.path.basename(app.template_stackfile or "compose.yaml"),
+                                               host_url=container_host_url)
+        return {"status": "deploying", "task_id": task.id}
+
+    return task_deploy_compose_stack(project_name=app.project_name,
+                                     project_dir=str(app_dir.resolve()),
+                                     stackfile=os.path.basename(app.template_stackfile or "compose.yaml"),
+                                     host_url=container_host_url)
 
 
 def handle_app_stack_view_template_config(item: dict, view_params: dict) -> dict:

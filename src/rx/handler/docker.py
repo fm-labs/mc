@@ -1,10 +1,8 @@
 import os
 
-from rx.config import RunConfig, GlobalContext
+from rx.config import RunConfig
 from rx.helper.awscli_helper import awscli_ecr_login
 from rx.helper.dockercli_helper import dockercli_login
-from rx.util import toolcmd
-from rx.helper.subprocess_helper import rx_subprocess
 from rx.util import parse_image_ref, split_url
 
 DEFAULT_DOCKER_REGISTRY = "docker.io"
@@ -186,40 +184,40 @@ def _init_image_env(run_cfg: RunConfig, login=False):
     return env
 
 
-def handle_docker_container_run(run_cfg: RunConfig, ctx: GlobalContext):
-    env = _init_container_env(run_cfg, login=True)
-
-    docker_cfg = run_cfg.extra.get("docker", {})
-    # run the container
-    docker_args = []
-    run_args = docker_cfg.get("run_args", [])
-    docker_args.extend(run_args)
-    #if scheme in ["local"]:
-    #    docker_cmd += ["--pull", "never"]
-
-    docker_cmd = toolcmd("docker", ["run", "-d", "--rm"] + docker_args)
-    # strip the scheme from the url
-    docker_cmd += [split_url(run_cfg.src)[1]]
-    return rx_subprocess(docker_cmd, cwd=ctx.cwd, env=env)
-
-
-
-def handle_docker_image_push(run_cfg: RunConfig, ctx: GlobalContext):
-    src = run_cfg.src # source image
-    dest = run_cfg.dest # destination image
-
-    # tag the src image to the dest image
-    src_image = build_image_name_from_url(src)
-    dest_image = build_image_name_from_url(dest)
-
-    # login
-    env = _init_image_env(run_cfg, login=True)
-
-    # tag
-    docker_cmd = toolcmd("docker", ["tag", src_image, dest_image])
-    rx_subprocess(docker_cmd, cwd=ctx.cwd, env=env)
-
-    # push
-    docker_cmd = toolcmd("docker", ["push", dest_image])
-    return rx_subprocess(docker_cmd, cwd=ctx.cwd, env=env)
+# def handle_docker_container_run(run_cfg: RunConfig, ctx: GlobalContext):
+#     env = _init_container_env(run_cfg, login=True)
+#
+#     docker_cfg = run_cfg.extra.get("docker", {})
+#     # run the container
+#     docker_args = []
+#     run_args = docker_cfg.get("run_args", [])
+#     docker_args.extend(run_args)
+#     #if scheme in ["local"]:
+#     #    docker_cmd += ["--pull", "never"]
+#
+#     docker_cmd = toolcmd("docker", ["run", "-d", "--rm"] + docker_args)
+#     # strip the scheme from the url
+#     docker_cmd += [split_url(run_cfg.src)[1]]
+#     return rx_subprocess(docker_cmd, cwd=ctx.cwd, env=env)
+#
+#
+#
+# def handle_docker_image_push(run_cfg: RunConfig, ctx: GlobalContext):
+#     src = run_cfg.src # source image
+#     dest = run_cfg.dest # destination image
+#
+#     # tag the src image to the dest image
+#     src_image = build_image_name_from_url(src)
+#     dest_image = build_image_name_from_url(dest)
+#
+#     # login
+#     env = _init_image_env(run_cfg, login=True)
+#
+#     # tag
+#     docker_cmd = toolcmd("docker", ["tag", src_image, dest_image])
+#     rx_subprocess(docker_cmd, cwd=ctx.cwd, env=env)
+#
+#     # push
+#     docker_cmd = toolcmd("docker", ["push", dest_image])
+#     return rx_subprocess(docker_cmd, cwd=ctx.cwd, env=env)
 

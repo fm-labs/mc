@@ -2,10 +2,6 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from rx.config import RunConfig, GlobalContext
-from rx.util import split_url
-
-from rx.handler.s3 import handler as s3_run_handler
-from rx.handler.scp import handler as scp_run_handler
 
 
 @dataclass
@@ -55,56 +51,13 @@ class RxDirectorySource(RxSource):
         # todo dynamic import
         dest_scheme = self.get_scheme()
         if dest_scheme == "s3":
-            return s3_run_handler
+            #return s3_run_handler
+            raise RuntimeError("Not implemented")
         elif dest_scheme in ["rsync", "ssh", "file"]:
             #return rsync_run_handler
             raise RuntimeError("Not implemented")
         elif dest_scheme == "scp":
-            return scp_run_handler
-        else:
-            raise ValueError(f"Unsupported destination scheme {dest_scheme} for directory run.")
-
-
-# def delegate_dir_run(run_cfg: RunConfig, ctx: GlobalContext):
-#     src = RxDirectorySource(url=run_cfg.src)
-#     if not src.validate():
-#         raise ValueError(f"Invalid source configuration: {run_cfg.src}")
-#     handler = src.get_run_handler(run_cfg, ctx)
-#     print(f"Using directory run handler: {handler.__module__}.{handler.__name__}")
-#     raise NotImplementedError("Directory run handler is not implemented yet.")
-#     #return handler(run_cfg, ctx)
-#
-# handler = delegate_dir_run
-
-def handle_directory_run(run_cfg: RunConfig, ctx: GlobalContext):
-    src = run_cfg.src
-    dest = run_cfg.dest
-
-    # validate the source directory
-    if not src:
-        raise ValueError("Source directory is required for directory run.")
-    if not dest:
-        raise ValueError("Destination directory is required for directory run.")
-
-    if dest.startswith("/"):
-        # local absolute path, use rsync
-        #return rsync_run_handler(run_cfg, ctx)
-        raise RuntimeError("Not implemented")
-    elif "://" in dest:
-        # likely a URL
-        [dest_scheme, _] = split_url(dest)
-
-        # find the right handler based on scheme
-        if dest_scheme == "s3":
-            return s3_run_handler(run_cfg, ctx)
-        elif dest_scheme in ["rsync", "ssh", "file"]:
-            #return rsync_run_handler(run_cfg, ctx)
+            #return scp_run_handler
             raise RuntimeError("Not implemented")
-        elif dest_scheme == "scp":
-            return scp_run_handler(run_cfg, ctx)
         else:
             raise ValueError(f"Unsupported destination scheme {dest_scheme} for directory run.")
-    else:
-        raise ValueError(f"Unsupported destination format for directory run: {dest}")
-
-handler = handle_directory_run

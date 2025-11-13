@@ -3,7 +3,7 @@ from pathlib import Path
 from rx import config
 from rx.config import RunConfig, GlobalContext
 from rx.helper.subprocess_helper import rx_subprocess
-from rx.util import split_url
+from rx.util import split_url, get_tool_path
 
 
 # def check_aws_cli_installed(ctx: GlobalContext = None) -> str:
@@ -28,7 +28,8 @@ def handle_s3_run(run_cfg: RunConfig, ctx: GlobalContext):
     #aws_secret_access_key = aws_cfg.get("secret_access_key", config.AWS_SECRET_ACCESS_KEY)
 
     # ensure aws cli is installed
-    aws_bin = check_aws_cli_installed(ctx)
+    #aws_bin = check_aws_cli_installed(ctx)
+    aws_bin = get_tool_path("aws")
 
     # validate required fields
     [srcschema, src_hostpath] = split_url(src)

@@ -41,6 +41,12 @@
       "inputSchema": {
         "type": "object",
         "properties": {
+          "background": {
+            "type": "boolean",
+            "default": true,
+            "description": "Run deployment in the background.",
+            "title": "Run in Background"
+          },
           "confirm": {
             "type": "boolean",
             "default": true,
