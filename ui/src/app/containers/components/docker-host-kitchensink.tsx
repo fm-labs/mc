@@ -4,8 +4,9 @@ import AppIcon from "@/components/app-icon.tsx";
 import { ContainerHostProvider, useContainerHost } from "@/app/containers/components/container-host-provider.tsx";
 import { DockerHostStatus } from "@/app/containers/components/docker-host-status.tsx";
 import { DockerHostError } from "@/app/containers/components/docker-host-error.tsx";
-import DockerContainersList from "@/app/containers/components/docker-containers-list.tsx";
+import DockerHostContainers from "@/app/containers/components/docker-host-containers.tsx";
 import { DockerHostSummary } from "@/app/containers/components/docker-host-summary.tsx";
+import {useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
 
 const DockerHostsKitchensinkItem = ({ host }: { host: any }) => {
     const { summary } = useContainerHost();
@@ -38,14 +39,16 @@ const DockerHostsKitchensinkItem = ({ host }: { host: any }) => {
         <DockerHostError />
         {summary && (
             <div>
-                <DockerContainersList />
+                <DockerHostContainers />
             </div>
         )}
     </li>);
 };
 
 
-const DockerHostsKitchensink = ({ hosts }: { hosts: any[] }) => {
+const DockerHostsKitchensink = () => {
+    const { hosts } = useContainerHosts();
+
     return (
         <div>
             <ul className="faded-bottom no-scrollbar grid gap-2 overflow-auto">

@@ -1,7 +1,7 @@
 import React from "react";
 import { useContainerHost } from "@/app/containers/components/container-host-provider.tsx";
 import { DockerContainerProvider } from "@/app/containers/components/docker-container-provider.tsx";
-import { DockerContainersListItem } from "@/app/containers/components/docker-containers-list.tsx";
+import { DockerHostContainersListItem } from "@/app/containers/components/docker-host-containers.tsx";
 
 const ContainerView = ({ containerId }: {containerId: string}) => {
     const { containers } = useContainerHost();
@@ -19,7 +19,7 @@ const ContainerView = ({ containerId }: {containerId: string}) => {
 
     return (
         <DockerContainerProvider container={container}>
-            <DockerContainersListItem open={true} />
+            <DockerHostContainersListItem open={true} />
         </DockerContainerProvider>
     );
 };

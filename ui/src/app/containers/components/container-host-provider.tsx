@@ -1,6 +1,6 @@
 import React from "react";
-import { useApi } from "@/context/api-context.tsx";
-import { cached } from "@/utils/session-cache.ts";
+import {useApi} from "@/context/api-context.tsx";
+import {cached} from "@/utils/session-cache.ts";
 
 type ContainerHostContextConfig = {
     hostId: string,
@@ -11,12 +11,13 @@ type ContainerHostContextType = {
     info?: any,
     summary?: any,
     containers?: Record<string, any>,
-    images?: Record<string, any>,
+    //images?: Record<string, any>,
     fetchContainerData: (path: string) => Promise<any>,
     fetchInfo: (force?: boolean) => Promise<any>,
     fetchSummary: (force?: boolean) => Promise<any>,
     fetchContainers: (force?: boolean) => Promise<any>,
     fetchImages: (force?: boolean) => Promise<any>,
+    fetchVolumes: (force?: boolean) => Promise<any>,
     autorefreshInterval: number,
     setAutoRefreshInterval: (interval: number) => void,
     error?: string | null,
@@ -32,7 +33,7 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, config
     const [info, setInfo] = React.useState<any>(null);
     const [summary, setSummary] = React.useState<any>(null);
     const [containers, setContainers] = React.useState<Record<string, any>>([]);
-    const [images, setImages] = React.useState<Record<string, any>>([]);
+    //const [images, setImages] = React.useState<Record<string, any>>([]);
     const [autorefreshInterval, setAutoRefreshInterval] = React.useState<number>(30000);
 
 
@@ -55,10 +56,10 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, config
         }
     }, [config, setError, api])
 
-    const fetchContainerData = React.useCallback((path: string, force?: boolean) => {
+    const fetchContainerData = React.useCallback((path: string, force?: boolean, ttl?: number) => {
         const cacheKey = `container_host_${config.hostId}_path_${path}`;
         const p = () => _fetchContainerData(path)
-        return cached(cacheKey, p, autorefreshInterval - 1, force); // make sure cache TTL is less than autorefresh interval
+        return cached(cacheKey, p, ttl || autorefreshInterval - 1, force); // make sure cache TTL is less than autorefresh interval
     }, [config.hostId, _fetchContainerData, autorefreshInterval]);
 
     const fetchInfo = React.useCallback(async (force?: boolean) => {
@@ -83,10 +84,12 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, config
     }, [fetchContainerData, setContainers])
 
     const fetchImages = React.useCallback(async (force?: boolean) => {
-        const response = await fetchContainerData("images", force);
-        setImages(response);
-        return response;
-    }, [fetchContainerData, setImages])
+        return await fetchContainerData("images", force, 120000);
+    }, [fetchContainerData])
+
+    const fetchVolumes = React.useCallback(async (force?: boolean) => {
+        return await fetchContainerData("volumes", force, 120000);
+    }, [fetchContainerData])
 
     // const updateAll = React.useCallback(async (force?: boolean) => {
     //     await Promise.all([
@@ -139,12 +142,12 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, config
             info,
             summary,
             containers,
-            images,
             fetchContainerData,
             fetchInfo,
             fetchSummary,
             fetchContainers,
             fetchImages,
+            fetchVolumes,
             autorefreshInterval,
             setAutoRefreshInterval,
             error

@@ -5,6 +5,7 @@ import { ContainerHostProvider, useContainerHost } from "@/app/containers/compon
 import { DockerHostStatus } from "@/app/containers/components/docker-host-status.tsx";
 import { DockerHostError } from "@/app/containers/components/docker-host-error.tsx";
 import { DockerHostSummary } from "@/app/containers/components/docker-host-summary.tsx";
+import {useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
 
 
 export const DockerHostsGridItem = ({host}: {host: any}) => {
@@ -37,7 +38,8 @@ export const DockerHostsGridItem = ({host}: {host: any}) => {
 }
 
 
-export const DockerHostsGrid = ({hosts}: {hosts: any[]}) => {
+export const DockerHostsGrid = () => {
+    const { hosts } = useContainerHosts();
 
     return (
         <div>

@@ -30,7 +30,7 @@ import DockerContainerUptime from "@/app/containers/components/docker-container-
 //     }
 // };
 
-export const DockerContainersListItem = ({ open }: { open?: true}) => {
+export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
     const { container, buildLogStreamUrl } = useDockerContainer()
     const [selectedContainerId, setSelectedContainerId] = React.useState<string | null>(open ? container.Id : null);
     const containerLogStreamUrl = buildLogStreamUrl(container?.Id);
@@ -112,7 +112,7 @@ export const DockerContainersListItem = ({ open }: { open?: true}) => {
 }
 
 
-const DockerContainersList = () => {
+const DockerHostContainers = () => {
     const { config, containers, fetchContainers } = useContainerHost();
     const {apiBaseUrl} = useApi()
     const [selectedContainer, setSelectedContainer] = React.useState<string | null>(null);
@@ -157,8 +157,8 @@ const DockerContainersList = () => {
     //     };
     // }, []);
 
-    if (!containers) {
-        return <p>No containers found.</p>;
+    if (!containers || containers.length === 0) {
+        return <p>No containers running.</p>;
     }
 
     return (
@@ -174,7 +174,7 @@ const DockerContainersList = () => {
                             <li key={container.Id}
                                 className={`cursor-pointer pb-1 pl-1 pt-1 border-l-4 hover:border-l-amber-400 ${selectedContainer===container.Id ? "bg-accent pb-2":""}`}>
                                 <DockerContainerProvider container={container}>
-                                    <DockerContainersListItem />
+                                    <DockerHostContainersListItem />
                                 </DockerContainerProvider>
                             </li>
                         ))}
@@ -185,4 +185,4 @@ const DockerContainersList = () => {
     );
 };
 
-export default DockerContainersList;
+export default DockerHostContainers;

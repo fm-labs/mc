@@ -199,6 +199,10 @@ const ApiRouter = () => {
                                     Component: ContainerHostPage,
                                 },
                                 {
+                                    path: ":hostId/:view",
+                                    Component: ContainerHostPage,
+                                },
+                                {
                                     path: ":hostId/container/:containerId",
                                     Component: ContainerPage,
                                 }
