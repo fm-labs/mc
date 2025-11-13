@@ -1,5 +1,6 @@
 import React from "react";
-import { Badge } from "@/components/ui/badge.tsx";
+import {Badge} from "@/components/ui/badge.tsx";
+import DevOnly from "@/components/dev-only.tsx";
 
 interface EventSourceReaderProps {
     url: string;
@@ -10,13 +11,14 @@ interface EventSourceReaderProps {
     //onStop: () => void;
 }
 
-export const EventSourceReader = ({ url, ...props }: EventSourceReaderProps) => {
+export const EventSourceReader = ({url, ...props}: EventSourceReaderProps) => {
     const esRef = React.useRef<EventSource | null>(null);
     const logRef = React.useRef<HTMLDivElement | null>(null);
     const bytesReceivedRef = React.useRef<number>(0);
     const statsContainerRef = React.useRef<HTMLDivElement | null>(null);
 
     const [enableStreaming, setEnableStreaming] = React.useState<boolean>(false);
+    const [findText, setFindText] = React.useState<string>("");
 
     const clearLog = () => {
         if (logRef.current) {
@@ -38,6 +40,30 @@ export const EventSourceReader = ({ url, ...props }: EventSourceReaderProps) => 
             logRef.current.scrollTop = logRef.current.scrollHeight;
         }
     };
+
+    const findInLog = (text: string, lastIndex: number) => {
+        if (logRef.current) {
+            const logEntries = logRef.current.children;
+            for (let i = lastIndex; i < logEntries.length; i++) {
+                const entry = logEntries[i] as HTMLDivElement;
+                if (entry.textContent && entry.textContent.includes(text)) {
+                    entry.style.backgroundColor = "rgba(255, 255, 0, 0.5)"; // Highlight found entry
+                    return i + 1; // Return next index to continue search
+                }
+            }
+        }
+    }
+
+    React.useEffect(() => {
+        if (findText === "") return;
+        const index = findInLog(findText, 0);
+        let lastIndex = index !== undefined ? index : 0;
+        // scroll to first found entry
+        if (logRef.current && logRef.current.children[lastIndex - 1]) {
+            const entry = logRef.current.children[lastIndex - 1] as HTMLDivElement;
+            entry.scrollIntoView({behavior: "smooth", block: "center"});
+        }
+    })
 
     // const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     //     const container = e.currentTarget;
@@ -75,7 +101,7 @@ export const EventSourceReader = ({ url, ...props }: EventSourceReaderProps) => 
                 try {
                     const data = JSON.parse(event.data);
 
-                    if (data?.type==="complete") {
+                    if (data?.type === "complete") {
                         console.log("Stream complete, closing EventSource.");
                         eventSource.close();
                         esRef.current = null;
@@ -138,10 +164,16 @@ export const EventSourceReader = ({ url, ...props }: EventSourceReaderProps) => 
             {renderStatus()}
             <span ref={statsContainerRef} className={"ml-1 text-secondary-foreground text-xs"}></span>
             <div ref={logRef}
-                 //onClick={handleContainerClick}
-                 className="mt-1 h-96 w-full overflow-y-scroll overflow-x-hidden border p-1 text-sm font-mono whitespace-pre-wrap break-all [overflow-wrap:anywhere]">
+                //onClick={handleContainerClick}
+                 className="mt-1 h-64 w-full overflow-y-scroll overflow-x-hidden border p-1 text-sm font-mono whitespace-pre-wrap break-all [overflow-wrap:anywhere]">
                 <div>Event log will appear here...</div>
             </div>
+            <DevOnly>
+                <input type={"text"}
+                       value={findText}
+                       placeholder={"Enter search query ..."}
+                       onChange={(e) => setFindText(e.target.value)}/>
+            </DevOnly>
         </div>
     );
 };
