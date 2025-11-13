@@ -126,7 +126,6 @@ def post_docker_container_action(alias: str, container_id: str, action: str,
         cache_key = f"container_{container_id}"
         if cache_key in cache:
             del cache[cache_key]
-        cache_key = f"containers_{alias}"
         return {"action": action, "status": "ok", "message": f"Action {action} was successful"}
 
     except Exception as e:
@@ -271,3 +270,27 @@ def list_docker_images(client=Depends(dep_container_connection)) -> List[dict]:
 def get_docker_image(image_id: str, client=Depends(dep_container_connection)) -> dict:
     image = client.images.get(image_id)
     return jsonable_encoder(image.attrs)
+
+
+@router.get("/containers/{alias}/volumes")
+def list_docker_volumes(client=Depends(dep_container_connection)) -> List[dict]:
+    collection = client.volumes.list()
+    print("Volumes", collection)
+    volumes = []
+    for img in collection:
+        volumes.append(img.attrs)
+    return jsonable_encoder(volumes)
+
+
+@router.post("/containers/{alias}/compose/{project_name}/actions/{action}")
+def post_docker_container_action(alias: str, project_name: str, action: str,
+                                 client=Depends(dep_container_connection)) -> dict:
+
+    try:
+        pass
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class ExecRequest(BaseModel):
+    command: str

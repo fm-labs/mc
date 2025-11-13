@@ -1,21 +1,20 @@
-import os
 from pathlib import Path
 
 from rx import config
 from rx.config import RunConfig, GlobalContext
 from rx.helper.subprocess_helper import rx_subprocess
-from rx.util import split_url, get_tool_path
+from rx.util import split_url
 
 
-def check_aws_cli_installed(ctx: GlobalContext = None) -> str:
-    aws_bin = os.environ.get("AWS_BIN", "/usr/local/bin/aws")
-    if os.path.exists(aws_bin) and os.access(aws_bin, os.X_OK):
-        return aws_bin
-
-    aws_bin = get_tool_path("aws")
-    if aws_bin:
-        return aws_bin
-    raise EnvironmentError("AWS CLI is not installed or not found in PATH.")
+# def check_aws_cli_installed(ctx: GlobalContext = None) -> str:
+#     aws_bin = os.environ.get("AWS_BIN", "/usr/local/bin/aws")
+#     if os.path.exists(aws_bin) and os.access(aws_bin, os.X_OK):
+#         return aws_bin
+#
+#     aws_bin = get_tool_path("aws")
+#     if aws_bin:
+#         return aws_bin
+#     raise EnvironmentError("AWS CLI is not installed or not found in PATH.")
 
 
 def handle_s3_run(run_cfg: RunConfig, ctx: GlobalContext):

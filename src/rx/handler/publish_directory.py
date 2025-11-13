@@ -4,9 +4,8 @@ from pathlib import Path
 from rx.config import RunConfig, GlobalContext
 from rx.util import split_url
 
-from rx.plugin.s3 import handler as s3_run_handler
-from rx.plugin.rsync import handler as rsync_run_handler
-from rx.plugin.scp import handler as scp_run_handler
+from rx.handler.s3 import handler as s3_run_handler
+from rx.handler.scp import handler as scp_run_handler
 
 
 @dataclass
@@ -58,7 +57,8 @@ class RxDirectorySource(RxSource):
         if dest_scheme == "s3":
             return s3_run_handler
         elif dest_scheme in ["rsync", "ssh", "file"]:
-            return rsync_run_handler
+            #return rsync_run_handler
+            raise RuntimeError("Not implemented")
         elif dest_scheme == "scp":
             return scp_run_handler
         else:
@@ -88,7 +88,8 @@ def handle_directory_run(run_cfg: RunConfig, ctx: GlobalContext):
 
     if dest.startswith("/"):
         # local absolute path, use rsync
-        return rsync_run_handler(run_cfg, ctx)
+        #return rsync_run_handler(run_cfg, ctx)
+        raise RuntimeError("Not implemented")
     elif "://" in dest:
         # likely a URL
         [dest_scheme, _] = split_url(dest)
@@ -97,7 +98,8 @@ def handle_directory_run(run_cfg: RunConfig, ctx: GlobalContext):
         if dest_scheme == "s3":
             return s3_run_handler(run_cfg, ctx)
         elif dest_scheme in ["rsync", "ssh", "file"]:
-            return rsync_run_handler(run_cfg, ctx)
+            #return rsync_run_handler(run_cfg, ctx)
+            raise RuntimeError("Not implemented")
         elif dest_scheme == "scp":
             return scp_run_handler(run_cfg, ctx)
         else:

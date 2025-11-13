@@ -10,7 +10,7 @@ import yaml
 
 from mc.config import DATA_DIR
 from mc.inventory.storage import get_inventory_storage_instance
-from mc.plugin.containers.tasks import deploy_compose_project_to_container_host
+from mc.plugin.containers.tasks import task_deploy_compose_stack
 from mc.tasks import clone_or_update_git_repo
 
 
@@ -42,7 +42,7 @@ class AppStackItem:
         # normalize app_name
         # normalize with regex to only allow alphanumeric and hyphens
         slug = (self.name.lower().replace(" ", "-").replace("_", "-")
-                    .replace("/", "-"))
+                .replace("/", "-"))
         slug = re.sub(r"[^a-z0-9\-]", "", slug)
         return slug
 
@@ -112,7 +112,6 @@ class AppStackItem:
             else:
                 shutil.copy2(item, dest_path)
 
-
     @staticmethod
     def from_item_dict(item: dict) -> "AppStackItem":
         item_name = item.get("name")
@@ -126,17 +125,20 @@ def _build_app_dir_path(app_name: str) -> Path:
     app_dir = base_dir / app_name
     return app_dir
 
+
 def _build_template_repo_dir_path(repository_url: str) -> Path:
     repo_key = repository_url.replace("://", "-").replace("/", "-").replace(".", "-")
     base_dir = Path(f"{DATA_DIR}/template_repos")
     repo_dir = base_dir / repo_key
     return repo_dir
 
+
 def _generate_random_secret(length: int = 32) -> str:
     import secrets
     import string
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
+
 
 def _lookup_container_host_url(host_name: str) -> str:
     storage = get_inventory_storage_instance()
@@ -160,13 +162,14 @@ def _build_app_key(owner_id: str, item_name: str, version: str) -> str:
     def _normalize(s: str) -> str:
         return (s.lower().replace(" ", "-").replace("_", "-")
                 .replace(".", "-").replace("/", "-"))
+
     return f"{_normalize(owner_id)}-{_normalize(item_name)}"
 
 
 def _build_appstack_compose_override(app: AppStackItem) -> dict:
     item_name = app.name
     app_version = app.version or "latest"
-    #app_hash = _build_app_hash(project_name, item_name, app_version)
+    # app_hash = _build_app_hash(project_name, item_name, app_version)
     service_key = _build_app_key("default", item_name, app_version)
 
     override_networks = {}
@@ -277,6 +280,7 @@ def handle_app_stack_action_prepare(item: dict, action_params: dict) -> dict:
         "environment": environment,
     }
 
+
 def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
     """
     Configure the app stack by handling environment variables and other settings.
@@ -336,7 +340,6 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
         raise ValueError(f"App stack '{app.name}' has unsupported template_repository schema '{sschema}'")
 
 
-
 def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     """
     Deploy the app stack to the specified container host using Docker Compose.
@@ -346,8 +349,6 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
 
     app = AppStackItem.from_item_dict(item)
     item_name = app.name
-    if not app.template_repository:
-        raise ValueError(f"App stack '{item_name}' does not have a template_repository defined for deployment")
     if not app.container_host:
         raise ValueError(f"App stack '{item_name}' does not have a container_host defined for deployment")
     container_host_url = _lookup_container_host_url(app.container_host)
@@ -356,25 +357,8 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     if not app_dir.exists() or not app_dir.is_dir():
         raise FileNotFoundError(f"App stack directory '{app_dir}' does not exist")
 
-    # detect compose files in app_dir
-    compose_files = []
-    knownfiles_list = ["docker-compose.yml", "docker-compose.yaml",
-                       "docker-compose.prod.yml", "docker-compose.prod.yaml",
-                       "compose.yml", "compose.yaml",
-                       "compose.prod.yml", "compose.prod.yaml"]
-    for kf in knownfiles_list:
-        kf_path = app_dir / kf
-        if kf_path.exists() and kf_path.is_file():
-            compose_files.append(kf)
-
-    result = deploy_compose_project_to_container_host(host_url=container_host_url,
-                                                      app_name=app.slug,
-                                                      app_dir=str(app_dir.resolve()),
-                                                      compose_args={
-                                                          "composefile": compose_files,
-                                                          "up_args": ["--build"]
-                                                      })
-    return result
+    return task_deploy_compose_stack(project_name=app.slug, project_dir=str(app_dir.resolve()),
+                                       host_url=container_host_url,)
 
 
 def handle_app_stack_view_template_config(item: dict, view_params: dict) -> dict:

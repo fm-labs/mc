@@ -2,20 +2,12 @@ from pathlib import Path
 
 from rx.config import RunConfig, GlobalContext
 from rx.helper.subprocess_helper import rx_subprocess
-from rx.util import split_url, get_tool_path
-
-
-def check_scp_installed(ctx: GlobalContext = None) -> None:
-    if not get_tool_path("scp"):
-        raise EnvironmentError("scp is not installed or not found in PATH.")
+from rx.util import split_url
 
 
 def handle_scp_run(run_cfg: RunConfig, ctx: GlobalContext):
     src = run_cfg.src
     dest = run_cfg.dest
-
-    # ensure scp cli is installed
-    check_scp_installed(ctx)
 
     [srcschema, src_hostpath] = split_url(src)
     if srcschema not in ["file"]:

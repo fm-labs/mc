@@ -192,7 +192,7 @@ def ssh_load_pkey(key_filename: str, key_passphrase: str) -> tuple[paramiko.PKey
     raise Exception("Unsupported or invalid key file.")
 
 
-def ssh_execute_command(client, command: str, timeout: int = None, environment: dict = None) -> tuple[str, str, int]:
+def ssh_execute_command(client, command: str, timeout: int = None, environment: dict = None) -> tuple[bytes, bytes, int]:
     """
     Execute a command on the remote host via an established SSH connection.
 
@@ -211,7 +211,7 @@ def ssh_execute_command(client, command: str, timeout: int = None, environment: 
                                                     timeout=timeout,
                                                     environment=environment)
         exit_status = stdout.channel.recv_exit_status()
-        return stdout.read().decode(), stderr.read().decode(), exit_status
+        return stdout.read(), stderr.read(), exit_status
     except Exception as e:
         print(f"ssh_execute_command ERROR: '{command}': {e}")
         raise

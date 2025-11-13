@@ -6,9 +6,8 @@ from rx.helper.sshpy_helper import ssh_connect
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from mc.db.mongodb import mongodb_results_to_json
 from mc.inventory.storage import get_inventory_storage_instance
-from mc.util.ssh_async import stream_exec_command
+from mc.util.ssh_async import ssh_exec_command_stream
 
 router = APIRouter()
 
@@ -159,7 +158,7 @@ async def ssh_host_logs_stream(client: SSHClient, **kwargs) -> AsyncGenerator[tu
     print(f"Executing command: {cmd}")
 
     # convert to async generator
-    async for kind, payload in stream_exec_command(client, cmd, agent_forward=False):
+    async for kind, payload in ssh_exec_command_stream(client, cmd, agent_forward=False):
         #print(f"[{kind}] {payload}", end="")
         #yield "data: " + payload + "\n\n"
         yield kind, payload

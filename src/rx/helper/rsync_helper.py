@@ -1,21 +1,10 @@
 from pathlib import Path
 
-from rx.config import RunConfig, GlobalContext
 from rx.helper.subprocess_helper import rx_subprocess
-from rx.util import split_url, get_tool_path, toolcmd
+from rx.util import split_url, toolcmd
 
 
-def check_rsync_installed(ctx: GlobalContext = None) -> None:
-    if not get_tool_path("rsync"):
-        raise EnvironmentError("Rsync is not installed or not found in PATH.")
-
-
-def handle_rsync_run(run_cfg: RunConfig, ctx: GlobalContext, mkdir=True):
-    src = run_cfg.src
-    dest = run_cfg.dest
-
-    # ensure aws cli is installed
-    check_rsync_installed(ctx)
+def rsync_execute(src: str, dest: str, mkdir=True, ssh_config: dict = None, exclude: list = None, ):
 
     # validate required fields
     [srcschema, src_hostpath] = split_url(src)
@@ -23,7 +12,7 @@ def handle_rsync_run(run_cfg: RunConfig, ctx: GlobalContext, mkdir=True):
         srcschema = "file"
     if srcschema not in ["file"]:
         raise ValueError("Source URL must start with file://")
-    srcpath = Path(ctx.cwd) / src_hostpath
+    srcpath = Path(src_hostpath).resolve()
     if not srcpath.exists():
         raise FileNotFoundError(f"Source path '{srcpath}' does not exist.")
 
@@ -32,10 +21,13 @@ def handle_rsync_run(run_cfg: RunConfig, ctx: GlobalContext, mkdir=True):
     #cmd += ["--delete"]
 
     [destschema, dhostpath] = split_url(dest)
+    # local rsync
     if destschema in ["rsync+file", "file", ""]:
-        if dhostpath == "" or dhostpath == ".":
-            dhostpath = Path(ctx.cwd)
-        _dest = str(Path(dhostpath).absolute())
+        _dest = str(Path(dhostpath).resolve().absolute())
+        if mkdir:
+            Path(_dest).mkdir(parents=True, exist_ok=True)
+
+    # ssh rsync
     elif destschema in ["rsync+ssh", "ssh", "scp"]:
         # the ssh destpath should be in the format user@host:/path/to/dir
         [_, remote_path] = dhostpath.split(":", 1)
@@ -43,15 +35,10 @@ def handle_rsync_run(run_cfg: RunConfig, ctx: GlobalContext, mkdir=True):
             raise ValueError("Remote path is empty in destination.")
 
         # ssh specific options
-        ssh_cfg = run_cfg.extra.get("ssh", {})
-        ssh_port = ssh_cfg.get("port", "22")
-        ssh_key_file = ssh_cfg.get("key_file", "")
-
-        # build ssh args
+        ssh_port = ssh_config.get("port", "22")
+        ssh_key_file = ssh_config.get("key_file", "")
         ssh_args = []
-        # timeout for ssh connection
         ssh_args += ["-o", "ConnectTimeout=10"]
-        # disable host key checking
         ssh_args += ["-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null"]
         if ssh_key_file:
             ssh_args += ["-i", ssh_key_file]
@@ -68,20 +55,20 @@ def handle_rsync_run(run_cfg: RunConfig, ctx: GlobalContext, mkdir=True):
             rsync_args += ["--rsync-path", f"mkdir -p {remote_path} && rsync"]
 
         # handle exclude/include files
-        exclude_file = run_cfg.extra.get("exclude", ".exclude")
+        exclude_file = ".dockerignore"
         if exclude_file:
-            exclude_path = Path(ctx.cwd) / exclude_file
+            exclude_path = Path(exclude_file).resolve()
             if exclude_path.exists():
                 rsync_args += ["--exclude-from", str(exclude_path)]
             else:
                 print(f"Warning: exclude file '{exclude_path}' does not exist, ignoring.")
 
-        include_file = run_cfg.extra.get("include", ".include")
-        if include_file:
-            include_path = Path(ctx.cwd) / include_file
-            if include_path.exists():
-                rsync_args += ["--include-from", include_file]
-            print(f"Warning: include file '{include_path}' does not exist, ignoring.")
+        #include_file = ""
+        #if include_file:
+        #    include_path = Path(include_file).resolve()
+        #    if include_path.exists():
+        #        rsync_args += ["--include-from", include_file]
+        #    print(f"Warning: include file '{include_path}' does not exist, ignoring.")
 
         _dest = dhostpath
     else:
@@ -92,7 +79,4 @@ def handle_rsync_run(run_cfg: RunConfig, ctx: GlobalContext, mkdir=True):
 
     rsync_args += [f"{_src}/", f"{_dest}"]
     cmd = toolcmd("rsync", rsync_args)
-    return rx_subprocess(cmd, cwd=str(ctx.cwd))
-
-
-handler = handle_rsync_run
+    return rx_subprocess(cmd, cwd=str(Path(src).resolve().absolute()))

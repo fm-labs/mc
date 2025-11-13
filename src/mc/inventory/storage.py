@@ -1,8 +1,9 @@
 import abc
+import json
 import os
 from typing import List, Optional
 
-from mc.config import load_config_json, save_config_json
+from mc.config import DATA_DIR
 from mc.db.mongodb import get_mongo_client, get_mongo_collection
 from mc.db.redis import get_redis_client
 
@@ -62,7 +63,7 @@ class InventoryStorage(abc.ABC):
 class FileBasedInventoryStorage(InventoryStorage):
 
     def list_items(self, inventory_type: str) -> List[dict]:
-        return load_config_json(inventory_type)
+        return self.load_config_json(inventory_type)
 
     def save_item(self, inventory_type: str, item: dict) -> bool:
         items = self.list_items(inventory_type)
@@ -72,7 +73,7 @@ class FileBasedInventoryStorage(InventoryStorage):
                 break
         else:
             items.append(item)
-        save_config_json(inventory_type, items)
+        self.save_config_json(inventory_type, items)
         return True
 
     def get_item(self, inventory_type: str, item_key: str) -> dict:
@@ -85,8 +86,20 @@ class FileBasedInventoryStorage(InventoryStorage):
     def delete_item(self, inventory_type: str, item_key: str) -> bool:
         items = self.list_items(inventory_type)
         items = [item for item in items if item["item_key"] != item_key]
-        save_config_json(inventory_type, items)
+        self.save_config_json(inventory_type, items)
         return True
+
+    @staticmethod
+    def load_config_json(file_name: str) -> dict | list:
+        file_path = f"{DATA_DIR}/inventorydb/{file_name}.json"
+        with open(file_path, 'r') as f:
+            return json.load(f)
+
+    @staticmethod
+    def save_config_json(file_name: str, data: dict | list) -> None:
+        file_path = f"{DATA_DIR}/inventorydb/{file_name}.json"
+        with open(file_path, 'w') as f:
+            json.dump(data, f, indent=4)
 
 
 class MongoDBInventoryStorage(InventoryStorage):

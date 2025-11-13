@@ -6,37 +6,9 @@ from paramiko.client import SSHClient
 from rx.config import RunConfig, GlobalContext
 from rx.helper.sshpy_helper import ssh_connect, ssh_execute_command, ssh_params_from_url
 from rx.helper.subprocess_helper import rx_subprocess
-from rx.plugin.rsync import handle_rsync_run
 from rx.util import split_url
 
-def get_ssh_client(dest, ssh_cfg: dict) -> SSHClient:
-    ssh_params = ssh_params_from_url(dest, ssh_params=ssh_cfg, use_ssh_config=True)
-    print(f"SSH params: {ssh_params}")
 
-    ssh_hostname = ssh_params.get("hostname")
-    ssh_port = ssh_params.get("port")
-    ssh_user = ssh_params.get("username")
-    ssh_password = ssh_params.get("password")
-    ssh_key_file = ssh_params.get("key_filename")
-    ssh_key_pass = ssh_params.get("key_passphrase")
-    try:
-        client = ssh_connect(hostname=ssh_hostname, port=ssh_port,
-                             username=ssh_user, password=ssh_password,
-                             key_filename=ssh_key_file, key_passphrase=ssh_key_pass)
-        if not client:
-            raise ConnectionError(f"SSH client failed to connect to {dest}")
-        print(f"SSH client connected to {dest}")
-        return client
-    except Exception as e:
-        # print stack trace
-        import traceback
-        traceback.print_exc()
-
-        print(f"SSH client connection error: {e}")
-        raise
-
-def run_local_docker_compose_command(compose_dir: Path, compose_files: list, command: list):
-    pass
 
 def run_local_hook_script(local_compose_dir: Path, script_name: str) -> tuple[str, str, int]:
     stdout, stderr, rc = "", "", 0 # default success
@@ -82,23 +54,6 @@ def run_remote_hook_script(client: SSHClient, remote_compose_dir: str, script_na
         print(f"Remote Hook script {script_name} STDERR: {stderr}")
     return stdout, stderr, rc
 
-
-def run_remote_docker_compose_command(client: SSHClient, remote_compose_dir: str, compose_files: list, command: list):
-    pass
-
-
-def upload_directory_via_rsync(local_dir: Path, dest: str, ssh_params: dict, ctx: GlobalContext):
-    print(f"Syncing {local_dir} to {dest} ...")
-    src = f"file://{local_dir}/"
-    rsync_run_cfg = RunConfig(
-        src=src,
-        dest=str(dest),
-        extra={"ssh": ssh_params},
-    )
-    handle_rsync_run(rsync_run_cfg, ctx)
-
-def upload_directory_via_scp(local_dir: Path, remote_dir: str, ssh_params: dict):
-    pass
 
 
 def build_compose_command(command: list[str], compose_files: list[str], project_dir: str = None,

@@ -31,7 +31,7 @@ def _enqueue_stream(stream, kind: str, q: asyncio.Queue, loop: asyncio.AbstractE
         loop.call_soon_threadsafe(q.put_nowait, (f"{kind}_done", ""))
 
 
-async def stream_exec_command(
+async def ssh_exec_command_stream(
     client: paramiko.SSHClient,
     command: str,
     *,

@@ -6,11 +6,34 @@ import subprocess
 
 import typer
 
-from rx.helper.cli_helper import cli_error, cli_info, cli_success, cli_warn, cli_debug
+from rx.helper.typer_helper import cli_error, cli_info, cli_success, cli_warn, cli_debug
 from rx.config import load_config, GlobalContext
-from rx.rx import rx_run
 
 app = typer.Typer(add_completion=False, help="RX - Build and Runment Tool")
+
+
+# def get_run_handler(run_cfg: RunConfig, ctx: GlobalContext):
+#     if not run_cfg.action:
+#         return None
+#     module_name = "rx.handler." + run_cfg.action.replace("-", "_")
+#     handler_name = "handler"
+#     try:
+#         module = __import__(module_name, fromlist=[handler_name])
+#         handler = getattr(module, handler_name)
+#     except (ImportError, AttributeError) as e:
+#         print(f"Error importing handler for {run_cfg.action}: {e}")
+#         handler = None
+#     return handler
+#
+#
+#
+# def rx_run(run_cfg: RunConfig, ctx: GlobalContext) -> int:
+#     handler = get_run_handler(run_cfg, ctx)
+#     if not handler:
+#         raise ValueError(f"No handler found for run type: {run_cfg.action}")
+#
+#     print(f"Using run handler: {handler.__module__}.{handler.__name__}")
+#     return handler(run_cfg, ctx)
 
 
 def run_step(label: str, command: str | None, cwd: Optional[Path] = None, dry_run: bool = False) -> None:
@@ -169,7 +192,7 @@ def run(
         if (run_cfg.command is not None) and (run_cfg.command != ""):
             run_step("run", run_cfg.command, cwd=g.cwd, dry_run=g.dry_run)
         else:
-            rx_run(run_cfg, ctx=g)
+            raise ValueError(f"No command defined for run target '{target}'")
     except Exception as e:
         cli_error(str(e))
         raise e

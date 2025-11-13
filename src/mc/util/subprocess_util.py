@@ -1,4 +1,3 @@
-import subprocess
 
 def kwargs_to_cmdargs(kwargs) -> list:
     """
@@ -18,15 +17,5 @@ def kwargs_to_cmdargs(kwargs) -> list:
             if type(v) is not bool:
                 args.append(str(v))
     return args
-
-
-def run_command(cmd: str | list):
-    """
-    Invoke Docker Command in Local Shell (Blocking)
-    """
-    try:
-        return subprocess.check_output(cmd, shell=True)
-    except subprocess.CalledProcessError as e:
-        return e.output
 
 

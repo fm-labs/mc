@@ -2,14 +2,10 @@ import io
 import os
 import re
 import subprocess
-import tempfile
 
 import paramiko
 import pexpect
 from paramiko import RSAKey, ECDSAKey, Ed25519Key
-
-from mc.credentials import get_credentials
-from xvault.vault import open_vaultfile
 
 
 def ssh_agent_start():
@@ -141,58 +137,3 @@ def pkey_to_openssh_publine(pkey, comment: str | None = None) -> str:
     suffix = f" {comment}" if comment else ""
     return f"{keytype} {b64}{suffix}"
 
-
-def ssh_agent_load_keys_from_vault(vaultfile: str, password_file: str) -> None:
-    with open_vaultfile(vaultfile, passfile=password_file, mode="r") as vault_file:
-        ssh_agent_load_keys_from_credentials_file(str(vault_file.name))
-
-
-def ssh_agent_load_keys_from_credentials_file(creds_file: str) -> None:
-    creds = get_credentials(creds_file, None)
-    # iterate creds, find creds with "ssh_key_id" field
-    for cname, cdata in creds.items():
-        if "ssh_key_id" in cdata:
-            key_id = cdata["ssh_key_id"]
-            key_name = cdata["ssh_key_name"]
-            print(f">>> Found ssh credential {cname} with key_id {key_id}")
-            key_data = cdata.get("ssh_key")  # bytes
-            passphrase = cdata.get("ssh_key_passphrase")
-            if passphrase is not None:
-                if passphrase == "null" or passphrase == "":
-                    passphrase = None
-
-            if not key_data:
-                print(f"Skipping {cname}, no key data found")
-                continue
-
-            try:
-                pkey = build_ssh_pkey_from_buffer(key_data, passphrase)
-                print(f"Pkey loaded. type: {type(pkey)}, fingerprint: {pkey.get_fingerprint().hex()}")
-                pubkey = pkey_to_openssh_publine(pkey, comment=cname)
-                print(f"Public key: {pubkey}")
-
-                key_file_path = os.path.expanduser(f"~/.ssh/{key_name}")
-                os.makedirs(os.path.dirname(key_file_path), exist_ok=True)
-                if not os.path.exists(key_file_path):
-                    with open(key_file_path, "wb") as kf:
-                        kf.write(key_data)
-                    os.chmod(key_file_path, 0o600)
-                    print(f"Wrote SSH key to {key_file_path}")
-
-                    pubkey_file_path = os.path.expanduser(f"~/.ssh/{key_name}.pub")
-                    with open(pubkey_file_path, "w") as pkf:
-                        pkf.write(pubkey + "\n")
-                    os.chmod(pubkey_file_path, 0o644)
-                    print(f"Wrote SSH public key to {pubkey_file_path}")
-
-                #key_file = tempfile.NamedTemporaryFile(mode="w+t")
-                #key_file.write(key_data.decode("utf-8"))
-                #key_file.flush()
-                #key_file.seek(0)
-                #key_file_path = key_file.name
-
-                ssh_agent_add_key_file(key_file_path, passphrase)
-                print(f"Added SSH key for {cname} with key_id {key_id}")
-            except Exception as e:
-                print(f"Failed to load SSH key for {cname}: {e}")
-                continue

@@ -3,36 +3,8 @@ import tempfile
 import shutil
 import os
 
-from rx.config import RunConfig, GlobalContext
 
-
-def get_run_handler(run_cfg: RunConfig, ctx: GlobalContext):
-    if not run_cfg.action:
-        return None
-    module_name = "rx.handler." + run_cfg.action.replace("-", "_")
-    handler_name = "handler"
-    try:
-        module = __import__(module_name, fromlist=[handler_name])
-        handler = getattr(module, handler_name)
-    except (ImportError, AttributeError) as e:
-        print(f"Error importing handler for {run_cfg.action}: {e}")
-        handler = None
-    return handler
-
-
-
-def rx_run(run_cfg: RunConfig, ctx: GlobalContext) -> int:
-    handler = get_run_handler(run_cfg, ctx)
-    if not handler:
-        raise ValueError(f"No handler found for run type: {run_cfg.action}")
-
-    print(f"Using run handler: {handler.__module__}.{handler.__name__}")
-    return handler(run_cfg, ctx)
-
-
-
-
-def rx_dir_to_dir(src_dir: str, dest_dir: str, exclude: list = None) -> int:
+def rx_sync_dir_to_dir(src_dir: str, dest_dir: str, exclude: list = None) -> int:
     if not os.path.exists(src_dir):
         raise ValueError(f"Source directory does not exist: {src_dir}")
     if not os.path.isdir(src_dir):
@@ -55,7 +27,7 @@ def rx_dir_to_dir(src_dir: str, dest_dir: str, exclude: list = None) -> int:
         return 1
 
 
-def rx_dir_to_remote_dir(src_dir: str, dest: str, exclude: list = None) -> int:
+def rx_sync_dir_to_remote_dir(src_dir: str, dest: str, exclude: list = None) -> int:
     if not os.path.exists(src_dir):
         raise ValueError(f"Source directory does not exist: {src_dir}")
     if not os.path.isdir(src_dir):
@@ -81,7 +53,7 @@ def rx_dir_to_remote_dir(src_dir: str, dest: str, exclude: list = None) -> int:
         return 1
 
 
-def rx_dir_to_s3_dir(src_dir: str, dest_dir: str, exclude: list = None) -> int:
+def rx_sync_dir_to_s3_dir(src_dir: str, dest_dir: str, exclude: list = None) -> int:
     if not os.path.exists(src_dir):
         raise ValueError(f"Source directory does not exist: {src_dir}")
     if not os.path.isdir(src_dir):
@@ -105,7 +77,7 @@ def rx_dir_to_s3_dir(src_dir: str, dest_dir: str, exclude: list = None) -> int:
         return 1
 
 
-def rx_dir_to_temp_dir(src_dir: str, exclude: list = None) -> tuple[str, int]:
+def rx_sync_dir_to_temp_dir(src_dir: str, exclude: list = None) -> tuple[str, int]:
     if not os.path.exists(src_dir):
         raise ValueError(f"Source directory does not exist: {src_dir}")
     if not os.path.isdir(src_dir):

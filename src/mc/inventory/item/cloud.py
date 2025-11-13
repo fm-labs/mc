@@ -1,35 +1,5 @@
 import os
-from typing import List
 import configparser
-
-from mc import config
-from mc.credentials import add_credentials
-
-
-# from pydantic import BaseModel
-#
-#
-# class KloudiaAwsAccountModel(BaseModel):
-#     account_id: str
-#     regions: List[str]
-#
-#
-# class KloudiaGcpAccountModel(BaseModel):
-#     project_id: str
-#     regions: List[str]
-#
-#
-# class KloudiaAzureAccountModel(BaseModel):
-#     subscription_id: str
-#     regions: List[str]
-#
-#
-# class KloudiaCloudModel(BaseModel):
-#     name: str
-#     platform: str
-#     aws: KloudiaAwsAccountModel | None = None
-#     gcp: KloudiaGcpAccountModel | None = None
-#     azure: KloudiaAzureAccountModel | None = None
 
 def read_ini_file(file_path: str) -> configparser.ConfigParser:
     """
@@ -109,8 +79,8 @@ def handle_cloud_configure_aws_profile(item: dict, action_params: dict) -> dict:
     update_ini_section(aws_config_path, section_name, kv)
 
     # add to credentials vault as well
-    vault_file = f"{config.VAULT_FILE}.yaml"
-    add_credentials(vault_file, aws_profile_name, kv)
+    #vault_file = f"{config.VAULT_FILE}.yaml"
+    #add_credentials(vault_file, aws_profile_name, kv)
 
     return {
         "status": "configured",

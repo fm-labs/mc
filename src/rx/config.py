@@ -7,12 +7,11 @@ from dataclasses import dataclass, fields
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 from rx.util import substitute_double_brace
 
-load_dotenv(".env.local")
-load_dotenv(".env")
+#load_dotenv(".env.rx")
 
 # SSH related environment variables
 # generate a new key pair using:

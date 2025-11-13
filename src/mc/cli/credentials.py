@@ -3,14 +3,12 @@ from __future__ import annotations
 
 import json
 import sys
-from contextlib import contextmanager
-from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 
 import typer
 
-from xvault.backend.ansible_vault import run_ansible_vault
-from xvault.credentials import add_credentials, update_credentials, remove_credentials, get_credentials
+from mc.credentials_manager import update_credentials, remove_credentials, get_credentials, add_credentials
+from mc.vault import open_vaultfile
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 

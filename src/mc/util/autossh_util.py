@@ -1,7 +1,5 @@
 import os
 import sys
-import shlex
-import signal
 import subprocess
 from pathlib import Path
 from typing import Callable, Optional, List

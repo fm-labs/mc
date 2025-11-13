@@ -1,9 +1,6 @@
 import shutil
 from pathlib import Path
 
-from rx.config import RunConfig, GlobalContext
-from rx.util import split_url
-
 
 def copy_recursive(src: Path, dest: Path, exclude: list[str] = None):
     if not src.exists():
@@ -25,19 +22,3 @@ def copy_recursive(src: Path, dest: Path, exclude: list[str] = None):
             copy_recursive(s, d)
         else:
             shutil.copy2(s, d)
-
-
-def handle_file_run(run_cfg: RunConfig, ctx: GlobalContext):
-    src = run_cfg.src
-    dest = run_cfg.dest
-
-    [srcschema, srcpath] = split_url(src)
-    [destschema, destpath] = split_url(dest)
-
-    src_path = Path(ctx.cwd) / srcpath
-    dest_path = Path(ctx.cwd) / destpath
-    #copy_recursive(src_path, dest_path)
-    raise ValueError("xx")
-
-
-handler = handle_file_run
