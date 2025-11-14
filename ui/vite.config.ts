@@ -6,13 +6,19 @@ import tailwindcss from "@tailwindcss/vite";
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vite.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig({
 
     plugins: [react(), tailwindcss()],
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
         },
+    },
+
+    build: {
+        sourcemap: false, // only for debugging
+        minify: 'esbuild', // or "terser" (esbuild is faster)
+        cssCodeSplit: true, // separate css for better caching
     },
 
     // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
@@ -36,4 +42,4 @@ export default defineConfig(async () => ({
             ignored: ["**/src-tauri/**"],
         },
     },
-}));
+});

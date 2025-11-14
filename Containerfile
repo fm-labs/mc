@@ -3,7 +3,7 @@ FROM node:24-alpine AS ui-builder
 RUN npm install -g bun
 WORKDIR /builder
 COPY ui/package.json ui/bun.lock ./
-RUN bun install
+RUN bun install --frozen-lockfile
 COPY ui/ .
 RUN bun run build
 
