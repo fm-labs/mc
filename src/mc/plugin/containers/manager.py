@@ -99,34 +99,34 @@ async def bootstrap_container_connection_manager() -> None:
     for item in items:
         url = item.get("properties", {}).get("url")
         engine = item.get("properties", {}).get("engine", "docker").lower()
-        auto_connect = item.get("properties", {}).get("autoconnect", False)
+        autoconnect = item.get("properties", {}).get("autoconnect", False)
         print("CCM: Found container host in inventory:", engine, url)
-        if not auto_connect:
-            print("CCM: Skipping container host (auto_connect is false):", url)
+        if not autoconnect:
+            print("CCM: Skipping container host (autoconnect is false):", url)
             continue
 
         # check if we have a host inventory record
-        if url.startswith("ssh://"):
-            hostname = url.split("://")[-1].split("/")[0]
-            print("CCM: Lookup host inventory record for:", hostname)
-            host = inventory.get_item_by_name("host", hostname)
-            if host:
-                print("  Found host inventory record:", host.get("name"))
-                #ssh_hostname = host.get("properties", {}).get("ssh_hostname", hostname)
-                ssh_hostname = hostname
-                ssh_port = host.get("properties", {}).get("ssh_port", 22)
-                ssh_user = host.get("properties", {}).get("ssh_user", "")
-                #ssh_key_name = host.get("properties", {}).get("ssh_key_name", "")
-
-                url = f"ssh://"
-                if ssh_user:
-                    url += f"{ssh_user}@"
-                url += f"{ssh_hostname}"
-                if ssh_port and ssh_port != 22:
-                    url += f":{ssh_port}"
-                print("  Updated container host URL to:", url)
-            else:
-                print("  No host inventory record found for:", hostname)
+        # if url.startswith("ssh://"):
+        #     hostname = url.split("://")[-1].split("/")[0]
+        #     print("CCM: Lookup host inventory record for:", hostname)
+        #     host = inventory.get_item_by_name("host", hostname)
+        #     if host:
+        #         print("  Found host inventory record:", host.get("name"))
+        #         #ssh_hostname = host.get("properties", {}).get("ssh_hostname", hostname)
+        #         ssh_hostname = hostname
+        #         ssh_port = host.get("properties", {}).get("ssh_port", 22)
+        #         ssh_user = host.get("properties", {}).get("ssh_user", "")
+        #         #ssh_key_name = host.get("properties", {}).get("ssh_key_name", "")
+        #
+        #         url = f"ssh://"
+        #         if ssh_user:
+        #             url += f"{ssh_user}@"
+        #         url += f"{ssh_hostname}"
+        #         if ssh_port and ssh_port != 22:
+        #             url += f":{ssh_port}"
+        #         print("  Updated container host URL to:", url)
+        #     else:
+        #         print("  No host inventory record found for:", hostname)
 
         engine_url = engine + "+" + url
         try:

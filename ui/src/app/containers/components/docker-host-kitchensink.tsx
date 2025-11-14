@@ -22,8 +22,8 @@ const DockerHostsKitchensinkItem = ({ host }: { host: any }) => {
                     <AppIcon size={24} icon={"docker"} />
                 </div>
                 <div className={"mb-1"}>
-                    <h2 className="font-semibold">{host.id}</h2>
-                    <p className="line-clamp-2 text-gray-500">{host.url}</p>
+                    <h2 className="font-semibold">{host.name}</h2>
+                    <p className="line-clamp-2 text-gray-500">{host.properties.url}</p>
                 </div>
             </div>
             <div className={"flex flex-row gap-x-4 items-end"}>
@@ -31,7 +31,7 @@ const DockerHostsKitchensinkItem = ({ host }: { host: any }) => {
                 <Button asChild variant={"outline"}>
                     <div>
                         <DockerHostStatus />
-                        <Link to={`${host.id}`}>{summary ? "Connected":"Disconnected"}</Link>
+                        <Link to={`${host.name}`}>{summary ? "Connected":"Disconnected"}</Link>
                     </div>
                 </Button>
             </div>
@@ -53,7 +53,7 @@ const DockerHostsKitchensink = () => {
         <div>
             <ul className="faded-bottom no-scrollbar grid gap-2 overflow-auto">
                 {hosts && hosts.length > 0 && hosts.map((host) => (
-                    <ContainerHostProvider config={{ hostId: host.id }} key={host.id}>
+                    <ContainerHostProvider config={{ hostId: host.name }} key={host.name}>
                         <DockerHostsKitchensinkItem host={host} />
                     </ContainerHostProvider>
                 ))}

@@ -36,24 +36,24 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
 
     const navContainers: NavItem[] = React.useMemo(() => {
         const items: NavItem[] = hosts.map((host) => ({
-            title: host.name || host.id,
+            title: host.name || host.name,
             isActive: false,
-            url: `/containers/${host.id}`,
+            url: `/containers/${host.name}`,
             icon: "container-host",
             items: [
                 {
                     title: "Containers",
-                    url: `/containers/${host.id}/container`,
+                    url: `/containers/${host.name}/container`,
                     icon: "container"
                 },
                 {
                     title: "Images",
-                    url: `/containers/${host.id}/images`,
+                    url: `/containers/${host.name}/images`,
                     icon: "container-image"
                 },
                 {
                     title: "Volumes",
-                    url: `/containers/${host.id}/volumes`,
+                    url: `/containers/${host.name}/volumes`,
                     icon: "container-volume"
                 },
             ],

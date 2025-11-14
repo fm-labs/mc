@@ -1,5 +1,6 @@
 import React, {PropsWithChildren} from "react";
 import {useApi} from "@/context/api-context.tsx";
+import {InventoryItem} from "@/features/inventory/inventory.types.ts";
 
 type ContainerHostsContextType = {
     hosts: any[]
@@ -11,7 +12,19 @@ export const ContainerHostsProvider = ({
                                            children,
                                        }: PropsWithChildren) => {
     const {api} = useApi();
-    const [hosts, setHosts] = React.useState<any[]>([]);
+    //const [inventory, setInventory] = React.useState<InventoryItem<any>[]>([]);
+    const [hosts, setHosts] = React.useState<InventoryItem<any>[]>([]);
+
+    // const fetchContainerHostsInventory = async () => {
+    //     try {
+    //         const response = await api.get("/api/inventory/container-host");
+    //         setInventory(response);
+    //         return response;
+    //     } catch (error) {
+    //         console.error("Error fetching container host inventory:", error);
+    //         return [];
+    //     }
+    // };
 
     const fetchDockerHosts = async (refresh?: boolean) => {
         try {

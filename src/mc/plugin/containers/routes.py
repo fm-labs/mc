@@ -13,7 +13,10 @@ from starlette.concurrency import iterate_in_threadpool
 from starlette.requests import Request, ClientDisconnect
 from starlette.responses import StreamingResponse
 
+from mc.db.mongodb import mongodb_results_to_json
+from mc.inventory.storage import get_inventory_storage_instance
 from mc.plugin.containers.deps import dep_container_connection, dep_container_connections_manager
+from mc.plugin.containers.manager import ContainerClientsManager
 
 router = APIRouter()
 
@@ -45,11 +48,20 @@ def clear_cache(cache_key):
 
 
 @router.get("/containers/hosts")
-def get_container_hosts(manager=Depends(dep_container_connections_manager)) -> list[dict]:
-    urls = manager.urls()
-    print("Container hosts", urls)
-    hosts = [{"id": name, "url": url} for name, url in urls.items()]
-    return hosts
+def get_container_hosts(manager:ContainerClientsManager=Depends(dep_container_connections_manager)) -> list[dict]:
+    storage = get_inventory_storage_instance()
+    items = storage.list_items("container_host")
+
+    _items = []
+    for item in items:
+        item_copy = item.copy()
+        item_copy["connected"] = item.get("name") in manager.names()
+        _items.append(item_copy)
+
+    #urls = manager.urls()
+    #print("Container hosts", urls)
+    #hosts = [{"id": name, "url": url} for name, url in urls.items()]
+    return mongodb_results_to_json(_items)
 
 
 @router.get("/containers/{alias}/version")
