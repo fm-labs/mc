@@ -1,5 +1,5 @@
 import * as React from "react"
-import {GalleryVerticalEnd, Minus, Plus} from "lucide-react"
+import {GalleryVerticalEnd, Minus, PlugIcon, PlugZap, PlugZapIcon, Plus} from "lucide-react"
 
 import {
     Collapsible,
@@ -21,25 +21,29 @@ import {
 import AppIcon from "@/components/app-icon.tsx";
 import {NavLink} from "react-router";
 import {useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
-import {Separator} from "@/components/ui/separator.tsx";
 
 type NavItem = {
     title: string
     url: string
     isActive?: boolean
-    icon?: React.ReactNode
+    icon?: React.ReactNode | string
     items?: NavItem[]
+}
+
+type ContainerNavItem = NavItem & {
+    isConnected?: boolean
 }
 
 export function ContainersSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     const {hosts} = useContainerHosts()
 
-    const navContainers: NavItem[] = React.useMemo(() => {
-        const items: NavItem[] = hosts.map((host) => ({
+    const navContainers: ContainerNavItem[] = React.useMemo(() => {
+        const items: ContainerNavItem[] = hosts.map((host) => ({
             title: host.name || host.name,
             isActive: false,
+            isConnected: host?.connected,
             url: `/containers/${host.name}`,
-            icon: "container-host",
+            icon: host.properties?.engine || "container-host",
             items: [
                 {
                     title: "Containers",
@@ -112,6 +116,8 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                             <div className={"flex items-center gap-2"}>
                                                 <AppIcon icon={item?.icon}/>
                                                 {item.title}{" "}
+                                                {item?.isConnected &&
+                                                    <span className={"text-green-500"} title={"Connected"}><PlugZapIcon size={"1em"} /></span>}
                                             </div>
                                             <Plus className="ml-auto group-data-[state=open]/collapsible:hidden"/>
                                             <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden"/>
