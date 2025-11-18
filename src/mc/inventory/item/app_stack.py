@@ -291,13 +291,21 @@ def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
     :return: A dictionary indicating the configuration status.
     """
     env_vars = action_params.get("environment", {})
+    merge = action_params.get("merge", False)
     if env_vars:
         print("CONFIGUE WITH ENVVARS", env_vars)
-        environment = item.get("properties", {}).get("environment", {}).copy()
-        environment.update(env_vars)
-        item["properties"]["environment"] = environment
+        if merge:
+            # merge existing environment variables from app properties
+            existing_env = item.get("properties", {}).get("environment", {})
+            env_vars = {**existing_env, **env_vars}
 
-        # 1. store environment variables in app properties and persist to storage
+        # filter out None and empty string values
+        env_vars = {k: v for k, v in env_vars.items() if v is not None and v != ""}
+        # update item properties
+        if "properties" not in item:
+            item["properties"] = {}
+        item["properties"]["environment"] = env_vars
+
         storage = get_inventory_storage_instance()
         storage.save_item("app_stack", item)
 
