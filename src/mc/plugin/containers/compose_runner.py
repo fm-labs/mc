@@ -165,10 +165,14 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
     """
 
     def __init__(self, project_name, local_dir,
-                 docker_host="unix:///var/run/docker.sock", stackfile='compose.yaml', **kwargs):
+                 docker_host="unix:///var/run/docker.sock", stackfile:str|list='compose.yaml', **kwargs):
         super().__init__(project_name)
         self.project_name = project_name
         self.local_dir = local_dir
+        if isinstance(stackfile, str):
+            stackfile = [stackfile]
+        if not stackfile:
+            stackfile = ['compose.yaml']
         self.stackfile = stackfile
         self.docker_host = docker_host
 
@@ -190,18 +194,13 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         if working_dir is None or not os.path.isdir(working_dir):
             raise Exception(f"Invalid working directory: {working_dir}")
 
-        compose_file = self.stackfile
-
-        compose_args = dict()
-        compose_args['project-name'] = self.project_name
-        compose_args['project-directory'] = working_dir
-        compose_args['file'] = compose_file
-        #compose_args['progress'] = 'plain'
         try:
-            pcmd = ((["docker-compose"]
-                     + kwargs_to_cmdargs(compose_args))  # compose specific args
-                    + [cmd]  # the compose command (up/down/...)
-                    + kwargs_to_cmdargs(kwargs))  # additional command args
+            #"--project-name", self.project_name
+            _composecmd = ["docker", "compose", "--project-directory", working_dir]
+            for cf in self.stackfile:
+                _composecmd.append("--file")
+                _composecmd.append(cf)
+            pcmd = _composecmd + [cmd] + kwargs_to_cmdargs(kwargs)
             print(f"RAW CMD: {pcmd}")
             print(f"CMD: {' '.join(pcmd)}")
 
@@ -210,7 +209,7 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
             #penv['DOCKER_CONFIG'] = settings.DOCKER_CONFIG
             penv['COMPOSE_PROJECT_DIRECTORY'] = working_dir
             penv['COMPOSE_PROJECT_NAME'] = self.project_name
-            penv['COMPOSE_FILE'] = compose_file
+            #penv['COMPOSE_FILE'] = compose_file[0]
             penv['PWD'] = working_dir
 
             p1 = subprocess.run(pcmd, cwd=working_dir, env=penv, capture_output=True, check=True)
@@ -228,12 +227,16 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
     """
     Docker Compose stack runner for remote Docker hosts.
     """
-    def __init__(self, project_name: str, local_dir: str, docker_host: str, stackfile:str = 'compose.yaml',
+    def __init__(self, project_name: str, local_dir: str, docker_host: str, stackfile:str|list=None,
                  ssh_config: dict = None, **kwargs):
         super().__init__(project_name)
         self.local_dir = local_dir
         self.remote_dir = f"~/.compose/{self.project_name}"
         self.docker_host = docker_host
+        if not stackfile:
+            stackfile = ['compose.yaml']
+        if isinstance(stackfile, str):
+            stackfile = [stackfile]
         self.stackfile = stackfile
         self.ssh_config = ssh_config if ssh_config is not None else {}
         self._ssh_client = None
@@ -265,20 +268,16 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
         :return: (stdout, stderr, returncode)
         """
         remote_working_dir = self.remote_dir
-        compose_project_name = self.project_name
-        compose_file_name = self.stackfile
-
-        compose_args = dict()
-        #compose_args['project-name'] = self.project_name
-        compose_args['project-directory'] = remote_working_dir
-        compose_args['file'] = remote_working_dir + "/" + compose_file_name
-        #compose_args['progress'] = 'plain'
+        #compose_project_name = self.project_name
         try:
-            pcmd = ((["docker", "compose"]
-                     + kwargs_to_cmdargs(compose_args))  # compose specific args
-                    + [cmd]  # the compose command (up/down/...)
-                    + kwargs_to_cmdargs(kwargs))  # additional command args
+            _composecmd = ["docker", "compose", "--project-directory", remote_working_dir]
+            for cf in self.stackfile:
+                _composecmd.append("--file")
+                _composecmd.append(remote_working_dir + "/" +  cf)
+            pcmd = _composecmd + [cmd] + kwargs_to_cmdargs(kwargs)
             print(f"[rcompose] RAW CMD: {pcmd}")
+
+            # add override compose files from remote dir
 
             # environment variables for docker compose ON THE REMOTE HOST (!)
             renv = dict()
@@ -287,7 +286,7 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
             #renv['DOCKER_HOST'] = 'unix:///var/run/docker.sock'
             renv['COMPOSE_PROJECT_DIRECTORY'] = remote_working_dir
             #renv['COMPOSE_PROJECT_NAME'] = compose_project_name
-            renv['COMPOSE_FILE'] = compose_file_name
+            #renv['COMPOSE_FILE'] = compose_file_name
             #renv['PWD'] = remote_working_dir
 
             # prepend remote compose dir to compose files

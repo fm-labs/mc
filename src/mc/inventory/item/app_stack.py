@@ -367,16 +367,24 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     if not app_dir.exists() or not app_dir.is_dir():
         raise FileNotFoundError(f"App stack directory '{app_dir}' does not exist")
 
+    _stackfiles = []
+    if app.template_stackfile:
+        _stackfiles.append(os.path.basename(app.template_stackfile))
+        # check if an override file exists
+        override_file = app_dir / "compose.override.yaml"
+        if override_file.exists() and override_file.is_file():
+            _stackfiles.append("compose.override.yaml")
+
     if background:
         task = task_deploy_compose_stack.delay(project_name=app.project_name,
                                                project_dir=str(app_dir.resolve()),
-                                               stackfile=os.path.basename(app.template_stackfile or "compose.yaml"),
+                                               stackfile=_stackfiles,
                                                host_url=container_host_url)
         return {"status": "deploying", "task_id": task.id}
 
     return task_deploy_compose_stack(project_name=app.project_name,
                                      project_dir=str(app_dir.resolve()),
-                                     stackfile=os.path.basename(app.template_stackfile or "compose.yaml"),
+                                     stackfile=_stackfiles,
                                      host_url=container_host_url)
 
 
