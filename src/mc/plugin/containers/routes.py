@@ -13,6 +13,7 @@ from starlette.concurrency import iterate_in_threadpool
 from starlette.requests import Request, ClientDisconnect
 from starlette.responses import StreamingResponse
 
+from mc.cache.redis_cache import read_from_redis_cache, get_redis_cache_client, write_to_redis_cache
 from mc.db.mongodb import mongodb_results_to_json
 from mc.inventory.storage import get_inventory_storage_instance
 from mc.plugin.containers.deps import dep_container_connection, dep_container_connections_manager
@@ -20,31 +21,56 @@ from mc.plugin.containers.manager import ContainerClientsManager
 
 router = APIRouter()
 
-cache = {}
+# cache = {}
+#
+# def simple_cached(cache_key, func, ttl=60):
+#     global cache
+#     def wrapper(*args, **kwargs):
+#         key = cache_key
+#         if key in cache:
+#             _cached = cache[key]
+#             if ttl > 0 and time.time() - _cached["timestamp"] < ttl:
+#                 print(f"Cache hit for key {key}")
+#                 return _cached["data"]
+#             else:
+#                 print(f"Cache expired for key {key}")
+#
+#         result = func(*args, **kwargs)
+#         cache[key] = {"data": result, "timestamp": time.time()}
+#         print(f"Cache set for key {key}")
+#         return result
+#     return wrapper
 
-def cached(cache_key, func, ttl=60):
-    global cache
+
+def cached(cache_key, func, ttl=30):
     def wrapper(*args, **kwargs):
         key = cache_key
-        if key in cache:
-            _cached = cache[key]
+        r = get_redis_cache_client()
+        _cached = read_from_redis_cache(r, key)
+        if _cached:
+            _cached = json.loads(_cached)
             if ttl > 0 and time.time() - _cached["timestamp"] < ttl:
                 print(f"Cache hit for key {key}")
                 return _cached["data"]
             else:
-                print(f"Cache expired for key {key}")
+                print(f"!!!!Cache expired for key {key}")
 
         result = func(*args, **kwargs)
-        cache[key] = {"data": result, "timestamp": time.time()}
+        payload = json.dumps({"data": result, "timestamp": time.time()})
+        write_to_redis_cache(r, key, payload, ttl)
         print(f"Cache set for key {key}")
         return result
     return wrapper
 
+
 def clear_cache(cache_key):
-    global cache
-    if cache_key in cache:
-        del cache[cache_key]
-        print(f"Cache cleared for key {cache_key}")
+    #global cache
+    #if cache_key in cache:
+    #    del cache[cache_key]
+    #    print(f"Cache cleared for key {cache_key}")
+    r = get_redis_cache_client()
+    r.delete("mc_cache_" + cache_key)
+    print(f"Cache cleared for key {cache_key}")
 
 
 @router.get("/containers/hosts")
@@ -90,13 +116,13 @@ def get_docker_info(client=Depends(dep_container_connection)) -> dict:
 @router.get("/containers/{alias}/containers")
 def list_docker_containers(alias: str, client=Depends(dep_container_connection)) -> List[dict]:
     def fetch_containers():
-        collection = client.containers.list(all=True)
+        collection = client.containers.list(all=True, filters={"status": ["running", "exited", "created", "paused"]})
         print("Containers", collection)
         _containers = []
         for c in collection:
             _containers.append(c.attrs)
         return jsonable_encoder(_containers)
-    return cached(f"containers_{alias}", fetch_containers, ttl=30)()
+    return cached(f"containers_{alias}", fetch_containers, ttl=60)()
 
 
 @router.get("/containers/{alias}/containers/{container_id}")
@@ -136,8 +162,9 @@ def post_docker_container_action(alias: str, container_id: str, action: str,
                 pass
         #cache  cleanup
         cache_key = f"container_{container_id}"
-        if cache_key in cache:
-            del cache[cache_key]
+        #if cache_key in cache:
+        #    del cache[cache_key]
+        clear_cache(cache_key)
         return {"action": action, "status": "ok", "message": f"Action {action} was successful"}
 
     except Exception as e:
@@ -270,12 +297,14 @@ def stream_docker_container_logs(request: Request,
 
 @router.get("/containers/{alias}/images")
 def list_docker_images(client=Depends(dep_container_connection)) -> List[dict]:
-    collection = client.images.list()
-    print("Images", collection)
-    images = []
-    for img in collection:
-        images.append(img.attrs)
-    return jsonable_encoder(images)
+    def fetch_images():
+        collection = client.images.list()
+        print("Images", collection)
+        images = []
+        for img in collection:
+            images.append(img.attrs)
+        return jsonable_encoder(images)
+    return cached("images", fetch_images, ttl=60)()
 
 
 @router.get("/containers/{alias}/images/{image_id}")
@@ -286,20 +315,21 @@ def get_docker_image(image_id: str, client=Depends(dep_container_connection)) ->
 
 @router.get("/containers/{alias}/volumes")
 def list_docker_volumes(client=Depends(dep_container_connection)) -> List[dict]:
-    collection = client.volumes.list()
-    print("Volumes", collection)
-    volumes = []
-    for img in collection:
-        volumes.append(img.attrs)
-    return jsonable_encoder(volumes)
+    def fetch_volumes():
+        collection = client.volumes.list()
+        print("Volumes", collection)
+        volumes = []
+        for img in collection:
+            volumes.append(img.attrs)
+        return jsonable_encoder(volumes)
+    return cached("volumes", fetch_volumes, ttl=60)()
 
 
 @router.post("/containers/{alias}/compose/{project_name}/actions/{action}")
-def post_docker_container_action(alias: str, project_name: str, action: str,
+def post_docker_compose_action(alias: str, project_name: str, action: str,
                                  client=Depends(dep_container_connection)) -> dict:
-
     try:
-        pass
+        raise HTTPException(status_code=501, detail="Not implemented yet")
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

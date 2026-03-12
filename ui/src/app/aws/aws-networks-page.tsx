@@ -1,7 +1,7 @@
 import MainContent from "@/components/layout/main-content.tsx";
 import { AwsInventoryProvider, useAwsInventory } from "@/app/aws/aws-inventory-provider.tsx";
 import Data from "@/components/data.tsx";
-import GraphVisualization from "@/app/aws/components/aws-graph-viz.tsx";
+import GraphVisualization from "@/app/aws/components/graph-visualization.tsx";
 import React from "react";
 
 const AwsEc2InstancState = ({ status }: { status: string }) => {

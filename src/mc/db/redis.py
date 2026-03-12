@@ -4,13 +4,13 @@ from mc import config
 
 _redis_instance = aioredis.Redis | None
 
-def get_global_redis_client():
+def get_global_aioredis_client():
     global _redis_instance
     if _redis_instance is None:
-        _redis_instance = get_redis_client()
+        _redis_instance = get_aioredis_client()
     return _redis_instance
 
-def get_redis_client() -> aioredis.Redis:
+def get_aioredis_client() -> aioredis.Redis:
     redis_url = config.REDIS_URL or None
     if redis_url:
         return aioredis.from_url(redis_url, decode_responses=True)
@@ -38,5 +38,5 @@ def get_redis_client() -> aioredis.Redis:
     return client
 
 
-async def get_async_redis_client() -> aioredis.Redis:
-    return get_redis_client()
+async def get_aioredis_client_async() -> aioredis.Redis:
+    return get_aioredis_client()

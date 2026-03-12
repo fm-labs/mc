@@ -17,6 +17,7 @@ import useDialog from "@/hooks/use-dialog.tsx";
 import Form from "@rjsf/shadcn";
 import validator from "@rjsf/validator-ajv8";
 import { FEAT_INTEGRATIONS_ENABLED } from "@/constants.ts";
+import {RJSFSchema} from "@rjsf/utils";
 
 type AppType = "all" | "connected" | "notConnected"
 
@@ -28,7 +29,7 @@ const appText = new Map<AppType, string>([
 
 
 const IntegrationConnectForm = ({ onConnect }: { app: any, onConnect: () => void }) => {
-    const schema = {
+    const schema: RJSFSchema = {
         type: "object",
         properties: {
             apiKey: { type: "string", title: "API Key" },

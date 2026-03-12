@@ -4,7 +4,21 @@ import { useParams } from "react-router";
 import { ContainerHostProvider } from "@/app/containers/components/container-host-provider.tsx";
 import { useApi } from "@/context/api-context.tsx";
 import ContainerView from "@/app/containers/container-view.tsx";
+import {ContainerHostsProvider, useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
 
+const ContainerHostContainer = ({hostId, containerId}: {hostId: string, containerId: string}) => {
+    const {hosts} = useContainerHosts()
+    const host = hosts.find(h => h.name === hostId);
+    if (!host) {
+        return <div>Host not found: {hostId}</div>;
+    }
+
+    return <div>
+        <ContainerHostProvider host={host}>
+            <ContainerView containerId={containerId} />
+        </ContainerHostProvider>
+    </div>;
+}
 
 const ContainerPage = () => {
     const { hostId, containerId } = useParams<{ hostId: string, containerId: string }>();
@@ -39,9 +53,9 @@ const ContainerPage = () => {
 
     return (
         <MainContent>
-            <ContainerHostProvider config={{hostId}}>
-                <ContainerView containerId={containerId} />
-            </ContainerHostProvider>
+            <ContainerHostsProvider>
+                <ContainerHostContainer hostId={hostId} containerId={containerId} />
+            </ContainerHostsProvider>
         </MainContent>
     );
 };

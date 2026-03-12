@@ -1,6 +1,5 @@
 import React, {type ChangeEvent, useState} from 'react'
 import {Badge} from "@/components/ui/badge.tsx";
-import MainContent from "@/components/layout/main-content.tsx";
 import {Input} from "@/components/ui/input.tsx";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
 import {ArrowDownAZ, ArrowUpAZ, ImageIcon, SlidersHorizontal, TagIcon} from "lucide-react";
@@ -11,6 +10,7 @@ import {useApi} from "@/context/api-context.tsx";
 import useDialog from "@/hooks/use-dialog.tsx";
 import Data from "@/components/data.tsx";
 import MyForm from "@/components/rjsf/my-form.tsx";
+import {RJSFSchema} from "@rjsf/utils";
 
 interface PortainerTemplatesViewProps {
     templateUrl: string
@@ -18,7 +18,7 @@ interface PortainerTemplatesViewProps {
 
 const PortainerTemplateInfoDialog = ({template}: any) => {
 
-    const templateSchema = React.useMemo(() => {
+    const templateSchema: RJSFSchema = React.useMemo(() => {
 
         const properties: any = {};
         // map portainer env variables to form properties

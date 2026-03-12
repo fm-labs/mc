@@ -1,7 +1,8 @@
 import React from 'react';
 import MyForm from "@/components/rjsf/my-form.tsx";
+import {RJSFSchema} from "@rjsf/utils";
 
-const creditsBuySchema = {
+const creditsBuySchema: RJSFSchema = {
     type: "object",
     properties: {
         "currency_amount": {

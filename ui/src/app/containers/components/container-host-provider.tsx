@@ -1,13 +1,17 @@
 import React from "react";
 import {useApi} from "@/context/api-context.tsx";
 import {cached} from "@/utils/session-cache.ts";
+import {InventoryItem} from "@/features/inventory/inventory.types.ts";
+import {ContainerHost} from "@/app/containers/components/container-hosts-provider.tsx";
 
 type ContainerHostContextConfig = {
     hostId: string,
+    connected?: boolean,
 }
 
 type ContainerHostContextType = {
     config: ContainerHostContextConfig
+    host: InventoryItem<any>
     info?: any,
     summary?: any,
     containers?: Record<string, any>,
@@ -26,7 +30,7 @@ type ContainerHostContextType = {
 export const ContainerHostContext = React.createContext<ContainerHostContextType | undefined>(undefined);
 
 
-export const ContainerHostProvider: React.FC<{ children: React.ReactNode, config: any }> = ({ children, config }) => {
+export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: InventoryItem<ContainerHost> }> = ({ children, host }) => {
     const { api } = useApi()
 
     const [error, setError] = React.useState<string | null>(null);
@@ -36,6 +40,7 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, config
     //const [images, setImages] = React.useState<Record<string, any>>([]);
     const [autorefreshInterval, setAutoRefreshInterval] = React.useState<number>(30000);
 
+    const config = { hostId: host.name, connected: host?.connected }
 
     const _fetchContainerData = React.useCallback(async (path: string) => {
         try {
@@ -101,7 +106,7 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, config
     // }, [fetchContainers, fetchSummary])
 
     React.useEffect(() => {
-        if (!config || config.hostId === undefined || config.hostId === null) {
+        if (!config || config.hostId === undefined || config.hostId === null || config?.connected === false) {
             return;
         }
 
@@ -139,6 +144,7 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, config
     return (
         <ContainerHostContext.Provider value={{
             config,
+            host,
             info,
             summary,
             containers,

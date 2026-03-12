@@ -18,7 +18,7 @@ from fastapi.exceptions import RequestValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from mc.db.redis import get_redis_client
+from mc.db.redis import get_aioredis_client
 from mc.mcp.app import mcp as mcp_app
 from mc.mcp.helper import init_mcp_http_app
 from mc.plugin.containers.manager import bootstrap_container_connection_manager, get_container_connection_manager
@@ -35,7 +35,7 @@ async def lifespan(main_app: FastAPI):
 
     async with AsyncExitStack() as stack:
         # init resources for the main app
-        main_app.state.redis = get_redis_client()
+        main_app.state.redis = get_aioredis_client()
 
         await bootstrap_container_connection_manager()
 

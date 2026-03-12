@@ -11,6 +11,7 @@ from mc.config import PLUGINS_ENABLED, GITHUB_CLIENT_ID, GITHUB_AUTHORIZE_URL, G
     GITHUB_CLIENT_SECRET, GITHUB_ACCESS_TOKEN_URL
 from mc.server.auth import get_current_user
 from mc.auth.users import authenticate_user
+from mc.server.webauthn import router as webauthn_router
 from mc.inventory.routes import router as inventory_router
 from mc.findings.routes import router as findings_router
 from mc.integrations.routes import router as integrations_router
@@ -24,6 +25,7 @@ app_router.include_router(infra_router, prefix="/api", tags=["infrastructure"]) 
 app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(findings_router, prefix="/api", tags=["findings"], dependencies=[Security(get_current_user)])
 app_router.include_router(integrations_router, prefix="/api", tags=["integrations"], dependencies=[Security(get_current_user)])
+app_router.include_router(webauthn_router, prefix="/api", tags=["webauthn"]) #, dependencies=[Security(get_current_user)])
 
 
 for plugin_name in PLUGINS_ENABLED:

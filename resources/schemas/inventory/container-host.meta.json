@@ -22,6 +22,18 @@
       }
     },
     {
+      "id": "docker_login",
+      "name": "Docker Login",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "description": "Logs into a Docker registry to allow pulling private images.",
+        "title": "Docker Registry Login",
+        "properties": {},
+        "required": []
+      }
+    },
+    {
       "id": "setup_webstack",
       "name": "Setup Web stack",
       "type": "form",

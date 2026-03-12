@@ -8,7 +8,7 @@ COPY ui/ .
 RUN bun run build
 
 
-FROM python:3.13.9-alpine3.22 AS final
+FROM python:3.13.11-alpine3.23 AS final
 
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
@@ -17,6 +17,13 @@ LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.url="https://github.com/fm-labs/mc" \
     org.opencontainers.image.source="https://github.com/fm-labs/mc" \
     org.opencontainers.image.documentation="https://github.com/fm-labs/mc"
+
+
+# Set a non-root user
+RUN addgroup -S app && \
+    adduser -S app -G app && \
+    adduser app root # to allow docker socket access
+
 
 RUN apk update && apk add --no-cache \
     file \
@@ -38,18 +45,14 @@ RUN apk update && apk add --no-cache \
     ca-certificates \
     && rm -rf /var/cache/apk/*
 
-
 # Install the MCP Gateway CLI (docker-mcp) to the Docker plugin path
-RUN mkdir -p /root/.docker/cli-plugins \
- && curl -fL -o /root/.docker/cli-plugins/docker-mcp \
-      https://github.com/docker/mcp-gateway/releases/download/v0.27.0/docker-mcp-linux-amd64.tar.gz \
- && tar -xzf /root/.docker/cli-plugins/docker-mcp -C /usr/local/bin/ \
- && chmod +x /usr/local/bin/docker-mcp
+RUN mkdir -p /home/app/.docker/cli-plugins \
+ && curl -fL -o /tmp/docker-mcp.tar.gz \
+      https://github.com/docker/mcp-gateway/releases/download/v0.30.0/docker-mcp-linux-amd64.tar.gz \
+ && tar -xzf /tmp/docker-mcp.tar.gz -C /home/app/.docker/cli-plugins/ \
+ && chmod +x /home/app/.docker/cli-plugins/docker-mcp \
+ && rm /tmp/docker-mcp.tar.gz
 
-# Set a non-root user
-RUN addgroup -S app && \
-    adduser -S app -G app && \
-    adduser app root # to allow docker socket access
 
 # Little hack to add user to docker group
 # Add user to docker group (gid = 999)

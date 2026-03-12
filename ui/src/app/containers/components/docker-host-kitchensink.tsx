@@ -1,15 +1,15 @@
-import { Button } from "@/components/ui/button.tsx";
-import { Link } from "react-router";
+import {Button} from "@/components/ui/button.tsx";
+import {Link} from "react-router";
 import AppIcon from "@/components/app-icon.tsx";
-import { ContainerHostProvider, useContainerHost } from "@/app/containers/components/container-host-provider.tsx";
-import { DockerHostStatus } from "@/app/containers/components/docker-host-status.tsx";
-import { DockerHostError } from "@/app/containers/components/docker-host-error.tsx";
+import {ContainerHostProvider, useContainerHost} from "@/app/containers/components/container-host-provider.tsx";
+import {DockerHostStatus} from "@/app/containers/components/docker-host-status.tsx";
+import {DockerHostError} from "@/app/containers/components/docker-host-error.tsx";
 import DockerHostContainers from "@/app/containers/components/docker-host-containers.tsx";
-import { DockerHostSummary } from "@/app/containers/components/docker-host-summary.tsx";
+import {DockerHostSummary} from "@/app/containers/components/docker-host-summary.tsx";
 import {useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
 
-const DockerHostsKitchensinkItem = ({ host }: { host: any }) => {
-    const { summary } = useContainerHost();
+const DockerHostsKitchensinkItem = ({host}: { host: any }) => {
+    const {summary} = useContainerHost();
 
     return (<li
         className="rounded-lg border p-2 hover:shadow-md"
@@ -19,7 +19,7 @@ const DockerHostsKitchensinkItem = ({ host }: { host: any }) => {
                 <div
                     className={`bg-muted flex size-10 items-center justify-center rounded-lg p-2`}
                 >
-                    <AppIcon size={24} icon={"docker"} />
+                    <AppIcon size={24} icon={"docker"}/>
                 </div>
                 <div className={"mb-1"}>
                     <h2 className="font-semibold">{host.name}</h2>
@@ -27,34 +27,30 @@ const DockerHostsKitchensinkItem = ({ host }: { host: any }) => {
                 </div>
             </div>
             <div className={"flex flex-row gap-x-4 items-end"}>
-                <DockerHostSummary />
+                <DockerHostSummary/>
                 <Button asChild variant={"outline"}>
                     <div>
-                        <DockerHostStatus />
-                        <Link to={`${host.name}`}>{summary ? "Connected":"Disconnected"}</Link>
+                        <DockerHostStatus/>
+                        <Link to={`${host.name}`}>{summary ? "Connected" : "Disconnected"}</Link>
                     </div>
                 </Button>
             </div>
         </div>
-        <DockerHostError />
-        {summary && (
-            <div>
-                <DockerHostContainers />
-            </div>
-        )}
+        <DockerHostError/>
+        <DockerHostContainers/>
     </li>);
 };
 
 
 const DockerHostsKitchensink = () => {
-    const { hosts } = useContainerHosts();
+    const {hosts} = useContainerHosts();
 
     return (
         <div>
             <ul className="faded-bottom no-scrollbar grid gap-2 overflow-auto">
                 {hosts && hosts.length > 0 && hosts.map((host) => (
-                    <ContainerHostProvider config={{ hostId: host.name }} key={host.name}>
-                        <DockerHostsKitchensinkItem host={host} />
+                    <ContainerHostProvider key={host.name} host={host}>
+                        <DockerHostsKitchensinkItem host={host}/>
                     </ContainerHostProvider>
                 ))}
             </ul>

@@ -82,3 +82,63 @@ def ssh_pkey_from_bytes(key_bytes: bytes, password: str = None) -> paramiko.PKey
             key_stream.seek(0)
             continue
     raise ValueError("Unsupported or invalid key type.")
+
+
+def sftp_copy_file(
+    ssh_client: paramiko.SSHClient,
+    local_path: str,
+    remote_path: str
+) -> None:
+    """
+    Copy a file to a remote host using SCP over an established SSH connection.
+
+    :param ssh_client: An established Paramiko SSHClient connection.
+    :param local_path: Path to the local file to be copied.
+    :param remote_path: Destination path on the remote host.
+    """
+    with ssh_client.open_sftp() as sftp:
+        sftp.put(local_path, remote_path)
+
+
+def sftp_mkdir(
+    ssh_client: paramiko.SSHClient,
+    remote_path: str,
+    mode: int = 0o755
+) -> None:
+    """
+    Create a directory on the remote host via an established SSH connection.
+
+    :param ssh_client: An established Paramiko SSHClient connection.
+    :param remote_path: Path of the directory to create on the remote host.
+    :param mode: Permissions mode for the new directory.
+    """
+    with ssh_client.open_sftp() as sftp:
+        try:
+            sftp.mkdir(remote_path, mode=mode)
+        except IOError as e:
+            if e.errno == 17:  # File exists
+                pass
+            else:
+                raise
+
+
+def ssh_mkdir_recursive(
+    ssh_client: paramiko.SSHClient,
+    remote_path: str,
+    mode: int | None = None # 0o755
+) -> None:
+    """
+    Ensure a directory exists on the remote host using SSH command execution.
+
+    :param ssh_client: An established Paramiko SSHClient connection.
+    :param remote_path: Path of the directory to ensure on the remote host.
+    :param mode: Permissions mode for the directory.
+    """
+    command = f"mkdir -p {remote_path}"
+    if mode is not None:
+        command += f" && chmod {oct(mode)[2:]} {remote_path}"
+    stdin, stdout, stderr = ssh_client.exec_command(command)
+    exit_status = stdout.channel.recv_exit_status()
+    if exit_status != 0:
+        error_msg = stderr.read().decode('utf-8')
+        raise RuntimeError(f"Failed to ensure directory '{remote_path}': {error_msg}")

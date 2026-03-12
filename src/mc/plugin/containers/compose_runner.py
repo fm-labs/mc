@@ -67,6 +67,8 @@ def run_remote_hook_script(client: SSHClient, remote_compose_dir: str, script_na
         print(f"Remote Hook command: {cmd_str}")
         stdout, stderr, rc = ssh_execute_command(client, cmd_str)
         print(f"{script_name} exited with code {rc}")
+        #if rc != 0:
+        #    raise RuntimeError(f"Remote hook script {script_name} failed with exit code {rc}")
     except Exception as e:
         print(f"SSH remote execution error: {e}")
         stdout = ""
@@ -104,8 +106,12 @@ class DockerComposeStackRunner(abc.ABC):
         print(f"Starting project {self.project_name}")
         kwargs['detach'] = True if 'detach' not in kwargs else kwargs['detach']
         kwargs['build'] = False if 'build' not in kwargs else kwargs['build']
-        kwargs['force-recreate'] = True if 'force-recreate' not in kwargs else kwargs['force-recreate']
+        kwargs['force-recreate'] = False if 'force-recreate' not in kwargs else kwargs['force-recreate']
         kwargs['remove-orphans'] = False if 'remove-orphans' not in kwargs else kwargs['remove-orphans']
+        kwargs['yes'] = True if 'yes' not in kwargs else kwargs['yes'] # Assume "yes" as answer to all prompts and run non-interactively
+        kwargs['quiet-pull'] = True if 'quiet-pull' not in kwargs else kwargs['quiet-pull'] # Pull without printing progress information
+        kwargs['no-color'] = True if 'no-color' not in kwargs else kwargs['no-color'] # Produce monochrome output
+        #kwargs['wait-timeout'] = '300' if 'wait-timeout' not in kwargs else kwargs['wait-timeout'] # wait up to 5 minutes for services to be healthy
         return self._compose("up", **kwargs)
 
     def down(self, **kwargs) -> tuple[bytes, bytes, int]:
@@ -256,7 +262,11 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
 
     def up(self, **kwargs) -> tuple[bytes, bytes, int]:
         # run setup.sh if exists
-        run_remote_hook_script(self.ssh_client, self.remote_dir, "setup.sh")
+        if Path(self.local_dir).is_dir() and (Path(self.local_dir) / "setup.sh").exists():
+            stdout, stderr, rc = run_remote_hook_script(self.ssh_client, self.remote_dir, "setup.sh")
+            if rc != 0:
+                raise RuntimeError(f"Remote setup.sh failed with exit code {rc}")
+
         return super().up(**kwargs)
 
     def _compose(self, cmd, **kwargs) -> tuple[bytes, bytes, int]:

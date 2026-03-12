@@ -6,6 +6,7 @@ import validator from "@rjsf/validator-ajv8";
 import ReactJson from "@microlink/react-json-view";
 import { Separator } from "@/components/ui/separator.tsx";
 import { useApi } from "@/context/api-context.tsx";
+import {RJSFSchema} from "@rjsf/utils";
 
 /**
  * Render the docker MCP toolkit catalog
@@ -121,7 +122,7 @@ const DockerMcpCatalog = () => {
     const [selectedServer, setSelectedServer] = React.useState<any | null>(null);
     const [result, setResult] = React.useState<any | null>(null);
 
-    const buildConnectJsonSchemaForServer = (serverDef: any) => {
+    const buildConnectJsonSchemaForServer = (serverDef: any): RJSFSchema => {
 
         const properties: any = {}
 

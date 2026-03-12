@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 
 from redis.asyncio import Redis
 
-from mc.db.redis import get_redis_client
+from mc.db.redis import get_aioredis_client
 
 # --- Shared state ---
 _loop: Optional[asyncio.AbstractEventLoop] = None
@@ -63,7 +63,7 @@ def start_publisher() -> None:
         global _loop, _redis
         _loop = asyncio.new_event_loop()
         asyncio.set_event_loop(_loop)
-        _redis = get_redis_client() #Redis.from_url(redis_url, decode_responses=True)  # one pooled client
+        _redis = get_aioredis_client() #Redis.from_url(redis_url, decode_responses=True)  # one pooled client
         _loop.create_task(_worker())
         _loop.run_forever()
 

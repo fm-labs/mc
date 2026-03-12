@@ -44,7 +44,7 @@ export const DockerHostsGrid = () => {
         <div>
             <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 md:grid-cols-2 lg:grid-cols-3">
                 {hosts && hosts.length > 0 && hosts.map((host) => (
-                    <ContainerHostProvider config={{hostId: host.name}} key={host.name}>
+                    <ContainerHostProvider host={host} key={host.name}>
                         <DockerHostsGridItem host={host} />
                     </ContainerHostProvider>
                 ))}

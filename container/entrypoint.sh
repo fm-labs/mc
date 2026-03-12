@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 PYTHON_PATH="/app/src:$PYTHON_PATH"
 export PYTHONPATH

@@ -10,7 +10,7 @@ from starlette.requests import Request
 from starlette.responses import StreamingResponse
 from redis import asyncio as aioredis
 
-from mc.db.redis import get_async_redis_client
+from mc.db.redis import get_aioredis_client_async
 from orchestra.celery import celery, get_celery_task_instance
 from orchestra.datamodels import KoCeleryTaskSubmissionModel, KoCeleryTaskSubmissionResponseModel, KoAnsibleRunModel
 from orchestra.mongodb_helper import get_ansible_runs_collection, get_celery_task_log_collection
@@ -265,7 +265,7 @@ async def ansible_run_sse(run_id: str, request: Request):
             },
         )
 
-    r = await get_async_redis_client()
+    r = await get_aioredis_client_async()
     channels = [f"ansible_run_{run_id}"]
 
     async def event_generator():
@@ -301,7 +301,7 @@ async def ws_ansible_run_stream(websocket: WebSocket, run_id: str):
     """
     await websocket.accept()
 
-    r = await get_async_redis_client()
+    r = await get_aioredis_client_async()
     pubsub = r.pubsub()
     await pubsub.subscribe(run_id)
     try:

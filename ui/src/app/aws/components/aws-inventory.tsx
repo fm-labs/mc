@@ -9,7 +9,7 @@ import Header from "@/components/header.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { useNavigate } from "react-router";
 import { useApi } from "@/context/api-context.tsx";
-import GraphVisualization from "@/app/aws/components/aws-graph-viz.tsx";
+import GraphVisualization from "@/app/aws/components/graph-visualization.tsx";
 
 const AwsInventory = () => {
     const { items: data, fetchItems } = useAwsInventory();

@@ -8,6 +8,7 @@ services:
     build:
       context: .
       dockerfile: Containerfile
+    image: "mc:latest"
     ports:
       - "13080:80" # Nginx
       - "13500:5000" # API

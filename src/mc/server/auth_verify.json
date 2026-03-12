@@ -1,0 +1,15 @@
+{
+  "username": "foo",
+  "credential": {
+    "id": "LurlK1BjTn9zIvwiHRsTYFG9iZf8nBBUh_z09zWL8Ke35ibsiWNiQAssPU9cG5yg",
+    "rawId": "LurlK1BjTn9zIvwiHRsTYFG9iZf8nBBUh_z09zWL8Ke35ibsiWNiQAssPU9cG5yg",
+    "type": "public-key",
+    "response": {
+      "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiWmJhSHFwZDZ4TU5HRUVHdjhzNW8weVR1bW1Jc085YTBOMUd4V3p2ZjZoMDQ2NnM1SlpvQkRFek53MDU3NzEzUDdleml2OGcyTlhyWmI3WDZPRjFMcFEiLCJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0OjE0MjAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+      "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAADg",
+      "signature": "MEUCIQCxyCIL3IFSi8A-9JGjQB0D78rq_QN7BiCxcRZbH8tUdwIgSwTmKncqg1cfVJ40yzVC_r241MDuuFofO2nEEUftdk0",
+      "userHandle": "Zm9v"
+    },
+    "clientExtensionResults": {}
+  }
+}

@@ -5,11 +5,6 @@ export const topNav = [
         isActive: false,
     },
     {
-        title: "Admin",
-        href: "/admin",
-        isActive: false,
-    },
-    {
         title: "Containers",
         href: "/containers",
         isActive: false,
@@ -21,7 +16,12 @@ export const topNav = [
     // },
     {
         title: 'AI',
-        href: 'ai',
+        href: '/ai',
+        isActive: false,
+    },
+    {
+        title: "Admin",
+        href: "/admin",
         isActive: false,
     },
 ];

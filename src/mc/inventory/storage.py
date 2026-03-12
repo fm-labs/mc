@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from mc.config import DATA_DIR
 from mc.db.mongodb import get_mongo_client, get_mongo_collection
-from mc.db.redis import get_redis_client
+from mc.db.redis import get_aioredis_client
 
 DEFAULT_INVENTORY_STORAGE = "mongodb"  # Options: file, mongodb, redis
 
@@ -25,7 +25,7 @@ def get_inventory_storage_instance() -> 'InventoryStorage':
         mongo_client = get_mongo_client()
         _inventory_storage_instance = MongoDBInventoryStorage(mongo_client)
     elif storage_type == "redis":
-        redis_client = get_redis_client()
+        redis_client = get_aioredis_client()
         _inventory_storage_instance = RedisInventoryStorage(redis_client)
     else:
         raise ValueError(f"Unsupported storage type: {storage_type}")

@@ -9,9 +9,9 @@ sys.path.append('.')
 async def init_mcp() -> 'FastMCP':
     try:
         from mc.mcp.app import mcp as mcp_app
-        from mc.mcp.app2 import mcp as secondary_mcp_app
+        from mc.plugin.ama.amamcp import mcp as amamcp_app
 
-        mcp_app.mount(secondary_mcp_app, prefix="secondary")
+        mcp_app.mount(amamcp_app, prefix="ama")
 
         # config = {
         #     "mcpServers": {
@@ -57,7 +57,7 @@ async def main():
     _mcp = None
     try:
         _mcp = await init_mcp()
-        await _mcp.run_async(transport=transport, **kwargs)
+        await _mcp.run_async(transport=transport, show_banner=False, **kwargs)
     except asyncio.CancelledError:
         print("MCP server stopped.")
         sys.exit(0)

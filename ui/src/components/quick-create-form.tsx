@@ -1,8 +1,9 @@
 import validator from "@rjsf/validator-ajv8";
 import Form from "@rjsf/shadcn";
 import { Button } from "@/components/ui/button.tsx";
+import {RJSFSchema} from "@rjsf/utils";
 
-const jsonSchema = {
+const jsonSchema: RJSFSchema = {
     title: "Quick Create",
     type: "object",
     properties: {
