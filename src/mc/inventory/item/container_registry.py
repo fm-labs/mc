@@ -1,7 +1,7 @@
 import os
 
-from rx.helper.awscli_helper import awscli_ecr_login
-from rx.helper.dockercli_helper import dockercli_login
+from mc.util.awscli_helper import awscli_ecr_login
+from mc.util.dockercli_helper import dockercli_login
 
 
 def lookup_container_registry_credentials(registry_host: str, specified_username: str = None) -> tuple[str, str]:

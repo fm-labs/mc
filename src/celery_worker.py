@@ -4,15 +4,9 @@
 from orchestra.celery import celery
 
 # flake8: noqa
-from orchestra.tasks import *
+#from orchestra.tasks import *
 # flake8: noqa
 from mc.tasks import *
-# flake8: noqa
-from mc.plugin.demo.tasks import *
-# flake8: noqa
-from mc.plugin.xscan.tasks import *
-# flake8: noqa
-from mc.plugin.cloudscan.tasks import *
 # flake8: noqa
 from mc.plugin.containers.tasks import *
 # flake8: noqa

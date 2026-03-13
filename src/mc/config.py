@@ -5,9 +5,15 @@ from dotenv import load_dotenv
 load_dotenv(".env")
 load_dotenv(".env.local")
 
+# Admin credentials
+MC_ADMIN_EMAIL = os.getenv("MC_ADMIN_EMAIL", "johndoe@example.org")
+MC_ADMIN_PASSWORD = os.getenv("MC_ADMIN_PASSWORD", "secret")
+if os.getenv("MC_ADMIN_PASSWORD_FILE"):
+    with open(os.getenv("MC_ADMIN_PASSWORD_FILE"), "r") as f:
+        MC_ADMIN_PASSWORD = f.read().strip()
+
 # Enabled plugins and integrations
-PLUGINS_ENABLED = ["tools", "xscan", "orchestra", "cloudscan", "demo", "containers", "aws", "mcpman", "paypal"]
-INTEGRATIONS_ENABLED = ["github", "dockerhub", "docker"]
+PLUGINS_ENABLED = ["tools", "containers"]
 
 # Paths
 SSH_CONFIG = os.getenv("SSH_CONFIG", os.getcwd() + "/config/ssh_config")

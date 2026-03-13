@@ -1,5 +1,5 @@
 from mc.inventory.storage import get_inventory_storage_instance
-from rx.helper.dockercli_helper import dockercli_image_pull
+from mc.util.dockercli_helper import dockercli_image_pull
 
 
 def handle_container_image_pull(item: dict, action_params: dict) -> dict:

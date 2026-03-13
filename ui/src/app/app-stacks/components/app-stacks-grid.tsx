@@ -1,6 +1,6 @@
 import React from 'react';
 import {useInventory} from "@/app/inventory/components/inventory-provider.tsx";
-import {Share2Icon} from "lucide-react";
+import {BlocksIcon, Share2Icon} from "lucide-react";
 import {Badge} from "@/components/ui/badge.tsx";
 import AppStackProvider from "@/app/app-stacks/components/app-stack-provider.tsx";
 import {InventoryItem} from "@/features/inventory/inventory.types.ts";
@@ -16,7 +16,7 @@ const AppStacksGrid = () => {
 
     return (
         <div>
-            <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
                 {items && items.length > 0 && items.map((item: InventoryItem<any>) => (
                     <li
                         key={item.name}
@@ -24,12 +24,12 @@ const AppStacksGrid = () => {
                     >
                         <AppStackProvider stack={item}>
                             <div className="mb-4 flex items-center justify-between">
-                                <div
+                                {/*<div
                                     className={`bg-muted flex size-10 items-center justify-center rounded-lg p-2`}
                                     onClick={() => handleItemClick(item)}
                                 >
                                     <Share2Icon />
-                                </div>
+                                </div>*/}
                                 <div>
                                     {/*<Button
                                         variant="outline"
@@ -50,8 +50,8 @@ const AppStacksGrid = () => {
                                 </div>
                             </div>
                             <div>
-                                <h2 className="mb-1 font-semibold">
-                                    <Link to={`/stacks/details/${item.item_key}`}>{item.name}</Link>
+                                <h2 className="mb-1 font-semibold flex space-x-2">
+                                    <BlocksIcon /> <Link to={`/stacks/details/${item.item_key}`}>{item.name}</Link>
                                 </h2>
                                 <div className={"text-muted-foreground text-sm mb-1"}>
                                     {item?.properties?.template_repository}<br />

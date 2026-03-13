@@ -6,6 +6,7 @@
 import sys
 from pathlib import Path
 
+from mc.inventory.item.app_stack_helper import create_app_stack
 from mc.inventory.items import create_inventory_item, read_inventory_item
 
 # def _build_app_dir_path(stack_name: str, stack_name: str) -> str:

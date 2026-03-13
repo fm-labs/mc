@@ -20,16 +20,20 @@ DOCKER_SSH_COMMAND="ssh -F $SSH_CONFIG"
 export DOCKER_SSH_COMMAND
 
 VAULT_ENABLED=${VAULT_ENABLED:-true}
-VAULT_FILE=${VAULT_FILE:-/app/config/credentials.vault}
-VAULT_PASS_FILE=${VAULT_PASS_FILE:-/app/config/credentials.vault.pass}
+VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
+VAULT_PASS_FILE=${VAULT_PASS_FILE:-/data/credentials.vault.pass}
 if [ ! -f "$VAULT_PASS_FILE" ]; then
-  echo "Vault pass file not found, creating a new secure one..."
-  head -c 32 /dev/urandom | base64 > "$VAULT_PASS_FILE"
-  chmod 600 "$VAULT_PASS_FILE"
-  echo "Vault pass file created at $VAULT_PASS_FILE"
+  #echo "Vault pass file not found, creating a new secure one..."
+  #head -c 32 /dev/urandom | base64 > "$VAULT_PASS_FILE"
+  #chmod 600 "$VAULT_PASS_FILE"
+  #echo "Vault pass file created at $VAULT_PASS_FILE"
+  echo "warning: Vault pass file not found at $VAULT_PASS_FILE"
 fi
 export VAULT_FILE
 export VAULT_PASS_FILE
+
+REDIS_DATA_DIR=${REDIS_DATA_DIR:-/redis}
+export REDIS_DATA_DIR
 
 CMD=$1
 shift
@@ -52,17 +56,23 @@ case $CMD in
     exec nginx -g "daemon off;"
     ;;
 
+  redis)
+    echo "Starting redis server..."
+    exec redis-server /etc/redis/redis.conf --protected-mode no --dir /redis
+    ;;
+
   scan)
     echo "Running various inventory scans..."
     sleep 60 # wait for other services to be ready
     uv run /app/src/hostsping.py
     uv run /app/src/hostsfacts.py all
+    uv run /app/src/hoststunnel.py
 
     # continuously run the scans every 5 minutes
     while true; do
-      uv run /app/src/hostsping.py
-      uv run /app/src/hostsfacts.py all
-      uv run /app/src/hoststunnel.py
+    #  uv run /app/src/hostsping.py
+    #  uv run /app/src/hostsfacts.py all
+    #  uv run /app/src/hoststunnel.py
       sleep 300
     done
     ;;

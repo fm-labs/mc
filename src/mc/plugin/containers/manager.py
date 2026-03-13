@@ -37,7 +37,7 @@ class ContainerClientsManager:
             if "+" in base_url:
                 engine, url = base_url.split("+", 1)
             else:
-                engine, url = "podman", base_url  # default to podman
+                engine, url = "docker", base_url  # default to docker if no engine specified
 
             if engine == "docker":
                 use_ssh = url.startswith("ssh")
@@ -85,38 +85,40 @@ class ContainerClientsManager:
             self._urls.clear()
 
 
-@lru_cache(maxsize=1)
-def get_container_connection_manager() -> ContainerClientsManager:
+#@lru_cache(maxsize=1)
+def init_container_connection_manager() -> ContainerClientsManager:
     return ContainerClientsManager()
 
 
-async def bootstrap_container_connection_manager() -> None:
+async def bootstrap_container_connection_manager() -> ContainerClientsManager:
     """Idempotent: make sure defaults exist (read from env/config if you like)."""
-    m = get_container_connection_manager()
+    m = init_container_connection_manager()
 
-    inventory = get_inventory_storage_instance()
-    items = inventory.list_items("container_host")
-    for item in items:
-        url = item.get("properties", {}).get("url")
-        engine = item.get("properties", {}).get("engine", "docker").lower()
-        autoconnect = item.get("properties", {}).get("autoconnect", False)
-        print("CCM: Found container host in inventory:", engine, url)
-        if not autoconnect:
-            print("CCM: Skipping container host (autoconnect is false):", url)
-            continue
+    await m.ensure("localdocker", "unix://var/run/docker.sock", test_ping=False)
 
-        engine_url = engine + "+" + url
-        try:
-            if engine == "docker" or engine == "podman":
-                await m.ensure(item.get("name", url), engine_url, test_ping=False)
-                print("CCM: Configured container host:", engine_url)
-            else:
-                print(f"CCM: Unknown container engine '{engine}' for host '{url}'")
-        except Exception as e:
-            print(f"CCM: Failed to configure container host '{url}': {e}")
-
+    # inventory = get_inventory_storage_instance()
+    # items = inventory.list_items("container_host")
+    # for item in items:
+    #     url = item.get("properties", {}).get("url")
+    #     engine = item.get("properties", {}).get("engine", "docker").lower()
+    #     autoconnect = item.get("properties", {}).get("autoconnect", False)
+    #     print("CCM: Found container host in inventory:", engine, url)
+    #     if not autoconnect:
+    #         print("CCM: Skipping container host (autoconnect is false):", url)
+    #         continue
+    #
+    #     engine_url = engine + "+" + url
+    #     try:
+    #         if engine == "docker" or engine == "podman":
+    #             await m.ensure(item.get("name", url), engine_url, test_ping=False)
+    #             print("CCM: Configured container host:", engine_url)
+    #         else:
+    #             print(f"CCM: Unknown container engine '{engine}' for host '{url}'")
+    #     except Exception as e:
+    #         print(f"CCM: Failed to configure container host '{url}': {e}")
     #await m.ensure("local", "unix:///run/podman/podman.sock", test_ping=False)
+    return m
 
 
 # best-effort cleanup if the process exits without FastAPI shutdown
-atexit.register(lambda: asyncio.run(get_container_connection_manager().close_all()))
+#atexit.register(lambda: asyncio.run(init_container_connection_manager().close_all()))

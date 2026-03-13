@@ -21,24 +21,21 @@ services:
     #  - credentials_vault_pass
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${PWD}/.local/config:/app/config
-      - ${PWD}/.local/aws_config.local:/home/app/.aws/config:ro
-      - ${PWD}/data:/data
-      - ../mc-templates:/templates/mc:ro
-      - ../fm-templates:/templates/fm:ro
-      - ../../amatic/javang-git/gsmc:/templates/gsmc:ro
+      - ${PWD}/data/dev:/data
+      #- ${PWD}/.local/config:/app/config
+      #- ../mc-templates:/templates/mc:ro
+      #- ../fm-templates:/templates/fm:ro
       #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
-      #- ${PWD}/.local/home:/home/app/
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
       - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
-      - HOST_DATA_DIR=${PWD}/data
-      - HOST_CONFIG_DIR=${PWD}/config
-      - FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
-      - FLOWER_USER_PASS=${FLOWER_USER_PASS:-password}
+      #- HOST_DATA_DIR=${PWD}/data
+      #- HOST_CONFIG_DIR=${PWD}/config
+      #- FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
+      #- FLOWER_USER_PASS=${FLOWER_USER_PASS:-password}
       #- CONFIG_DIR=/app/config
       #- RESOURCES_DIR=/app/resources
       #- DATA_DIR=/data

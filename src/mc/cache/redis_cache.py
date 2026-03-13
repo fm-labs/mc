@@ -35,7 +35,7 @@ def write_to_redis_cache(redis_client, key: str, value: str, ttl=None):
         redis_client.set(key, value)
 
 
-def read_from_redis_cache(redis_client, key: str) -> dict:
+def read_from_redis_cache(redis_client, key: str) -> str:
     """
     Read a value from the Redis cache by its key.
 

@@ -1,27 +1,24 @@
 ################################################################
-# KLOUDIA - AI-DRIVEN CLOUD MANAGEMENT PLATFORM
+# MISSION CONTROL SERVER
 # MAIN SERVER FILE
-# This file sets up the FastAPI application, including middleware and routing.
-# Note: Middlewares are executed in reverse order of addition (LIFO)
 #
 # Run the server with:
 #   uvicorn server:app
 ################################################################
-import os
 import logging
+import os
 from contextlib import AsyncExitStack, asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException
-from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from mc.db.redis import get_aioredis_client
+#from mc.db.redis import get_aioredis_client
 from mc.mcp.app import mcp as mcp_app
-from mc.mcp.helper import init_mcp_http_app
-from mc.plugin.containers.manager import bootstrap_container_connection_manager, get_container_connection_manager
+from mc.mcp.fastmcp_helper import init_mcp_http_app
+from mc.plugin.containers.manager import bootstrap_container_connection_manager
 from mc.server.models import Problem
 from mc.server.router import app_router
 
@@ -35,12 +32,11 @@ async def lifespan(main_app: FastAPI):
 
     async with AsyncExitStack() as stack:
         # init resources for the main app
-        main_app.state.redis = get_aioredis_client()
+        #main_app.state.redis = get_aioredis_client()
+        main_app.state.ccm = await bootstrap_container_connection_manager()
 
-        await bootstrap_container_connection_manager()
-
-        # if you want to be explicit, also enter the mounted app's lifespan:
-        # (This guarantees startup/shutdown even if you run the sub-app standalone elsewhere.)
+        # also enter the mounted app's lifespan:
+        # this guarantees startup/shutdown even if the sub-app runs standalone elsewhere.
         await stack.enter_async_context(
             mcp_http_app.router.lifespan_context(mcp_http_app)
         )
@@ -48,10 +44,8 @@ async def lifespan(main_app: FastAPI):
         try:
             yield
         finally:
-            # teardown in reverse order is handled by ExitStack, but if your redis
-            # client needs explicit closing, do it here (or register with stack)
-            await main_app.state.redis.aclose()
-            await get_container_connection_manager().close_all()
+            await main_app.state.ccm.close_all()
+            #await main_app.state.redis.aclose()
 
 
 logging.basicConfig(level=logging.INFO)

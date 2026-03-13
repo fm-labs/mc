@@ -13,5 +13,5 @@ export default function Page() {
     //     </MainContent>
     // )
 
-    return <Navigate to={'/infrastructure'} />
+    return <Navigate to={'/stacks'} />
 }

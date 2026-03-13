@@ -7,9 +7,9 @@ from docker.constants import DEFAULT_TIMEOUT_SECONDS
 from paramiko.client import SSHClient
 
 from mc.util.subprocess_util import kwargs_to_cmdargs
-from rx.helper.rsync_helper import rsync_execute
-from rx.helper.sshpy_helper import ssh_execute_command, ssh_params_from_url, ssh_connect
-from rx.helper.subprocess_helper import rx_subprocess
+from mc.util.rsync_helper import rsync_execute
+from mc.util.sshpy_helper import ssh_execute_command, ssh_params_from_url, ssh_connect
+from mc.util.subprocess_helper import rx_subprocess
 
 
 def get_ssh_client(dest, ssh_cfg: dict) -> SSHClient:

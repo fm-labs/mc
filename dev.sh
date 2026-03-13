@@ -3,7 +3,7 @@
 PROJECT_NAME="mc"
 CONTAINER_NAME="${PROJECT_NAME}-dev"
 IMAGE_NAME="${PROJECT_NAME}:dev"
-DOCKER_COMPOSE_FILE="docker-compose.dev.yml"
+DOCKER_COMPOSE_FILE="compose.dev.yaml"
 
 CMD=$1
 

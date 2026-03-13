@@ -47,7 +47,7 @@ export function NavInventory({
                                 <span><TypewriterText delay={0} limit={2000} text={item.title} /></span>
                             </NavLink>
                         </SidebarMenuButton>
-                        <DropdownMenu>
+                        {/*<DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <SidebarMenuAction
                                     showOnHover
@@ -76,15 +76,15 @@ export function NavInventory({
                                     <span>Delete</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
-                        </DropdownMenu>
+                        </DropdownMenu>*/}
                     </SidebarMenuItem>
                 ))}
-                <SidebarMenuItem>
+                {/*<SidebarMenuItem>
                     <SidebarMenuButton className="text-sidebar-foreground/70">
                         <IconDots className="text-sidebar-foreground/70" />
                         <span>More</span>
                     </SidebarMenuButton>
-                </SidebarMenuItem>
+                </SidebarMenuItem>*/}
             </SidebarMenu>
         </SidebarGroup>
     );

@@ -18,7 +18,7 @@ const NetworksGrid = ({ networks }: { networks: InventoryItem<any>[] }) => {
 
     return (
         <div>
-            <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
                 {networks && networks.length > 0 && networks.map((network) => (
                     <li
                         key={network.name}
@@ -26,12 +26,12 @@ const NetworksGrid = ({ networks }: { networks: InventoryItem<any>[] }) => {
                     >
                         <NetworkProvider network={network}>
                             <div className="mb-4 flex items-center justify-between">
-                                <div
+                                {/*<div
                                     className={`bg-muted flex size-10 items-center justify-center rounded-lg p-2`}
                                     onClick={() => toggleSelectedNetwork(network)}
                                 >
                                     <Share2Icon />
-                                </div>
+                                </div>*/}
                                 <div>
                                     {/*<Button
                                         variant="outline"

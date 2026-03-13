@@ -1,6 +1,5 @@
 import asyncio
 import json
-import time
 from typing import List, Annotated, Any
 
 import anyio
@@ -13,64 +12,13 @@ from starlette.concurrency import iterate_in_threadpool
 from starlette.requests import Request, ClientDisconnect
 from starlette.responses import StreamingResponse
 
-from mc.cache.redis_cache import read_from_redis_cache, get_redis_cache_client, write_to_redis_cache
+from mc.cache.cached import cached, clear_cache
 from mc.db.mongodb import mongodb_results_to_json
 from mc.inventory.storage import get_inventory_storage_instance
 from mc.plugin.containers.deps import dep_container_connection, dep_container_connections_manager
 from mc.plugin.containers.manager import ContainerClientsManager
 
 router = APIRouter()
-
-# cache = {}
-#
-# def simple_cached(cache_key, func, ttl=60):
-#     global cache
-#     def wrapper(*args, **kwargs):
-#         key = cache_key
-#         if key in cache:
-#             _cached = cache[key]
-#             if ttl > 0 and time.time() - _cached["timestamp"] < ttl:
-#                 print(f"Cache hit for key {key}")
-#                 return _cached["data"]
-#             else:
-#                 print(f"Cache expired for key {key}")
-#
-#         result = func(*args, **kwargs)
-#         cache[key] = {"data": result, "timestamp": time.time()}
-#         print(f"Cache set for key {key}")
-#         return result
-#     return wrapper
-
-
-def cached(cache_key, func, ttl=30):
-    def wrapper(*args, **kwargs):
-        key = cache_key
-        r = get_redis_cache_client()
-        _cached = read_from_redis_cache(r, key)
-        if _cached:
-            _cached = json.loads(_cached)
-            if ttl > 0 and time.time() - _cached["timestamp"] < ttl:
-                print(f"Cache hit for key {key}")
-                return _cached["data"]
-            else:
-                print(f"!!!!Cache expired for key {key}")
-
-        result = func(*args, **kwargs)
-        payload = json.dumps({"data": result, "timestamp": time.time()})
-        write_to_redis_cache(r, key, payload, ttl)
-        print(f"Cache set for key {key}")
-        return result
-    return wrapper
-
-
-def clear_cache(cache_key):
-    #global cache
-    #if cache_key in cache:
-    #    del cache[cache_key]
-    #    print(f"Cache cleared for key {cache_key}")
-    r = get_redis_cache_client()
-    r.delete("mc_cache_" + cache_key)
-    print(f"Cache cleared for key {cache_key}")
 
 
 @router.get("/containers/hosts")

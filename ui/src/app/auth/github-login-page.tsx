@@ -38,9 +38,7 @@ const GithubLoginPage = () => {
         }
     }
 
-
     // React.useEffect(() => {
-    //     // Here you would typically send 'code' and 'state' to your backend to exchange for an access token
     //     if (code && state) {
     //         loginWithGitHubCode();
     //     }

@@ -5,13 +5,10 @@ import json
 import sys
 from typing import Any, Dict, Optional
 
-import typer
+import click
 
 from mc.credentials_manager import update_credentials, remove_credentials, get_credentials, add_credentials
 from mc.vault import open_vaultfile
-
-app = typer.Typer(no_args_is_help=True, add_completion=False)
-
 
 # ----------------------------- Helpers ---------------------------------- #
 
@@ -24,13 +21,13 @@ def _read_json_from_stdin() -> Dict[str, Any]:
     try:
         raw = sys.stdin.read()
         if not raw.strip():
-            raise typer.BadParameter("No JSON received on stdin.")
+            raise click.BadParameter("No JSON received on stdin.")
         data = json.loads(raw)
         if not isinstance(data, dict):
-            raise typer.BadParameter("Expected a JSON object at top level.")
+            raise click.BadParameter("Expected a JSON object at top level.")
         return data
     except json.JSONDecodeError as e:
-        raise typer.BadParameter(f"Invalid JSON on stdin: {e}") from e
+        raise click.BadParameter(f"Invalid JSON on stdin: {e}") from e
 
 
 def _interactive_collect_credentials() -> Dict[str, Any]:
@@ -39,14 +36,14 @@ def _interactive_collect_credentials() -> Dict[str, Any]:
     Finish by entering an empty key.
     """
     creds: Dict[str, Any] = {}
-    typer.echo("Entering interactive mode. Leave key empty to finish.")
+    click.echo("Entering interactive mode. Leave key empty to finish.")
     while True:
-        key = typer.prompt("Key name", default="", show_default=False)
+        key = click.prompt("Key name", default="", show_default=False)
         if not key:
             break
 
-        hide = typer.confirm(f"Hide value input for '{key}'? (recommended for secrets)", default=True)
-        value = typer.prompt(f"Value for '{key}'", hide_input=hide)
+        hide = click.confirm(f"Hide value input for '{key}'? (recommended for secrets)", default=True)
+        value = click.prompt(f"Value for '{key}'", hide_input=hide)
 
         # Basic type coercion:
         # Try bool/null/int/float; otherwise keep string
@@ -64,7 +61,7 @@ def _interactive_collect_credentials() -> Dict[str, Any]:
         creds[key] = parsed
 
     if not creds:
-        raise typer.BadParameter("No credentials provided.")
+        raise click.BadParameter("No credentials provided.")
     return creds
 
 
@@ -79,99 +76,99 @@ def _gather_credentials(interactive: bool) -> Dict[str, Any]:
         return _read_json_from_stdin()
     if interactive:
         return _interactive_collect_credentials()
-    raise typer.BadParameter(
+    raise click.BadParameter(
         "No credentials provided. Either pipe JSON on stdin or enable --interactive."
     )
 
 
-# ---------------------------- Global flags ------------------------------- #
-
-@app.callback()
-def _main(
-    ctx: typer.Context,
-    interactive: bool = typer.Option(
-        True,
-        "--interactive/--no-interactive",
-        help="Interactively prompt for credentials when not reading JSON from stdin.",
-        show_default=True,
-    ),
-):
-    """
-    Manage raw unencrypted vault credentials (YAML or TOML), without exposing secrets
-    on the command line. For 'add' and 'update', supply credentials via JSON on stdin
-    or via interactive prompts.
-    """
-    ctx.obj = {"interactive": interactive}
-
-
 # ----------------------------- Helpers ---------------------------------- #
+
 def ask_password(prompt: str = "Enter password") -> str:
-    return typer.prompt(prompt, hide_input=True)
+    return click.prompt(prompt, hide_input=True)
+
+
+# ----------------------------- CLI Group -------------------------------- #
+
+@click.group()
+def credentials():
+    pass
+
 
 # ----------------------------- Commands --------------------------------- #
 
-@app.command("add")
-def cmd_add(
-    ctx: typer.Context,
-    vaultfile: str = typer.Argument(..., help="Path to vault .yaml/.yml/.toml"),
-    name: str = typer.Argument(..., help="Credential name (unique)"),
-):
+@credentials.command("add")
+@click.argument("vaultfile")
+@click.argument("name")
+@click.pass_context
+def cmd_add(ctx: click.Context, vaultfile: str, name: str):
     """
-    Add a credential set. Credentials are read from JSON on stdin or entered interactively.
+    Add a credential set.
+
+    VAULTFILE is the path to a vault .yaml/.yml/.toml file.
+    NAME is the unique credential name.
+
+    Credentials are read from JSON on stdin or entered interactively.
     """
     with open_vaultfile(vaultfile, mode="w") as decrypted_file:
         creds = _gather_credentials(ctx.obj["interactive"])
         add_credentials(decrypted_file.name, name, creds)
-        typer.echo(f"Added credential '{name}' to {vaultfile}.")
+        click.echo(f"Added credential '{name}' to {vaultfile}.")
 
 
-
-@app.command("update")
-def cmd_update(
-    ctx: typer.Context,
-    vaultfile: str = typer.Argument(..., help="Path to vault .yaml/.yml/.toml"),
-    name: str = typer.Argument(..., help="Credential name to modify"),
-):
+@credentials.command("update")
+@click.argument("vaultfile")
+@click.argument("name")
+@click.pass_context
+def cmd_update(ctx: click.Context, vaultfile: str, name: str):
     """
-    Update (change) keys for an existing credential set. Reads JSON from stdin or prompts.
+    Update (change) keys for an existing credential set.
+
+    VAULTFILE is the path to a vault .yaml/.yml/.toml file.
+    NAME is the credential name to modify.
+
+    Reads JSON from stdin or prompts interactively.
     """
     with open_vaultfile(vaultfile, mode="w") as decrypted_file:
         creds = _gather_credentials(ctx.obj["interactive"])
         update_credentials(decrypted_file.name, name, creds)
-        typer.echo(f"Updated credential '{name}' in {vaultfile}.")
+        click.echo(f"Updated credential '{name}' in {vaultfile}.")
 
 
-@app.command("remove")
-def cmd_remove(
-    vaultfile: str = typer.Argument(..., help="Path to vault .yaml/.yml/.toml"),
-    name: str = typer.Argument(..., help="Credential name to remove"),
-    yes: bool = typer.Option(
-        False, "--yes", "-y", help="Do not prompt for confirmation."
-    ),
-):
-    """Remove a credential set."""
+@credentials.command("remove")
+@click.argument("vaultfile")
+@click.argument("name")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Do not prompt for confirmation.")
+def cmd_remove(vaultfile: str, name: str, yes: bool):
+    """
+    Remove a credential set.
+
+    VAULTFILE is the path to a vault .yaml/.yml/.toml file.
+    NAME is the credential name to remove.
+    """
     if not yes:
-        typer.confirm(f"Remove credential '{name}' from {vaultfile}?", abort=True)
+        click.confirm(f"Remove credential '{name}' from {vaultfile}?", abort=True)
 
     with open_vaultfile(vaultfile, mode="w") as decrypted_file:
         remove_credentials(decrypted_file.name, name)
-        typer.echo(f"Removed credential '{name}' from {vaultfile}.")
+        click.echo(f"Removed credential '{name}' from {vaultfile}.")
 
 
-@app.command("show")
-def cmd_show(
-    vaultfile: str = typer.Argument(..., help="Path to vault .yaml/.yml/.toml"),
-    name: Optional[str] = typer.Argument(
-        None, help="Credential name to show (omit to show all)"
-    ),
-):
-    """Show credentials (all or one)."""
+@credentials.command("show")
+@click.argument("vaultfile")
+@click.argument("name", required=False, default=None)
+def cmd_show(vaultfile: str, name: Optional[str]):
+    """
+    Show credentials (all or one).
+
+    VAULTFILE is the path to a vault .yaml/.yml/.toml file.
+    NAME is the optional credential name to show (omit to show all).
+    """
     with open_vaultfile(vaultfile, mode="r") as f:
         creds = get_credentials(f.name, name)
-        print(json.dumps(creds, indent=2, sort_keys=True))
+        click.echo(json.dumps(creds, indent=2, sort_keys=True))
 
 
 # ----------------------------- Entrypoint -------------------------------- #
 
 if __name__ == "__main__":
-    app()
+    cli()

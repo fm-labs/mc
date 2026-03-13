@@ -1,16 +1,6 @@
-import {
-    IconCamera,
-    IconFileAi,
-    IconFileDescription,
-} from "@tabler/icons-react";
 import { AppNavigationData } from "@/components/layout/data/types.ts";
 
 export const navigationData: AppNavigationData = {
-    // user: {
-    //     name: "shadcn",
-    //     email: "m@example.com",
-    //     avatar: "/avatars/shadcn.jpg",
-    // },
     navMain: [
         {
             title: "Dashboard",
@@ -18,24 +8,24 @@ export const navigationData: AppNavigationData = {
             //icon: IconDashboard,
             iconName: "dashboard",
         },
-        {
-            title: "My Servers",
-            url: "/infrastructure",
-            //icon: IconTool,
-            iconName: "network",
-        },
-        {
-            title: "My Clouds",
-            url: "/infrastructure/aws",
-            //icon: IconTool,
-            iconName: "aws",
-        },
-        {
-            title: "My Repositories",
-            url: "/repositories",
-            //icon: IconTool,
-            iconName: "repository",
-        },
+        // {
+        //     title: "My Servers",
+        //     url: "/infrastructure",
+        //     //icon: IconTool,
+        //     iconName: "network",
+        // },
+        // {
+        //     title: "My Clouds",
+        //     url: "/infrastructure/aws",
+        //     //icon: IconTool,
+        //     iconName: "aws",
+        // },
+        // {
+        //     title: "My Repositories",
+        //     url: "/repositories",
+        //     //icon: IconTool,
+        //     iconName: "repository",
+        // },
         {
             title: "My Applications",
             url: "/stacks",
@@ -120,41 +110,41 @@ export const navigationData: AppNavigationData = {
         },
     ],
     navAdmin: [
-        {
-            title: "Settings",
-            url: "/settings/profile",
-            iconName: "settings",
-        },
+        // {
+        //     title: "Settings",
+        //     url: "/settings/profile",
+        //     iconName: "settings",
+        // },
         {
             title: "Tools",
             url: "/admin/tools",
             //icon: IconTool,
             iconName: "tool",
         },
-        {
-            title: "Integrations",
-            url: "/admin/integrations",
-            //icon: IconTool,
-            iconName: "apps",
-        },
-        {
-            title: "Tasks",
-            url: "/admin/tasks",
-            //icon: IconTool,
-            iconName: "tasks",
-        },
-        {
-            title: "Ansible",
-            url: "/admin/ansible",
-            //icon: IconTool,
-            iconName: "ansible",
-        },
-        {
-            title: "MCP Servers",
-            url: "/mcp-servers",
-            //icon: IconTool,
-            iconName: "mcp",
-        },
+        // {
+        //     title: "Integrations",
+        //     url: "/admin/integrations",
+        //     //icon: IconTool,
+        //     iconName: "apps",
+        // },
+        // {
+        //     title: "Tasks",
+        //     url: "/admin/tasks",
+        //     //icon: IconTool,
+        //     iconName: "tasks",
+        // },
+        // {
+        //     title: "Ansible",
+        //     url: "/admin/ansible",
+        //     //icon: IconTool,
+        //     iconName: "ansible",
+        // },
+        // {
+        //     title: "MCP Servers",
+        //     url: "/mcp-servers",
+        //     //icon: IconTool,
+        //     iconName: "mcp",
+        // },
         // {
         //     title: "Docker MCP",
         //     url: "/docker-mcp",

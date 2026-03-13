@@ -14,11 +14,11 @@ export const topNav = [
     //     href: 'security',
     //     isActive: false,
     // },
-    {
-        title: 'AI',
-        href: '/ai',
-        isActive: false,
-    },
+    // {
+    //     title: 'AI',
+    //     href: '/ai',
+    //     isActive: false,
+    // },
     {
         title: "Admin",
         href: "/admin",

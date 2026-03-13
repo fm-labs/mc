@@ -17,26 +17,14 @@ uv run uvicorn --app-dir ./src --reload --port 13080 server:app
 ```
 
 
-### Run Orchestra
+The API will be available at `http://localhost:13080`.
 
-Orchestra is a lightweight task queue built on top of Celery. 
-
-It is used to run background tasks and track their status.
-
-
-#### Run celery worker
-
-```bash
-export PYTHONPATH=$PYTHONPATH:$(pwd)/src
-export DATA_DIR="/path/to/data"
-celery -A celery_worker.celery worker --loglevel=INFO
-```
 
 
 ### Local development stack with Docker
 
 ```bash
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f compose.dev.yaml up -d
 ```
 
 
@@ -51,4 +39,4 @@ bun install
 bun dev
 ```
 
-The UI will be available at `http://localhost:1420` by default.
+The UI will be available at `http://localhost:1420`.

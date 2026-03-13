@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Link } from "react-router";
+import React from "react";
 
 type TopNavProps = React.HTMLAttributes<HTMLElement> & {
   links: {

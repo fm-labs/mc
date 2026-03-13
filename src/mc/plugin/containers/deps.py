@@ -4,14 +4,20 @@ from typing import Annotated
 from fastapi import Depends, HTTPException
 from fastapi.params import Query
 from podman import PodmanClient
+from starlette.requests import Request
 
-from mc.plugin.containers.manager import ContainerClientsManager, get_container_connection_manager, \
-    bootstrap_container_connection_manager
+from mc.plugin.containers.manager import ContainerClientsManager, bootstrap_container_connection_manager
+
+
+def dep_ccm(request: Request) -> ContainerClientsManager:
+    if not hasattr(request.app.state, "ccm"):
+        raise HTTPException(500, "Container connection manager not initialized")
+    return request.app.state.ccm
 
 
 def dep_container_connection(
         alias: str,
-        manager: ContainerClientsManager = Depends(get_container_connection_manager),
+        manager: ContainerClientsManager = Depends(dep_ccm),
 ) -> PodmanClient:
     c = manager.get(alias)
     if not c:
@@ -36,7 +42,7 @@ def dep_container_connection(
 
 async def dep_container_connections_manager(
         refresh: Annotated[bool, Query()] = False,
-        manager: ContainerClientsManager = Depends(get_container_connection_manager),
+        manager: ContainerClientsManager = Depends(dep_ccm),
 ) -> ContainerClientsManager:
     # check if refresh is needed, due to ssh key changes or similar
     check_file = "/tmp/ssh-load-keys-success"
