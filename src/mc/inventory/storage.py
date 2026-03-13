@@ -24,9 +24,9 @@ def get_inventory_storage_instance() -> 'InventoryStorage':
     elif storage_type == "mongodb":
         mongo_client = get_mongo_client()
         _inventory_storage_instance = MongoDBInventoryStorage(mongo_client)
-    elif storage_type == "redis":
-        redis_client = get_aioredis_client()
-        _inventory_storage_instance = RedisInventoryStorage(redis_client)
+    # elif storage_type == "redis":
+    #     redis_client = get_redis_client()
+    #     _inventory_storage_instance = RedisInventoryStorage(redis_client)
     else:
         raise ValueError(f"Unsupported storage type: {storage_type}")
 
@@ -138,30 +138,30 @@ class MongoDBInventoryStorage(InventoryStorage):
         return result.deleted_count > 0
 
 
-class RedisInventoryStorage(InventoryStorage):
-
-    def __init__(self, redis_client):
-        self.redis_client = redis_client
-
-    def list_items(self, inventory_type: str) -> List[dict]:
-        keys = self.redis_client.keys(f"{inventory_type}:*")
-        items = []
-        for key in keys:
-            item = self.redis_client.hgetall(key)
-            items.append({k.decode('utf-8'): v.decode('utf-8') for k, v in item.items()})
-        return items
-
-    def save_item(self, inventory_type: str, item: dict) -> bool:
-        key = f"{inventory_type}:{item['item_key']}"
-        self.redis_client.hmset(key, item)
-        return True
-
-    def get_item(self, inventory_type: str, item_key: str) -> dict:
-        key = f"{inventory_type}:{item_key}"
-        item = self.redis_client.hgetall(key)
-        return {k.decode('utf-8'): v.decode('utf-8') for k, v in item.items()} if item else {}
-
-    def delete_item(self, inventory_type: str, item_key: str) -> bool:
-        key = f"{inventory_type}:{item_key}"
-        result = self.redis_client.delete(key)
-        return result > 0
+# class RedisInventoryStorage(InventoryStorage):
+#
+#     def __init__(self, redis_client):
+#         self.redis_client = redis_client
+#
+#     def list_items(self, inventory_type: str) -> List[dict]:
+#         keys = self.redis_client.keys(f"{inventory_type}:*")
+#         items = []
+#         for key in keys:
+#             item = self.redis_client.hgetall(key)
+#             items.append({k.decode('utf-8'): v.decode('utf-8') for k, v in item.items()})
+#         return items
+#
+#     def save_item(self, inventory_type: str, item: dict) -> bool:
+#         key = f"{inventory_type}:{item['item_key']}"
+#         self.redis_client.hmset(key, item)
+#         return True
+#
+#     def get_item(self, inventory_type: str, item_key: str) -> dict:
+#         key = f"{inventory_type}:{item_key}"
+#         item = self.redis_client.hgetall(key)
+#         return {k.decode('utf-8'): v.decode('utf-8') for k, v in item.items()} if item else {}
+#
+#     def delete_item(self, inventory_type: str, item_key: str) -> bool:
+#         key = f"{inventory_type}:{item_key}"
+#         result = self.redis_client.delete(key)
+#         return result > 0

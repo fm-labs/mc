@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+####################################
+# MISSION CONTROL MCP SERVER (Standalone)
+####################################
 import asyncio
 import os
 import sys
@@ -9,9 +13,9 @@ sys.path.append('.')
 async def init_mcp() -> 'FastMCP':
     try:
         from mc.mcp.app import mcp as mcp_app
-        from mc.plugin.ama.amamcp import mcp as amamcp_app
 
-        mcp_app.mount(amamcp_app, prefix="ama")
+        #from mc.plugin.plugin_name.mcp import mcp as plugin_name_mcp_app
+        #mcp_app.mount(plugin_name_mcp_app, prefix="plugin_name")
 
         # config = {
         #     "mcpServers": {

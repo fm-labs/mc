@@ -2,14 +2,6 @@ from redis import asyncio as aioredis
 
 from mc import config
 
-_redis_instance = aioredis.Redis | None
-
-def get_global_aioredis_client():
-    global _redis_instance
-    if _redis_instance is None:
-        _redis_instance = get_aioredis_client()
-    return _redis_instance
-
 def get_aioredis_client() -> aioredis.Redis:
     redis_url = config.REDIS_URL or None
     if redis_url:
@@ -28,15 +20,4 @@ def get_aioredis_client() -> aioredis.Redis:
         password=redis_password,
         decode_responses=True,
     )
-
-    #if ping:
-    #    try:
-    #        await client.ping()
-    #    except redis.ConnectionError as e:
-    #        raise ConnectionError(f"Could not connect to Redis: {e}")
-
     return client
-
-
-async def get_aioredis_client_async() -> aioredis.Redis:
-    return get_aioredis_client()

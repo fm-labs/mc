@@ -24,7 +24,7 @@ for plugin_name in PLUGINS_ENABLED:
 
     router = getattr(module, "router")
     if router:
-        app_router.include_router(router, prefix="/api", tags=['plugin ' + plugin_name]) #, dependencies=[Security(get_current_user)])
+        app_router.include_router(router, prefix="/api", tags=[plugin_name], dependencies=[Security(get_current_user)])
 
 
 @app_router.get("/api/info", tags=["info"])

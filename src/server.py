@@ -22,24 +22,29 @@ from mc.plugin.containers.manager import bootstrap_container_connection_manager
 from mc.server.models import Problem
 from mc.server.router import app_router
 
+logging.basicConfig(level=logging.INFO)
+
 # Load MCP server app with specified transport
-mcp_transport = os.getenv("MCP_TRANSPORT", "streamable-http")
-mcp_http_app = init_mcp_http_app(mcp_app, transport=mcp_transport)
+mcp_enabled = os.getenv("MCP_ENABLED", "false").lower() == "true"
+if mcp_enabled:
+    mcp_transport = os.getenv("MCP_TRANSPORT", "streamable-http")
+    mcp_http_app = init_mcp_http_app(mcp_app, transport=mcp_transport)
+
 
 @asynccontextmanager
 async def lifespan(main_app: FastAPI):
     print("Setting up resources for main app lifespan...")
 
     async with AsyncExitStack() as stack:
-        # init resources for the main app
         #main_app.state.redis = get_aioredis_client()
         main_app.state.ccm = await bootstrap_container_connection_manager()
 
-        # also enter the mounted app's lifespan:
-        # this guarantees startup/shutdown even if the sub-app runs standalone elsewhere.
-        await stack.enter_async_context(
-            mcp_http_app.router.lifespan_context(mcp_http_app)
-        )
+        if mcp_enabled:
+            # also enter the mounted app's lifespan:
+            # this guarantees startup/shutdown even if the sub-app runs standalone elsewhere.
+            await stack.enter_async_context(
+                mcp_http_app.router.lifespan_context(mcp_http_app)
+            )
 
         try:
             yield
@@ -48,28 +53,18 @@ async def lifespan(main_app: FastAPI):
             #await main_app.state.redis.aclose()
 
 
-logging.basicConfig(level=logging.INFO)
-
-
-# FastAPI app with lifespan context
-#app = FastAPI(title="MissionControl API", version="0.1.0", lifespan=mcp_http_app.lifespan)
 app = FastAPI(title="MissionControl API", version="0.1.0", lifespan=lifespan)
-
+#if mcp_enabled:
 #app.mount("/mcp", mcp_http_app)
 
 # Middleware configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
-
-
-# class NotFoundError(Exception):
-#     def __init__(self, detail: str):
-#         self.detail = detail
 
 # Global exception handlers that emit Problem JSON responses
 @app.exception_handler(HTTPException)
@@ -80,6 +75,11 @@ async def http_exception_handler(_: Request, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code,
                         content=problem.model_dump(),
                         media_type="application/json")
+
+
+# class NotFoundError(Exception):
+#     def __init__(self, detail: str):
+#         self.detail = detail
 
 # @app.exception_handler(NotFoundError)
 # async def not_found_handler(_: Request, exc: NotFoundError):
@@ -113,4 +113,3 @@ default_error_responses = {
 }
 
 app.include_router(app_router, responses=default_error_responses)
-

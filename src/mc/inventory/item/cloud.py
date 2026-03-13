@@ -1,6 +1,6 @@
 import os
 
-from mc.utils.ini_util import update_ini_section
+from mc.util.ini_util import update_ini_section
 
 
 def handle_cloud_configure_aws_profile(item: dict, action_params: dict) -> dict:

@@ -3,14 +3,6 @@ from typing import List
 from pymongo import MongoClient
 from mc import config
 
-mongo: MongoClient | None = None
-
-def get_global_mongo_client() -> MongoClient:
-    global mongo
-    if mongo is None:
-        mongo = get_mongo_client()
-    return mongo
-
 
 def get_mongo_client(ping: bool = False) -> MongoClient:
     mongodb_uri = config.MONGODB_URL

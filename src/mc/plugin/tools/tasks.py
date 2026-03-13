@@ -1,6 +1,6 @@
 import os
 
-from mc.plugin.tools.helper import subprocess_run, subprocess_stream
+from mc.util.subprocess_helper2 import subprocess_run, subprocess_stream
 from orchestra.celery import celery
 from mc.plugin.tools.toolindex import get_tool_def
 
