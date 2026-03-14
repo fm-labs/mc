@@ -34,9 +34,9 @@ def handle_repository_item_scan(item: dict, action_params: dict) -> dict:
     # mounts /path/on/hostmachine/data/scans/xyz -> /data/ in the scan container
     host_output_path = f"{HOST_DATA_DIR}/{scan_output_dir}"
 
-    repo_url = item.get("properties", {}).get("url")
+    repo_url = item.get("url")
     if not repo_url:
-        return {"error": "Repository URL not found in item properties."}
+        return {"error": "Repository URL not found in item."}
 
     cmd = ["xscan", "repo", repo_url, "--output-dir", "/data", "--ref", scan_id]
     docker_cmd = ["docker", "run", "--rm",

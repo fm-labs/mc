@@ -16,7 +16,7 @@ const AppStackStackfile = () => {
         }
 
         try {
-            const response = await api.get(`/api/inventory/${itemType}/${currentItem.item_key}/view/stackfile`);
+            const response = await api.get(`/api/inventory/${itemType}/${currentItem.id}/view/stackfile`);
             setStackfileContent(response?.content);
         } catch (error) {
             console.error("Error fetching app stack config schema:", error);

@@ -4,7 +4,7 @@ from mc.util.dockercli_helper import dockercli_image_pull
 
 def handle_container_image_pull(item: dict, action_params: dict) -> dict:
     #item_name = item.get("name")
-    item_props = item.get("properties", {})
+    item_props = item
     image_url = item_props.get("image_url")
     image_tag = item_props.get("tag", "latest")
 
@@ -22,7 +22,7 @@ def handle_container_image_pull(item: dict, action_params: dict) -> dict:
         ch_item = storage.get_item_by_name(inventory_type="container_host", name=container_host)
         if not ch_item:
             raise ValueError(f"Container host '{container_host}' not found in inventory.")
-        ch_props = ch_item.get("properties", {})
+        ch_props = ch_item
         container_host_url = ch_props.get("url")
         if not container_host_url:
             raise ValueError(f"Container host '{container_host}' has no URL defined.")

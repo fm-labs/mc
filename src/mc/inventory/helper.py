@@ -5,10 +5,10 @@ import os
 from mc.config import RESOURCES_DIR
 
 
-def gen_inventory_key(item_type: str, item_name: str) -> str:
-    """Generate a unique MD5 hash key for an inventory item based on its type and name."""
-    key_string = f"{item_type}:{item_name}"
-    return hashlib.md5(key_string.encode('utf-8')).hexdigest()
+# def gen_inventory_key(item_type: str, item_name: str) -> str:
+#     """Generate a unique MD5 hash key for an inventory item based on its type and name."""
+#     key_string = f"{item_type}:{item_name}"
+#     return hashlib.md5(key_string.encode('utf-8')).hexdigest()
 
 
 def default_inventory_item_schema_lookup(item_type: str) -> dict:

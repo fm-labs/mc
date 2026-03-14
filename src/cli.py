@@ -1,14 +1,31 @@
+import os
+import logging
+from rich.logging import RichHandler
 import click
 
 from mc.cli.credentials import credentials
+from mc.cli.apps import apps
+
+logging.basicConfig(
+    level="INFO",
+    format="%(message)s",
+    handlers=[
+        RichHandler(
+            show_time=True,  # show timestamps
+            omit_repeated_times=False,  # show timestamp every line
+            show_level=True,
+            show_path=True,  # hide file path
+            rich_tracebacks=False,  # beautiful exception tracebacks
+        )
+    ]
+)
+logger = logging.getLogger(__name__)
 
 @click.group()
-@click.option("--interactive/--no-interactive", default=True)
 @click.pass_context
-def cli(ctx, interactive):
+def cli(ctx):
     """Main CLI."""
     ctx.ensure_object(dict)
-    ctx.obj["interactive"] = interactive
 
 @cli.command()
 def version():
@@ -16,6 +33,7 @@ def version():
     click.echo("Version 2.0.0")
 
 #cli.add_command(credentials)
+cli.add_command(apps)
 
 if __name__ == "__main__":
     cli()

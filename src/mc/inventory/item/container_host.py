@@ -35,9 +35,9 @@ def handle_container_host_docker_login(item: dict, action_params: dict) -> dict:
     Copies Docker credentials to the container host for Docker registry authentication.
     Credentials are read from the local Docker config file located at ~/.docker/config.json.
     """
-    host_url = item.get("properties", {}).get("url")
+    host_url = item.get("url")
     if not host_url:
-        raise ValueError("Container host URL not found in item properties.")
+        raise ValueError("Container host URL not found in item.")
 
     if not host_url.startswith("ssh://"):
         raise ValueError("Docker login action is only supported for SSH container hosts.")
@@ -65,9 +65,9 @@ def handle_container_host_docker_login(item: dict, action_params: dict) -> dict:
 
 
 def handle_container_host_deploy_template(item: dict, action_params: dict) -> dict:
-    host_url = item.get("properties", {}).get("url")
+    host_url = item.get("url")
     if not host_url:
-        raise ValueError("Container host URL not found in item properties.")
+        raise ValueError("Container host URL not found in item.")
 
     template_name = action_params.get("template_name")
     if not template_name:

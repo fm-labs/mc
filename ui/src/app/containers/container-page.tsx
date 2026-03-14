@@ -8,7 +8,7 @@ import {ContainerHostsProvider, useContainerHosts} from "@/app/containers/compon
 
 const ContainerHostContainer = ({hostId, containerId}: {hostId: string, containerId: string}) => {
     const {hosts} = useContainerHosts()
-    const host = hosts.find(h => h.name === hostId);
+    const host = hosts.find(h => h.id === hostId);
     if (!host) {
         return <div>Host not found: {hostId}</div>;
     }

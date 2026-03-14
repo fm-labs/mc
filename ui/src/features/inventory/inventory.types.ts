@@ -8,10 +8,8 @@ export type InventoryMetadata = {
 }
 
 export type InventoryItem<T> = {
-    item_key: string;
+    id: string;
     type: string;
-    name: string;
-    provider?: string;
     properties: T;
     [key: string]: any; // for any additional properties
 }

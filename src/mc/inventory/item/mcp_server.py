@@ -2,12 +2,12 @@ from mc.util.mcp_client import build_stdio_client, build_streamable_http_client,
 
 
 def handle_mcp_server_connect(item: dict, action_params: dict) -> dict:
-    props = item.get("properties", {})
+    props = item
     return {"status": "OK", "output": {}}
 
 
 def build_mcp_client_from_item(item: dict):
-    props = item.get("properties", {})
+    props = item
     server_type = props.get("type").lower()
     if server_type == "stdio":
         command = props.get("command", "").strip()

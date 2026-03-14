@@ -16,7 +16,7 @@ const AppStackConfig = () => {
         }
 
         try {
-            const template = await api.get(`/api/inventory/${itemType}/${currentItem.item_key}/view/template`);
+            const template = await api.get(`/api/inventory/${itemType}/${currentItem.id}/view/template`);
             setConfigSchema(template?.environment);
         } catch (error) {
             console.error("Error fetching app stack config schema:", error);
@@ -30,7 +30,7 @@ const AppStackConfig = () => {
 
         try {
             console.log("Form submitted with data:", formData);
-            const response = await api.post(`/api/inventory/${itemType}/${currentItem.item_key}/action/configure`, {environment: formData});
+            const response = await api.post(`/api/inventory/${itemType}/${currentItem.id}/action/configure`, {environment: formData});
             console.log("Configuration response:", response);
             toast.success("App stack configuration updated successfully!");
         } catch (error) {

@@ -13,8 +13,8 @@ if os.getenv("MC_ADMIN_PASSWORD_FILE"):
         MC_ADMIN_PASSWORD = f.read().strip()
 
 # Enabled plugins and integrations
-PLUGINS_ENABLED = ["tools", "containers"]
-INVENTORY_ITEMS_ENABLED = ["app_stack", "container_registry"]
+PLUGINS_ENABLED = ["containers"]
+INVENTORY_ITEMS_ENABLED = ["app_stack", "container_registry", "mc_node"]
 
 # Paths
 SSH_CONFIG = os.getenv("SSH_CONFIG", os.getcwd() + "/config/ssh_config")

@@ -7,8 +7,8 @@ import {InventoryItem} from "@/features/inventory/inventory.types.ts";
 import {Link} from "react-router";
 
 const AppStacksGrid = () => {
-    const { items } = useInventory()
-    
+    const {items} = useInventory()
+
     const handleItemClick = (item: any) => {
         // Implement the logic to handle item click, e.g., open a modal or navigate
         console.log("Item clicked:", item);
@@ -19,47 +19,24 @@ const AppStacksGrid = () => {
             <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
                 {items && items.length > 0 && items.map((item: InventoryItem<any>) => (
                     <li
-                        key={item.name}
+                        key={item.id}
                         className="rounded-lg border p-4 hover:shadow-md"
                     >
                         <AppStackProvider stack={item}>
-                            <div className="mb-4 flex items-center justify-between">
-                                {/*<div
-                                    className={`bg-muted flex size-10 items-center justify-center rounded-lg p-2`}
-                                    onClick={() => handleItemClick(item)}
-                                >
-                                    <Share2Icon />
-                                </div>*/}
+                            <div className="flex items-center justify-between">
                                 <div>
-                                    {/*<Button
-                                        variant="outline"
-                                        size="sm"
-                                        //onClick={() => setCurrentItem(item, null)}
-                                        //className={`${item.connected ? "border border-blue-300 bg-blue-50 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:hover:bg-blue-900":""}`}
-                                    >
-                                        Add Host
-                                    </Button>*/}{" "}
-                                    {/*<Button
-                                        variant="outline"
-                                        size="sm"
-                                        //onClick={() => setCurrentItem(item, null)}
-                                        //className={`${item.connected ? "border border-blue-300 bg-blue-50 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-950 dark:hover:bg-blue-900":""}`}
-                                    >
-                                        Launch new Host
-                                    </Button>*/}
+                                    <h2 className="mb-1 font-semibold flex space-x-2">
+                                        <BlocksIcon/> <Link to={`/stacks/details/${item.id}`}>{item.id}</Link>
+                                    </h2>
+                                    <div className={"text-muted-foreground text-sm mb-1"}>
+                                        {item?.properties?.source_type} - {item?.properties?.source_url} - {item?.properties?.stackfile}
+                                    </div>
                                 </div>
-                            </div>
-                            <div>
-                                <h2 className="mb-1 font-semibold flex space-x-2">
-                                    <BlocksIcon /> <Link to={`/stacks/details/${item.item_key}`}>{item.name}</Link>
-                                </h2>
-                                <div className={"text-muted-foreground text-sm mb-1"}>
-                                    {item?.properties?.template_repository}<br />
-                                    {item?.properties?.template_stackfile}
-                                </div>
-                                <div className="flex gap-1 line-clamp-2 text-gray-500 text-sm mb-1">
-                                    <Badge variant={"outline"}>{item?.properties?.container_host}</Badge>
-                                    <Badge variant={"default"}>DEPLOYED</Badge>
+                                <div className={"text-right"}>
+                                    <div className="flex gap-1 line-clamp-2 text-gray-500 text-sm mb-1">
+                                        <Badge variant={"outline"}>{item?.properties?.deployment_target}</Badge>
+                                        <Badge variant={"default"}>DEPLOYED</Badge>
+                                    </div>
                                 </div>
                             </div>
                         </AppStackProvider>

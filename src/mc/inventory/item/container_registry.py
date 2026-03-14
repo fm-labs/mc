@@ -60,7 +60,7 @@ def lookup_container_registry_credentials(registry_host: str, specified_username
 
 
 def handle_container_registry_login(item: dict, action_params: dict) -> dict:
-    item_props = item.get("properties", {})
+    item_props = item
     registry_url= item_props.get("registry_url")
     username = item_props.get("username")
     #password = item_props.get("password")

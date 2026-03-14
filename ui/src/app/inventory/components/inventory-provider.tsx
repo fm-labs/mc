@@ -151,19 +151,19 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
             const props = (inputSchema as any).properties;
             const itemCols: ColumnDef<InventoryItem<T>>[] = [
                 // {
-                //     accessorKey: 'item_key',
+                //     accessorKey: 'id',
                 //     header: 'UUID',
                 // },
                 {
-                    accessorKey: "name",
-                    header: "name",
+                    accessorKey: "id",
+                    header: "id",
                     cell: ({ row }) => {
                         return <span className={"font-bold"} onClick={() => {
-                            console.log("Clicked on item name:", row.original);
+                            console.log("Clicked on item:", row.original);
                             setCurrentItem(row.original);
                             setOpen("update");
                         }}>
-                            {row.original.name}
+                            {row.original.id}
                         </span>;
                     },
                 },

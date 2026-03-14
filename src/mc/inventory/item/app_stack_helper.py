@@ -30,7 +30,7 @@ def create_app_stack(stack_name: str, src: str, stackfile: str, **kwargs) -> dic
 
     item = {
         "stack_name": stack_name,
-        "template_stackfile": stackfile,
+        "stackfile": stackfile,
     }
 
     if src.startswith("file://"):
@@ -74,7 +74,7 @@ def create_app_stack_from_template_dir(app_dir: str, template_dir: str) -> dict:
     print(f"Created application from template directory '{template_dir}' at '{app_dir}'")
 
     return {
-        "template_repository": f"file://{template_dir}",
+        "source_url": f"file://{template_dir}",
     }
 
 
@@ -99,7 +99,7 @@ def create_app_stack_from_git_repo(app_dir: str, git_repo: str, git_branch: str 
 
 
     return {
-        "template_repository": f"{git_repo}#{git_branch}" if git_branch else git_repo,
+        "source_url": f"{git_repo}#{git_branch}" if git_branch else git_repo,
     }
 
 
@@ -185,5 +185,5 @@ def create_app_stack_from_url_template(app_dir: str, template_url: str) -> dict:
         print(f"Created application from URL template '{template_url}' at '{app_dir}'")
 
     return {
-        "template_repository": template_url,
+        "source_url": template_url,
     }

@@ -86,11 +86,11 @@ const KitchensinkInventoryItems = () => {
     const { itemType, items, setDialog } = useInventory()
     const [activeItemKey, setActiveItemKey] = React.useState<string | null>(null);
 
-    const toggleActiveItem = (item_key: string) => {
-        if (activeItemKey===item_key) {
+    const toggleActiveItem = (id: string) => {
+        if (activeItemKey===id) {
             setActiveItemKey(null);
         } else {
-            setActiveItemKey(item_key);
+            setActiveItemKey(id);
         }
     };
 
@@ -117,10 +117,10 @@ const KitchensinkInventoryItems = () => {
             {items && items.length > 0 ? (
                 <ul className={"_sm:columns-1 _md:columns-1 _lg:columns-1 _xl:columns-3 gap-2"}>
                     {items.map((item) => (
-                        <Item key={item.item_key}
+                        <Item key={item.id}
                               item={item}
-                              onClick={() => toggleActiveItem(item.item_key)}
-                              isActive={activeItemKey===item.item_key} />
+                              onClick={() => toggleActiveItem(item.id)}
+                              isActive={activeItemKey===item.id} />
                     ))}
                 </ul>
             ):(
@@ -128,7 +128,7 @@ const KitchensinkInventoryItems = () => {
             )}
             {/*{activeItemKey && <InventoryMutateDrawer open={true}
                                                       onOpenChange={() => setActiveItemKey(null)}
-                                                      currentRow={items.find(i => i.item_key === activeItemKey)} />}
+                                                      currentRow={items.find(i => i.id === activeItemKey)} />}
 
             {activeItemKey === "__NEW__" && <InventoryMutateDrawer open={true}
                                                                     onOpenChange={() => setActiveItemKey(null)}

@@ -12,8 +12,8 @@ def handle_cloud_configure_aws_profile(item: dict, action_params: dict) -> dict:
     :param action_params: Action parameters.
     """
     item_name = item.get("name", "")
-    cloud_provider = item.get("properties", {}).get("provider", "")
-    account_id = item.get("properties", {}).get("account_id", "")
+    cloud_provider = item.get("provider", "")
+    account_id = item.get("account_id", "")
     if cloud_provider.lower() != "aws":
         raise Exception(f"Unsupported cloud provider: {cloud_provider}")
     if not account_id:

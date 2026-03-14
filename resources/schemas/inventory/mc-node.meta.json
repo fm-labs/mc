@@ -1,0 +1,15 @@
+{
+  "actions": [
+    {
+      "id": "ping",
+      "name": "Ping Host",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "timeout": 10000
+    }
+  ]
+}

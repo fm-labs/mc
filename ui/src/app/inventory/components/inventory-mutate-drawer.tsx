@@ -81,7 +81,7 @@ export function InventoryMutateDrawer({
         //     return {"type": "object", "properties": {}};
         // }
         const _properties: any = {
-            name: { type: "string", "description": "Unique Name of the inventory item" },
+            id: { type: "string", "description": "Unique ID" },
             ...inputSchema?.properties,
         };
         const _schema: RJSFSchema = {

@@ -27,8 +27,8 @@ def dep_container_connection(
     # if not item:
     #     raise HTTPException(404, f"No container host named '{alias}' in inventory")
     #
-    # engine = item.get("properties", {}).get("engine", "docker").lower()
-    # url = item.get("properties", {}).get("url")
+    # engine = item.get("engine", "docker").lower()
+    # url = item.get("url")
     # if not url:
     #     raise HTTPException(400, f"Container host '{alias}' has no URL configured")
     #

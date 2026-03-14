@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "title": "MissionControl Node",
+  "description": "MissionControl node inventory item",
+  "version": "1.0.0",
+  "$icon": "node",
+  "properties": {
+    "url": {
+      "type": "string",
+      "title": "MissionControl API Base URL"
+    },
+    "autoconnect": {
+      "type": "boolean",
+      "title": "Auto-connect",
+      "default": false
+    }
+  },
+  "required": [
+    "url"
+  ]
+}

@@ -9,13 +9,13 @@ from orchestra.tasks import task_run_ansible_playbook
 
 
 def handle_host_ping(item: dict, action_params: dict) -> dict:
-    props = item.get("properties", {})
+    props = item
     #host_name = props.get("ssh_hostname", props.get("hostname", item.get("name")))
     #if not host_name:
-    #   raise ValueError("Hostname not found in item properties.")
-    #host_ip = item.get("properties", {}).get("ip_address")
+    #   raise ValueError("Hostname not found in item.")
+    #host_ip = item.get("ip_address")
     #if not host_ip:
-    #    raise ValueError("IP address not found in item properties.")
+    #    raise ValueError("IP address not found in item.")
     ping_target = props.get("ssh_hostname", props.get("ip_address", props.get("hostname", item.get("name"))))
     try:
         print("Ping: ", ping_target)
@@ -35,9 +35,9 @@ def handle_host_ping(item: dict, action_params: dict) -> dict:
 
 
 def handle_host_run_ansible_playbook(item: dict, action_params: dict) -> dict:
-    hostname = item.get("properties", {}).get("ssh_hostname")
+    hostname = item.get("ssh_hostname")
     if not hostname:
-        raise ValueError("Hostname not found in item properties.")
+        raise ValueError("Hostname not found in item.")
     if not action_params.get("playbook"):
         raise ValueError("Parameter 'playbook' is required.")
 
@@ -58,9 +58,9 @@ def handle_host_run_ansible_playbook(item: dict, action_params: dict) -> dict:
 
 
 def handle_host_ssh_probe(item: dict, action_params: dict) -> dict:
-    hostname = item.get("properties", {}).get("hostname")
+    hostname = item.get("hostname")
     if not hostname:
-        raise ValueError("Hostname not found in item properties.")
+        raise ValueError("Hostname not found in item.")
     import socket
     port = action_params.get("port", 22)
     timeout = action_params.get("timeout", 5)
@@ -81,15 +81,15 @@ def handle_host_setup_container_host(item: dict, action_params: dict) -> dict:
 def handle_host_setup_webstack(item: dict, action_params: dict) -> dict:
     # todo run the appropriate compose project template to setup web host
 
-    hostname = item.get("properties", {}).get("hostname")
+    hostname = item.get("hostname")
     if not hostname:
-        raise ValueError("Hostname not found in item properties.")
+        raise ValueError("Hostname not found in item.")
 
     project_name = action_params.get("project_name")
     if not project_name:
         raise ValueError("Parameter 'project_name' is required.")
 
-    webstack_enabled = item.get("properties", {}).get("webstack_enabled", True)
+    webstack_enabled = item.get("webstack_enabled", True)
     if not webstack_enabled:
         raise ValueError("Parameter 'webstack_enabled' is required.")
 
@@ -104,7 +104,7 @@ def handle_host_setup_webstack(item: dict, action_params: dict) -> dict:
         stack_item = {
             "name": app_name,
             "properties": {
-                "template_repository": f"file://{RESOURCES_DIR}/compose-templates",
+                "source_url": f"file://{RESOURCES_DIR}/compose-templates",
                 "stackfile": "traefik-ssl/compose.yaml",
                 "container_host": hostname,
                 "domain_name": "",

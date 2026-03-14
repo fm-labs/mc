@@ -33,7 +33,7 @@ def get_container_hosts(manager:ContainerClientsManager=Depends(dep_container_co
     #     _items.append(item_copy)
     # return mongodb_results_to_json(_items)
     hosts = []
-    hosts.append({"item_key": "localdocker", "name": "localdocker", "connected": True, "properties": {
+    hosts.append({"id": "localdocker", "name": "localdocker", "connected": True, "properties": {
         "engine": "docker",
         "url": "unix:///var/run/docker.sock",
         "autoconnect": True,

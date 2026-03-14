@@ -35,7 +35,7 @@ def handle_credential_configure(item: dict, action_params: dict) -> dict:
 
 
 def handle_credential_destroy(item: dict, action_params: dict) -> dict:
-    # props = item.get("properties", {})
+    # props = item
     # key_name = props.get("ssh_key_name", item['name'])
     # key_path = f"~/.ssh/{key_name}"
     # expanded_key_path = os.path.expanduser(key_path)
@@ -54,7 +54,7 @@ def handle_credential_destroy(item: dict, action_params: dict) -> dict:
     #     print(f"Failed to remove credential '{key_name}': {e}")
     #
     # storage = get_inventory_storage_instance()
-    # storage.delete_item("credential", item['item_key'])
+    # storage.delete_item("credential", item['id'])
     # return {"message": f"Credential '{item['name']}' destroyed."}
     return {"message": f"Not implemented."}
 

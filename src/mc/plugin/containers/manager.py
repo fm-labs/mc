@@ -97,9 +97,9 @@ async def bootstrap_container_connection_manager() -> ContainerClientsManager:
     # inventory = get_inventory_storage_instance()
     # items = inventory.list_items("container_host")
     # for item in items:
-    #     url = item.get("properties", {}).get("url")
-    #     engine = item.get("properties", {}).get("engine", "docker").lower()
-    #     autoconnect = item.get("properties", {}).get("autoconnect", False)
+    #     url = item.get("url")
+    #     engine = item.get("engine", "docker").lower()
+    #     autoconnect = item.get("autoconnect", False)
     #     print("CCM: Found container host in inventory:", engine, url)
     #     if not autoconnect:
     #         print("CCM: Skipping container host (autoconnect is false):", url)

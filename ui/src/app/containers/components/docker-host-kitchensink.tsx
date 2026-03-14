@@ -49,7 +49,7 @@ const DockerHostsKitchensink = () => {
         <div>
             <ul className="faded-bottom no-scrollbar grid gap-2 overflow-auto">
                 {hosts && hosts.length > 0 && hosts.map((host) => (
-                    <ContainerHostProvider key={host.name} host={host}>
+                    <ContainerHostProvider key={host.id} host={host}>
                         <DockerHostsKitchensinkItem host={host}/>
                     </ContainerHostProvider>
                 ))}

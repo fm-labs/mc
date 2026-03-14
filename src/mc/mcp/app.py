@@ -1,6 +1,6 @@
 from fastmcp import FastMCP
 
-from mc.inventory.metadata import retrieve_inventory_json_schema, store_inventory_json_schema
+from mc.inventory.metadata import read_inventory_json_schema, store_inventory_json_schema
 
 mcp = FastMCP("MissionControl MCP", version="1.0.0")
 
@@ -14,7 +14,7 @@ def add_inventory_json_schema(item_type: str, schema: dict) -> dict:
         item_type (str): The type of inventory item (e.g., "server", "network", "application").
         schema (dict): The JSON schema that defines the structure of the inventory item.
     """
-    existing = retrieve_inventory_json_schema(item_type)
+    existing = read_inventory_json_schema(item_type)
     if existing:
         raise Exception(f"Item type '{item_type}' already exists")
 
@@ -30,7 +30,7 @@ def get_inventory_json_schema(item_type: str) -> dict:
     Returns:
         dict: The JSON schema if found, otherwise raises an exception.
     """
-    schema = retrieve_inventory_json_schema(item_type)
+    schema = read_inventory_json_schema(item_type)
     if not schema:
         raise Exception(f"Item type '{item_type}' does not exist")
     return schema
@@ -45,7 +45,7 @@ def update_inventory_json_schema(item_type: str, schema: dict) -> dict:
         item_type (str): The type of inventory item (e.g., "server", "network", "application").
         schema (dict): The updated JSON schema that defines the structure of the inventory item.
     """
-    existing = retrieve_inventory_json_schema(item_type)
+    existing = read_inventory_json_schema(item_type)
     if not existing:
         raise Exception(f"Item type '{item_type}' does not exist")
 

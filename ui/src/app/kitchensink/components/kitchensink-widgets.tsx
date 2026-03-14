@@ -54,7 +54,7 @@ const InternetDomainWidget = (props: InventoryWidgetComponentProps) => {
     const { item } = props;
     const [showIframe, setShowIframe] = React.useState(false);
 
-    const url = item?.name ? `https://${item.name}`:null;
+    const url = item?.id ? `https://${item.id}`:null;
     if (!url) {
         return <div>No domain name available</div>;
     }
@@ -65,7 +65,7 @@ const InternetDomainWidget = (props: InventoryWidgetComponentProps) => {
                 URL: <a href={url} target={`_blank`} rel="noopener noreferrer">{url}</a>
             </div>
             {showIframe ? <div>
-                <iframe src={url} title={item.name} className={"w-full min-h-[400px]"}></iframe>
+                <iframe src={url} title={item.id} className={"w-full min-h-[400px]"}></iframe>
             </div>:<button className={"text-xs underline"} onClick={() => setShowIframe(true)}>Show Iframe</button>}
         </div>
     );

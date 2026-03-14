@@ -77,16 +77,16 @@ export const buildApiClient = (baseURL: string) => {
     };
 
     const updateInventoryItem = async (itemType: string, item: InventoryItem<any>, config?: AxiosRequestConfig): Promise<InventoryItem<any>> => {
-        const response = await apiHttpClient.put(`api/inventory/${itemType}/${item.item_key}`, item, config);
+        const response = await apiHttpClient.put(`api/inventory/${itemType}/${item.id}`, item, config);
         return response.data;
     };
 
     const deleteInventoryItem = async (itemType: string, item: InventoryItem<any>, config?: AxiosRequestConfig): Promise<any> => {
-        const response = await apiHttpClient.delete(`api/inventory/${itemType}/${item.item_key}`, config);
+        const response = await apiHttpClient.delete(`api/inventory/${itemType}/${item.id}`, config);
         return response.data;
     };
     const submitInventoryItemAction = async (itemType: string, item: InventoryItem<any>, action_name: string, action_args?: any, config?: AxiosRequestConfig): Promise<TaskSubmissionResponse> => {
-        const response = await apiHttpClient.post(`api/inventory/${itemType}/${item.item_key}/action/${action_name}`, action_args || {}, config);
+        const response = await apiHttpClient.post(`api/inventory/${itemType}/${item.id}/action/${action_name}`, action_args || {}, config);
         return response.data;
     };
 
@@ -95,7 +95,7 @@ export const buildApiClient = (baseURL: string) => {
      * @deprecated Use submitInventoryItemAction with action_name 'scan' instead
      */
     const createInventoryScan = (config?: AxiosRequestConfig) => async (item: InventoryItem<any>): Promise<any> => {
-        const response = await apiHttpClient.post(`api/inventory/${item.type}/${item.item_key}/action/scan`, {}, config);
+        const response = await apiHttpClient.post(`api/inventory/${item.type}/${item.id}/action/scan`, {}, config);
         return response.data;
     };
 
@@ -103,7 +103,7 @@ export const buildApiClient = (baseURL: string) => {
      * @deprecated Use submitInventoryItemAction with itemType 'dns-domain' instead
      */
     const submitDomainAction = (config?: AxiosRequestConfig) => async (item: InventoryItem<any>, action_name: string, action_args?: any): Promise<TaskSubmissionResponse> => {
-        const response = await apiHttpClient.post(`api/inventory/dns-domain/${item.item_key}/action/${action_name}`, action_args || {}, config);
+        const response = await apiHttpClient.post(`api/inventory/dns-domain/${item.id}/action/${action_name}`, action_args || {}, config);
         return response.data;
     };
 

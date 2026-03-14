@@ -8,7 +8,7 @@ services:
     ports:
       - "13080:80" # Nginx
       - "13500:5000" # API
-      - "13555:5555" # Flower
+      #- "13555:5555" # Flower
     networks:
       - mc-net
     #extra_hosts:
@@ -18,21 +18,21 @@ services:
       - ${PWD}/data/dev:/data
       #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
-    environment:
+    #environment:
       #- REDIS_HOST=redis
       #- REDIS_PORT=6379
       #- REDIS_DB=0
-      - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
+      #- MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
       #- HOST_DATA_DIR=${PWD}/data
       #- FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
       #- FLOWER_USER_PASS=${FLOWER_USER_PASS:-password}
       #- SSH_AUTH_SOCK=/ssh-agent
       #- SSH_CONFIG=/data/ssh_config
-    env_file:
-      - ./.env.docker.local
-    depends_on:
+    #env_file:
+    #  - ./.env.docker.local
+    #depends_on:
       #- redis
-      - mongodb
+      #- mongodb
     develop:
       watch:
         - action: sync+exec
@@ -67,26 +67,26 @@ services:
 #      - mc-net
 #    volumes:
 #      - redis-data:/data
-
-  mongodb:
-    image: mongo:latest
-    ports:
-      - "13017:27017"
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
-      - MONGO_INITDB_ROOT_AUTHENTICATION_DATABASE=admin
-    networks:
-      - mc-net
-    volumes:
-      - mongo-data:/data/db
-
-
-volumes:
-  redis-data:
-    driver: local
-  mongo-data:
-    driver: local
+#
+#  mongodb:
+#    image: mongo:latest
+#    ports:
+#      - "13017:27017"
+#    environment:
+#      - MONGO_INITDB_ROOT_USERNAME=admin
+#      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
+#      - MONGO_INITDB_ROOT_AUTHENTICATION_DATABASE=admin
+#    networks:
+#      - mc-net
+#    volumes:
+#      - mongo-data:/data/db
+#
+#
+#volumes:
+#  redis-data:
+#    driver: local
+#  mongo-data:
+#    driver: local
 
 networks:
   mc-net:

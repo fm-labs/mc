@@ -64,41 +64,45 @@ def list_inventory_items(item_type: str) -> List[dict]:
     # sort items by name
     _items.sort(key=lambda x: x.get("name", ""))
 
-    _items = [_sanitize_item(item) for item in _items]
+    _items = [_sanitize_item({"id": item.get("id"), "properties": item}) for item in _items]
     return _items
 
 
 @router.post("/inventory/{item_type}", response_model=dict)
-def create_inventory_item(item_type: str, item: dict) -> dict:
+def create_inventory_item(item_type: str, payload: dict) -> dict:
+    item = payload.get("properties", {})
     return items.create_inventory_item(item_type, item)
 
 
-@router.get("/inventory/{item_type}/{item_key}", response_model=dict)
-def read_inventory_item(item_type: str, item_key: str) -> dict:
-    item = items.read_inventory_item(item_type, item_key)
+@router.get("/inventory/{item_type}/{id}", response_model=dict)
+def read_inventory_item(item_type: str, id: str) -> dict:
+    item = items.read_inventory_item(item_type, id)
     if not item:
-        raise HTTPException(404, detail=f"Item '{item_key}' of type '{item_type}' not found.")
-    return _sanitize_item(item)
+        raise HTTPException(404, detail=f"Item '{id}' of type '{item_type}' not found.")
+
+    payload = {"id": id, "properties": item}
+    return _sanitize_item(payload)
 
 
-@router.put("/inventory/{item_type}/{item_key}", response_model=dict)
-def update_inventory_item(item_type: str, item_key: str, data: dict) -> dict:
-    return items.update_inventory_item(item_type, item_key, data)
+@router.put("/inventory/{item_type}/{id}", response_model=dict)
+def update_inventory_item(item_type: str, id: str, payload: dict) -> dict:
+    item = payload.get("properties", {})
+    return items.update_inventory_item(item_type, id, item)
 
 
-@router.delete("/inventory/{item_type}/{item_key}", response_model=bool)
-def delete_inventory_item(item_type: str, item_key: str) -> bool:
-    return items.delete_inventory_item(item_type, item_key)
+@router.delete("/inventory/{item_type}/{id}", response_model=bool)
+def delete_inventory_item(item_type: str, id: str) -> bool:
+    return items.delete_inventory_item(item_type, id)
 
 
-@router.post("/inventory/{item_type}/{item_key}/action/{action_name}", response_model=dict)
-async def request_inventory_item_action(item_type: str, item_key: str, action_name: str, action_params: dict) -> dict:
+@router.post("/inventory/{item_type}/{id}/action/{action_name}", response_model=dict)
+async def request_inventory_item_action(item_type: str, id: str, action_name: str, action_params: dict) -> dict:
     try:
         storage = get_inventory_storage_instance()
         item_type = item_type.lower().replace("-", "_")
-        item = storage.get_item(item_type, item_key)
+        item = storage.get_item(item_type, id)
         if not item:
-            raise ValueError(f"Item '{item_key}' of type '{item_type}' not found.")
+            raise ValueError(f"Item '{id}' of type '{item_type}' not found.")
 
         return await handle_inventory_item_action(item_type, item, action_name, action_params)
     except (ValueError, NotImplementedError, Exception) as e:
@@ -109,14 +113,14 @@ async def request_inventory_item_action(item_type: str, item_key: str, action_na
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/inventory/{item_type}/{item_key}/view/{view_name}", response_model=dict)
-async def request_inventory_item_view(item_type: str, item_key: str, view_name: str) -> dict:
+@router.get("/inventory/{item_type}/{id}/view/{view_name}", response_model=dict)
+async def request_inventory_item_view(item_type: str, id: str, view_name: str) -> dict:
     try:
         storage = get_inventory_storage_instance()
         item_type = item_type.lower().replace("-", "_")
-        item = storage.get_item(item_type, item_key)
+        item = storage.get_item(item_type, id)
         if not item:
-            raise ValueError(f"Item '{item_key}' of type '{item_type}' not found.")
+            raise ValueError(f"Item '{id}' of type '{item_type}' not found.")
 
         return await handle_inventory_item_view(item_type, item, view_name, {})
     except (ValueError, NotImplementedError, Exception) as e:

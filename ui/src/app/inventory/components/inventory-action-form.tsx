@@ -26,7 +26,7 @@ const InventoryActionForm = ({def, item}: {def: InventoryActionDef, item: Invent
         console.log("Action Form submitted:", formData);
         const timeout = def?.timeout || 30000;
         try {
-            const p = api.post(`/api/inventory/${itemType}/${item.item_key}/action/${def.id}`, formData, { timeout: 60000 })
+            const p = api.post(`/api/inventory/${itemType}/${item.id}/action/${def.id}`, formData, { timeout: 60000 })
                 .then((res: any) => {
                     setResponse(res);
                     return res;
@@ -73,7 +73,7 @@ const InventoryActionForm = ({def, item}: {def: InventoryActionDef, item: Invent
     return (
         <div>
             <div className={"py-4"}>
-                <h1>{def.name} - {item.name}</h1>
+                <h1>{def.name} - {item.id}</h1>
             </div>
 
             <Form

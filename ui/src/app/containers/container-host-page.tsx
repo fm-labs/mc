@@ -11,7 +11,7 @@ import DockerHostVolumes from "@/app/containers/components/docker-host-volumes.t
 
 const ContainerHost = ({hostId, view}: {hostId: string, view?: string}) => {
     const {hosts} = useContainerHosts()
-    const host = hosts.find(h => h.name === hostId);
+    const host = hosts.find(h => h.id === hostId);
     if (!host) {
         return <div>Host not found: {hostId}</div>;
     }

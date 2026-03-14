@@ -58,7 +58,7 @@ def handle_dns_domain_item_scan(item: dict, action_params: dict) -> dict:
 
     domain_name = item.get("name")
     if not domain_name:
-        return {"error": "Repository URL not found in item properties."}
+        return {"error": "Domain Name not found in item."}
 
     cmd = ["xscan", "domain", domain_name, "--output-dir", "/data", "--ref", scan_id]
     docker_cmd = ["docker", "run", "--rm",

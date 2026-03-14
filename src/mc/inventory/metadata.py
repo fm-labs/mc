@@ -84,7 +84,7 @@ def list_inventory_item_types() -> list[str]:
     # schema resources in the database
     storage = get_inventory_storage_instance()
     items = storage.list_items("_schemas")
-    db_items_types = [item["item_key"] for item in items if "item_key" in item]
+    db_items_types = [item["id"] for item in items if "id" in item]
 
     # schema resources in the folder
     folder_items_types = enumerate_inventory_item_types_from_schema_dir()
@@ -110,13 +110,13 @@ def store_inventory_json_schema(item_type: str, schema: dict):
 
     storage = get_inventory_storage_instance()
     item = {
-        "item_key": item_type,
+        "id": item_type,
         "schema": schema
     }
     storage.save_item("_schemas", item)
 
 
-def retrieve_inventory_json_schema(item_type: str) -> dict | None:
+def read_inventory_json_schema(item_type: str) -> dict | None:
     """
     Retrieve a JSON schema for a specific inventory item type from the database.
 
@@ -142,34 +142,34 @@ def retrieve_inventory_json_schema(item_type: str) -> dict | None:
     return None
 
 
-def store_inventory_metadata(item_type: str, metadata: dict):
-    """
-    Store metadata for a specific inventory item type in the database.
-
-    Args:
-        item_type (str): The type of inventory item (e.g., "server", "network", "application").
-        metadata (dict): The metadata associated with the inventory item type.
-    """
-    storage = get_inventory_storage_instance()
-    item = {
-        "item_key": item_type,
-        "metadata": metadata
-    }
-    storage.save_item("_metadata", item)
-
-
-def retrieve_inventory_metadata(item_type: str) -> dict | None:
-    """
-    Retrieve metadata for a specific inventory item type from the database.
-
-    Args:
-        item_type (str): The type of inventory item (e.g., "server", "network", "application").
-
-    Returns:
-        dict | None: The metadata if found, otherwise None.
-    """
-    storage = get_inventory_storage_instance()
-    item = storage.get_item("_metadata", item_type)
-    if item:
-        return item.get("metadata")
-    return None
+# def store_inventory_metadata(item_type: str, metadata: dict):
+#     """
+#     Store metadata for a specific inventory item type in the database.
+#
+#     Args:
+#         item_type (str): The type of inventory item (e.g., "server", "network", "application").
+#         metadata (dict): The metadata associated with the inventory item type.
+#     """
+#     storage = get_inventory_storage_instance()
+#     item = {
+#         "id": item_type,
+#         "metadata": metadata
+#     }
+#     storage.save_item("_metadata", item)
+#
+#
+# def retrieve_inventory_metadata(item_type: str) -> dict | None:
+#     """
+#     Retrieve metadata for a specific inventory item type from the database.
+#
+#     Args:
+#         item_type (str): The type of inventory item (e.g., "server", "network", "application").
+#
+#     Returns:
+#         dict | None: The metadata if found, otherwise None.
+#     """
+#     storage = get_inventory_storage_instance()
+#     item = storage.get_item("_metadata", item_type)
+#     if item:
+#         return item.get("metadata")
+#     return None

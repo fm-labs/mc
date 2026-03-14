@@ -270,7 +270,7 @@ const AppStackDetailsPage = () => {
         <InventoryProvider itemType={itemType} item={item}>
             <MainContent>
                 <Header
-                    title={item?.name}
+                    title={item?.id}
                     subtitle={item?.description || "No description available."}>
 
                     <div className="flex flex-wrap items-center gap-1">
@@ -279,11 +279,8 @@ const AppStackDetailsPage = () => {
                     </div>
                 </Header>
 
-                <div className={"grid grid-cols-1 md:grid-cols-2 gap-6"}>
+                <div className={"grid grid-cols-1 gap-6"}>
                     <div className={"border rounded-lg"}><KeyValueTable data={kvValues} /></div>
-                    <div className={"border rounded-lg p-2"}>
-                        {/*<ReactJson src={item} collapsed={false} />*/}
-                    </div>
                 </div>
 
                 <div className={""}>

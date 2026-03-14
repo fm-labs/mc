@@ -5,33 +5,22 @@
   "type": "object",
   "additionalProperties": true,
   "properties": {
-    "project_name": {
+    "source_type": {
       "type": "string",
-      "description": "Optional project name for the application stack. Leaves blank to auto-generate. Only lowercase alphanumeric characters, dashes, and underscores are allowed.",
-      "minLength": 1,
-      "pattern": "^[a-z0-9_-]+$"
+      "description": "The type of source for the application stack.",
+      "enum": [
+        "directory",
+        "git"
+      ]
     },
-    "template_repository": {
+    "source_url": {
       "type": "string",
       "format": "uri",
-      "description": "Template repository URL, e.g. 'git://user/repo'."
+      "description": "Repository URL, e.g. 'git://user/repo'."
     },
-    "template_stackfile": {
+    "stackfile": {
       "type": "string",
-      "description": "Path to the stackfile within the template repository."
-    },
-    "template_content": {
-      "type": "string",
-      "description": "The raw content of the template"
-    },
-    "container_host": {
-      "type": "string",
-      "description": "The container host name where the app will be deployed."
-    },
-    "domain_name": {
-      "type": "string",
-      "description": "Optional domain name for the app.",
-      "pattern": "^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(?:\\.(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*\\.?$"
+      "description": "Path to the stackfile within the repository."
     },
     "deployment_method": {
       "type": "string",
@@ -45,33 +34,42 @@
       ],
       "default": "compose"
     },
-    "traefik_enabled": {
+    "deployment_target": {
+      "type": "string",
+      "description": "The deployment target node."
+    },
+    "domain_name": {
+      "type": "string",
+      "description": "Optional domain name. Required if routing is enabled.",
+      "pattern": "^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(?:\\.(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*\\.?$"
+    },
+    "proxy_enabled": {
       "type": "boolean",
       "default": false,
-      "description": "Whether to auto-wire Traefik labels."
+      "description": "Enables routing."
     },
-    "traefik_http_enabled": {
+    "proxy_http_enabled": {
       "type": "boolean",
       "default": false,
-      "description": "Whether to enable HTTP routing for the app."
+      "description": "Enable HTTP routing."
     },
-    "traefik_https_enabled": {
+    "proxy_https_enabled": {
       "type": "boolean",
       "default": false,
-      "description": "Whether to enable SSL (HTTPS) routing for the app."
+      "description": "Enable HTTPS routing."
     },
-    "traefik_service_name": {
+    "proxy_service_name": {
       "type": "string",
       "description": "Name of the container service to attach the router.",
       "minLength": 1
     },
-    "traefik_container_port": {
+    "proxy_container_port": {
       "type": "integer",
-      "description": "Container port the app listens on (for Traefik routing).",
+      "description": "Container port the app listens on.",
       "minimum": 1,
       "maximum": 65535
     },
-    "traefik_network_name": {
+    "proxy_network_name": {
       "type": "string",
       "description": "Name of the Docker network Traefik is on. Defaults to 'traefik'.",
       "minLength": 1
@@ -85,7 +83,7 @@
     }
   },
   "required": [
-    "template_repository",
-    "container_host"
+    "source_url",
+    "deployment_target"
   ]
 }

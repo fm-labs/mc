@@ -15,7 +15,7 @@ const InventoryViewForm = ({def, item}: { def: InventoryViewDef, item: Inventory
     const fetchView = React.useCallback(async () => {
         try {
             setLoading(true);
-            const res = await api.get(`/api/inventory/${itemType}/${item.item_key}/view/${def.id}`);
+            const res = await api.get(`/api/inventory/${itemType}/${item.id}/view/${def.id}`);
             setResponse(res);
         } catch (error) {
             console.error("Error fetching view data:", error);
@@ -23,7 +23,7 @@ const InventoryViewForm = ({def, item}: { def: InventoryViewDef, item: Inventory
         } finally {
             setLoading(false);
         }
-    }, [api, def.id, item.item_key, itemType]);
+    }, [api, def.id, item.id, itemType]);
 
     React.useEffect(() => {
         fetchView();
@@ -31,7 +31,7 @@ const InventoryViewForm = ({def, item}: { def: InventoryViewDef, item: Inventory
 
     return (
         <div>
-            <Header title={`${def.name} ${item.name}`}>
+            <Header title={`${def.name} ${item.id}`}>
                 <Button onClick={fetchView} disabled={loading}>
                     {loading ? "Loading..." : "Refresh"}
                 </Button>
