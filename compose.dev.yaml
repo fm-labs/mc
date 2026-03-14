@@ -1,7 +1,3 @@
-#secrets:
-#  credentials_vault_pass:
-#    file: ./config/credentials.vault.pass
-
 
 services:
   server:
@@ -17,36 +13,25 @@ services:
       - mc-net
     #extra_hosts:
     #  - "host.docker.internal:host-gateway"
-    #secrets:
-    #  - credentials_vault_pass
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${PWD}/data/dev:/data
-      #- ${PWD}/.local/config:/app/config
-      #- ../mc-templates:/templates/mc:ro
-      #- ../fm-templates:/templates/fm:ro
       #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_DB=0
+      #- REDIS_HOST=redis
+      #- REDIS_PORT=6379
+      #- REDIS_DB=0
       - MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017?authSource=admin
       #- HOST_DATA_DIR=${PWD}/data
-      #- HOST_CONFIG_DIR=${PWD}/config
       #- FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
       #- FLOWER_USER_PASS=${FLOWER_USER_PASS:-password}
-      #- CONFIG_DIR=/app/config
-      #- RESOURCES_DIR=/app/resources
-      #- DATA_DIR=/data
-      #- VAULT_FILE=/app/config/credentials.vault
-      #- VAULT_PASS_FILE=/run/secrets/credentials_vault_pass
       #- SSH_AUTH_SOCK=/ssh-agent
       #- SSH_CONFIG=/data/ssh_config
     env_file:
       - ./.env.docker.local
     depends_on:
-      - redis
+      #- redis
       - mongodb
     develop:
       watch:
@@ -74,16 +59,14 @@ services:
         - action: restart
           path: ./.env.docker.local
 
-  redis:
-    image: redis:latest
-    ports:
-      - "13379:6379"
-    #expose:
-    #  - "6379"
-    networks:
-      - mc-net
-    volumes:
-      - redis-data:/data
+#  redis:
+#    image: redis:latest
+#    ports:
+#      - "13379:6379"
+#    networks:
+#      - mc-net
+#    volumes:
+#      - redis-data:/data
 
   mongodb:
     image: mongo:latest

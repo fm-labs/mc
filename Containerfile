@@ -1,11 +1,11 @@
 ## UI Build stage
 FROM node:24-alpine AS ui-builder
-RUN npm install -g bun
+RUN npm install -g pnpm
 WORKDIR /builder
-COPY ui/package.json ui/bun.lock ./
-RUN bun install --frozen-lockfile
+COPY ui/package.json ui/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY ui/ .
-RUN bun run build
+RUN pnpm run build
 
 
 FROM python:3.14.2-slim

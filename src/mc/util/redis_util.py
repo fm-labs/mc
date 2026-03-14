@@ -19,7 +19,7 @@ def get_redis_cache_client():
     return r
 
 
-def write_to_redis_cache(redis_client, key: str, value: str, ttl=None):
+def redis_write(redis_client, key: str, value: str, ttl=None):
     """
     Write a key-value pair to the Redis cache with an optional expiration time.
 
@@ -35,7 +35,7 @@ def write_to_redis_cache(redis_client, key: str, value: str, ttl=None):
         redis_client.set(key, value)
 
 
-def read_from_redis_cache(redis_client, key: str) -> str:
+def redis_read(redis_client, key: str) -> str:
     """
     Read a value from the Redis cache by its key.
 

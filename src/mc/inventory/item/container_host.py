@@ -4,7 +4,7 @@ import paramiko
 
 from mc.config import RESOURCES_DIR
 from mc.inventory.item.app_stack_helper import create_app_stack_from_template_dir
-from mc.plugin.containers.tasks import task_deploy_compose_stack
+from mc.tasks import task_deploy_compose_stack
 from mc.util.ssh_util import sftp_copy_file, ssh_mkdir_recursive
 from mc.util.sshpy_helper import ssh_connect
 

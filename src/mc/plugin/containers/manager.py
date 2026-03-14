@@ -7,8 +7,6 @@ from typing import Dict, Iterable, Optional
 from docker import DockerClient
 from podman import PodmanClient
 
-from mc.inventory.storage import get_inventory_storage_instance
-
 
 class ContainerClientsManager:
     def __init__(self) -> None:

@@ -10,21 +10,12 @@ import AuthenticatedRoute from "@/components/authenticated-route.tsx";
 
 // lazy load pages
 const InventoryPage = await import('@/app/inventory/page.tsx').then(mod => mod.default);
-const FindingsPage = await import('@/app/findings/page.tsx').then(mod => mod.default);
 const ToolsPage = await import('@/app/tools/page.tsx').then(mod => mod.default);
-const TasksPage = await import('@/app/tasks/page.tsx').then(mod => mod.default);
 const ContainerHostsPage = await import('@/app/containers/container-hosts-page.tsx').then(mod => mod.default);
 const ContainerHostPage = await import('@/app/containers/container-host-page.tsx').then(mod => mod.default);
 const ContainerPage = await import('@/app/containers/container-page.tsx').then(mod => mod.default);
-const AwsInventoryPage = await import('@/app/aws/aws-inventory-page.tsx').then(mod => mod.default);
-const AwsNetworksPage = await import('@/app/aws/aws-networks-page.tsx').then(mod => mod.default);
-const NetworksPage = await import('@/app/infrastructure/networks-page.tsx').then(mod => mod.default);
-const HostPage = await import('@/app/infrastructure/host-page.tsx').then(mod => mod.default);
-const DomainsPage = await import('@/app/inventory/dns-domain/page.tsx').then(mod => mod.default);
-const WebcheckPage = await import('@/app/inventory/dns-domain/webcheck-page.tsx').then(mod => mod.default);
 const WelcomePage = await import('@/app/welcome/welcome-page.tsx').then(mod => mod.default);
 const LoginPage = await import('@/app/auth/login-page.tsx').then(mod => mod.default);
-const GithubLoginPage = await import('@/app/auth/github-login-page.tsx').then(mod => mod.default);
 const DashboardPage = await import('@/app/dashboard/page.tsx').then(mod => mod.default);
 const KitchensinkPage = await import('@/app/kitchensink/page.tsx').then(mod => mod.default);
 const PortainerTemplatesPage = await import('@/app/app-stacks/portainer-templates-page.tsx').then(mod => mod.default);
@@ -45,7 +36,7 @@ const ApiRouter = () => {
                     Component: AuthLayout,
                     children: [
                         { path: "login", Component: LoginPage },
-                        { path: "callback/github", Component: GithubLoginPage },
+                        //{ path: "callback/github", Component: GithubLoginPage },
                     ],
                 },
                 {
@@ -86,71 +77,6 @@ const ApiRouter = () => {
                             ]
                         },
                         {
-                            path: "findings", // secops
-                            Component: MainLayout,
-                            children: [
-                                {
-                                    index: true,
-                                    Component: FindingsPage,
-                                }
-                            ]
-                        },
-                        {
-                            path: "infrastructure", // devops
-                            Component: MainLayout,
-                            children: [
-                                {
-                                    index: true,
-                                    Component: NetworksPage,
-                                    loader: () => {
-                                        return apiClient.getInventoryItems("host-network");
-                                    },
-                                },
-                                {
-                                    path: "host/:hostId",
-                                    Component: HostPage,
-                                    loader: ({ params }) => {
-                                        const { hostId } = params;
-                                        if (hostId) {
-                                            return apiClient.getInventoryItem("host", hostId);
-                                        }
-                                    },
-                                },
-                                {
-                                    path: "domains",
-                                    children: [
-                                        {
-                                            index: true,
-                                            Component: DomainsPage,
-                                            loader: () => {
-                                                return apiClient.getInventoryItems("dns-domain");
-                                            },
-                                        },
-                                        {
-                                            path: "webcheck",
-                                            children: [{
-                                                path: ":domain",
-                                                Component: WebcheckPage,
-                                            }]
-                                        }
-                                    ]
-                                },
-                                {
-                                    path: "aws",
-                                    children: [
-                                        {
-                                            index: true,
-                                            Component: AwsInventoryPage
-                                        },
-                                        {
-                                            path: "networks",
-                                            Component: AwsNetworksPage
-                                        }
-                                    ]
-                                },
-                            ]
-                        },
-                        {
                             path: "containers", // docker/containers
                             //Component: ContainersLayout,
                             children: [
@@ -180,10 +106,10 @@ const ApiRouter = () => {
                                     index: true,
                                     Component: KitchensinkPage,
                                 },
-                                {
-                                    path: "tasks",
-                                    Component: TasksPage,
-                                },
+                                // {
+                                //     path: "tasks",
+                                //     Component: TasksPage,
+                                // },
                                 {
                                     path: "tools",
                                     Component: ToolsPage,

@@ -1,5 +1,6 @@
 import os
 
+from mc.plugin.containers.compose_runner import LocalDockerComposeStackRunner, RemoteDockerComposeStackRunner
 from mc.util.gitcli_util import git_update, git_clone
 from orchestra.celery import celery
 
@@ -51,3 +52,31 @@ def clone_or_update_git_repo(self, repo_url: str, checkout_dir: str, private_key
             raise ValueError(f"Error cloning repository: {e}")
 
     return {"status": "success", "app_dir": checkout_dir, "stdout": stdout, "stderr": stderr, "return_code": rc}
+
+
+@celery.task(bind=True)
+def task_deploy_compose_stack(self, project_name: str, project_dir: str, stackfile: str|list, host_url: str):
+    if host_url.startswith("unix://"):
+        compose_runner = LocalDockerComposeStackRunner(
+            project_name=project_name,
+            local_dir=project_dir,
+            stackfile=stackfile,
+            docker_host=host_url
+        )
+    elif host_url.startswith("ssh://"):
+        compose_runner = RemoteDockerComposeStackRunner(
+            project_name=project_name,
+            local_dir=project_dir,
+            stackfile=stackfile,
+            docker_host=host_url
+        )
+    else:
+        raise ValueError(f"Unsupported host URL scheme: {host_url}")
+
+    compose_runner.stop()
+    compose_runner.sync()
+
+    stdout, stderr, rc = compose_runner.up()
+    return {"status": "success",
+            "message": f"App {project_name} deployed to {host_url}",
+            "stdout": stdout.decode(), "stderr": stderr.decode(), "return_code": rc}

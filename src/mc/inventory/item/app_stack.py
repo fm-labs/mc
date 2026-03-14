@@ -10,8 +10,7 @@ import yaml
 
 from mc.config import DATA_DIR
 from mc.inventory.storage import get_inventory_storage_instance
-from mc.plugin.containers.tasks import task_deploy_compose_stack
-from mc.tasks import clone_or_update_git_repo
+from mc.tasks import clone_or_update_git_repo, task_deploy_compose_stack
 
 
 @dataclass(frozen=True)
