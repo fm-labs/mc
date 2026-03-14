@@ -1,11 +1,10 @@
-# mc-app
+# MissionControl UI
 
 ## Tech Stack
 
-- Tauri
 - Typescript
 - Vite
-- Bun (javascript runtime/package manager/bundler)
+- pnpm
 - React
 - React-router
 - Tailwind CSS 
@@ -16,24 +15,10 @@
 **Install dependencies**
 
 ```bash
-bun install
+pnpm install
 ```
 
 **Run development server**
 ```bash
-bun run dev
-```
-
-**Run development Tauri app**
-```bash
-bun run tauri dev
-```
-
-
-## Developer
-
-### Add shadcn UI components
-
-```bash
-bunx --bun shadcn@latest add button
+pnpm run dev
 ```

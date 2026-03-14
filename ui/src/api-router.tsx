@@ -28,7 +28,6 @@ const GithubLoginPage = await import('@/app/auth/github-login-page.tsx').then(mo
 const DashboardPage = await import('@/app/dashboard/page.tsx').then(mod => mod.default);
 const KitchensinkPage = await import('@/app/kitchensink/page.tsx').then(mod => mod.default);
 const PortainerTemplatesPage = await import('@/app/app-stacks/portainer-templates-page.tsx').then(mod => mod.default);
-const AppLaunchPage = await import('@/app/app-stacks/app-launch-page.tsx').then(mod => mod.default);
 const AppStacksPage = await import('@/app/app-stacks/app-stacks-page.tsx').then(mod => mod.default);
 const AppStackDetailsPage = await import('@/app/app-stacks/app-stack-details-page.tsx').then(mod => mod.default);
 
@@ -79,10 +78,6 @@ const ApiRouter = () => {
                                     loader: ({ params }) => {
                                         return apiClient.getInventoryItem("app-stack", params.stackId!);
                                     },
-                                },
-                                {
-                                    path: "launch",
-                                    Component: AppLaunchPage,
                                 },
                                 {
                                     path: "portainer",

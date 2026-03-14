@@ -28,11 +28,11 @@ const WelcomePage = () => {
         // }
         toast.info("Connecting ...");
         setTimeout(async () => {
-            toast.success("Endpoint URL set successfully! Connecting...");
+            //toast.success("Endpoint URL set successfully! Connecting...");
 
             // Test the connection
             api.get("/api/info").then((_response: any) => {
-                toast.success("Connected to server successfully!");
+                toast.success("Connected to server!");
                 //window.location.href = "/auth/login";
                 navigate("/auth/login");
             }).catch((_error: any) => {
@@ -40,7 +40,6 @@ const WelcomePage = () => {
             });
         }, 500);
     };
-
 
     return (
         <div className="h-svh">
