@@ -1,7 +1,7 @@
 {
   "type": "object",
-  "title": "MissionControl Node",
-  "description": "MissionControl node inventory item",
+  "title": "Node",
+  "description": "MissionControl node",
   "version": "1.0.0",
   "$icon": "node",
   "properties": {

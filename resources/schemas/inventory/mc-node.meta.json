@@ -10,6 +10,17 @@
         "required": []
       },
       "timeout": 10000
+    },
+    {
+      "id": "api_probe",
+      "name": "Probe API connectivity",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "timeout": 10000
     }
   ]
 }

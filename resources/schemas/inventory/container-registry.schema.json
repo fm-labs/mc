@@ -6,21 +6,12 @@
   "properties": {
     "registry_url": {
       "type": "string",
-      "title": "Registry URL"
-    },
-    "private": {
-      "type": "boolean",
-      "title": "Private registry (requires authentication)",
-      "default": false
+      "title": "Registry URL Prefix",
+      "description": "The URL prefix for the container registry including the protocol (e.g. https://docker.io/)"
     },
     "username": {
       "type": "string",
       "title": "Username",
-      "default": ""
-    },
-    "password": {
-      "type": "string",
-      "title": "Password",
       "default": ""
     }
   },
