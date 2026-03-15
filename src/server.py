@@ -22,7 +22,7 @@ from mc.plugin.containers.manager import bootstrap_container_connection_manager
 from mc.server.models import Problem
 from mc.server.router import app_router
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 # Load MCP server app with specified transport
 mcp_enabled = os.getenv("MCP_ENABLED", "false").lower() == "true"

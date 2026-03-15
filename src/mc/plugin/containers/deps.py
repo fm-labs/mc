@@ -6,7 +6,7 @@ from fastapi.params import Query
 from podman import PodmanClient
 from starlette.requests import Request
 
-from mc.plugin.containers.manager import ContainerClientsManager
+from mc.plugin.containers.manager import ContainerClientsManager, ContainerClient
 
 
 def dep_ccm(request: Request) -> ContainerClientsManager:
@@ -18,7 +18,7 @@ def dep_ccm(request: Request) -> ContainerClientsManager:
 def dep_container_connection(
         alias: str,
         manager: ContainerClientsManager = Depends(dep_ccm),
-) -> PodmanClient:
+) -> ContainerClient:
     c = manager.get(alias)
     if not c:
        raise HTTPException(404, f"No container client registered named '{alias}'")

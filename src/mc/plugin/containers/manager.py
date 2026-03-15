@@ -1,19 +1,72 @@
 from __future__ import annotations
 
 import threading
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, Optional, Any
 
 from docker import DockerClient
 from podman import PodmanClient
 
+from mc.client.apiclient import McApiClient
+from mc.inventory.storage import get_inventory_storage_instance
+
+ContainerClient = PodmanClient | DockerClient
+
+
+class NodeContainerClient:
+
+    class Containers:
+        def list(self, *args, **kwargs):
+            return []
+
+    class Volumes:
+        def list(self, *args, **kwargs):
+            return []
+
+    class Images:
+        def list(self, *args, **kwargs):
+            return []
+
+    def __init__(self, name: str, base_url: str) -> None:
+        self.name = name
+        self.client = McApiClient(api_url=base_url, api_key="")
+        self.node_alias = "localdocker"
+
+    def _get(self, endpoint: str) -> Optional[dict]:
+        try:
+            return self.client.get(f"/containers/{self.node_alias}/{endpoint}")
+        except Exception as e:
+            print(f"Error getting df from container client '{self.name}': {e}")
+            return None
+
+    def ping(self) -> Any:
+        return self._get("ping")
+
+    def version(self) -> Any:
+        return self._get("version")
+
+    def df(self) -> Any:
+        return self._get("df")
+
+    @property
+    def containers(self) -> Any:
+        return self.Containers()
+
+    @property
+    def images(self) -> Any:
+        return self.Images()
+
+    @property
+    def volumes(self) -> Any:
+        return self.Volumes()
+
 
 class ContainerClientsManager:
     def __init__(self) -> None:
-        self._clients: Dict[str, PodmanClient|DockerClient] = {}
+        self._clients: Dict[str, ContainerClient] = {}
         self._urls: Dict[str, str] = {}
         self._lock = threading.Lock()
 
-    def get(self, name: str) -> Optional[PodmanClient|DockerClient]:
+    def get(self, name: str) -> Optional[ContainerClient]:
         return self._clients.get(name)
 
     def names(self) -> Iterable[str]:
@@ -25,7 +78,7 @@ class ContainerClientsManager:
         """
         return self._urls
 
-    def add(self, name: str, base_url: str, test_ping: bool = False) -> PodmanClient|DockerClient:
+    def add(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient:
         with self._lock:
             if name in self._clients:
                 raise ValueError(f"Client '{name}' already exists")
@@ -56,7 +109,7 @@ class ContainerClientsManager:
             self._urls[name] = base_url
             return c
 
-    def ensure(self, name: str, base_url: str, test_ping: bool = True) -> PodmanClient|DockerClient:
+    def ensure(self, name: str, base_url: str, test_ping: bool = True) -> ContainerClient:
         existing = self.get(name)
         if existing:
             return existing
@@ -91,6 +144,19 @@ def bootstrap_container_connection_manager() -> ContainerClientsManager:
     """Idempotent: make sure defaults exist (read from env/config if you like)."""
     m = ContainerClientsManager()
     m.ensure("localdocker", "unix://var/run/docker.sock", test_ping=False)
+
+    # storage = get_inventory_storage_instance()
+    # items = storage.list_items("mc_node")
+    # for item in items:
+    #     name = item.get("id")
+    #     url = item.get("url")
+    #     autoconnect = True # item.get("autoconnect", False)
+    #     print(f"Found container host in inventory: {name} at {url} (autoconnect={autoconnect})")
+    #     if autoconnect:
+    #         try:
+    #             m._clients.update({name: NodeContainerClient(name, url)})
+    #         except Exception as e:
+    #             print(f"Failed to connect to container host '{name}' at '{url}':", e)
 
     # inventory = get_inventory_storage_instance()
     # items = inventory.list_items("container_host")

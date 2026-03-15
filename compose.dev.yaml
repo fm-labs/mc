@@ -59,34 +59,74 @@ services:
         - action: restart
           path: ./.env.docker.local
 
-#  redis:
-#    image: redis:latest
-#    ports:
-#      - "13379:6379"
-#    networks:
-#      - mc-net
-#    volumes:
-#      - redis-data:/data
-#
-#  mongodb:
-#    image: mongo:latest
-#    ports:
-#      - "13017:27017"
-#    environment:
-#      - MONGO_INITDB_ROOT_USERNAME=admin
-#      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
-#      - MONGO_INITDB_ROOT_AUTHENTICATION_DATABASE=admin
-#    networks:
-#      - mc-net
-#    volumes:
-#      - mongo-data:/data/db
-#
-#
-#volumes:
-#  redis-data:
-#    driver: local
-#  mongo-data:
-#    driver: local
+
+  node01:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: "mc:node01"
+    ports:
+      - "3081:3080"
+    networks:
+      - mc-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${PWD}/data/node01:/opt/mc
+    environment:
+      - MC_REMOTE_API_KEY=supersecretkey1
+    profiles:
+      - cluster
+
+  node02:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: "mc:node02"
+    ports:
+      - "3082:3080"
+    networks:
+      - mc-net
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${PWD}/data/node02:/opt/mc
+    environment:
+      - MC_REMOTE_API_KEY=supersecretkey2
+    profiles:
+      - cluster
+
+
+  redis:
+    image: redis:latest
+    ports:
+      - "13379:6379"
+    networks:
+      - mc-net
+    volumes:
+      - redis-data:/data
+    profiles:
+      - advanced
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "13017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
+      - MONGO_INITDB_ROOT_AUTHENTICATION_DATABASE=admin
+    networks:
+      - mc-net
+    volumes:
+      - mongo-data:/data/db
+    profiles:
+      - advanced
+
+
+volumes:
+  redis-data:
+    driver: local
+  mongo-data:
+    driver: local
 
 networks:
   mc-net:

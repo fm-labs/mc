@@ -47,7 +47,7 @@ case $CMD in
 
   stack-up)
     echo "Starting docker stack..."
-    docker compose -f $DOCKER_COMPOSE_FILE -p $PROJECT_NAME up --build -d
+    docker compose -f $DOCKER_COMPOSE_FILE -p $PROJECT_NAME --profile cluster up --build -d
     ;;
 
   stack-down)
