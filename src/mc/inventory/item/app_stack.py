@@ -3,14 +3,18 @@ import os.path
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
+import logging
 
 import dotenv
 import yaml
 
+from mc import logs
 from mc.config import DATA_DIR
 from mc.inventory.storage import get_inventory_storage_instance
-from mc.tasks import clone_or_update_git_repo, task_deploy_compose_stack
+from mc.tasks import clone_or_update_git_repo, task_deploy_compose_project
 
+logger = logging.getLogger(__name__)
+logger.addHandler(logs.get_rotating_file_log_handler("app_stack"))
 
 @dataclass(frozen=True)
 class AppStackItem:
@@ -247,6 +251,7 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
         * background: Whether to perform the sync in the background (asynchronous task) or synchronously.
     :return: A dictionary indicating the sync status and task ID.
     """
+    logger.info(f"Syncing app stack '{item.get('id')}' with action_params: {action_params}")
     background = action_params.get("background", False)
 
     app = AppStackItem.from_item_dict(item)
@@ -299,7 +304,7 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
         else:
             raise ValueError(f"App stack '{app.id}' has unsupported source_url schema '{sschema}'")
     else:
-        print(f"App stack '{app.id}' has no repository to sync")
+        logger.warning(f"App stack '{app.id}' has no repository to sync")
         return {"status": "no-op", "message": f"No repository to sync"}
 
 
@@ -313,6 +318,7 @@ def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
         * merge: Whether to merge the provided environment variables with existing ones (default: False).
     :return: A dictionary indicating the configuration status.
     """
+    logger.info(f"Configuring app stack '{item.get('id')}' with action_params: {action_params}")
     env_vars = action_params.get("environment", {})
     merge = action_params.get("merge", False)
     if env_vars:
@@ -337,6 +343,7 @@ def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
 
 
 def handle_app_stack_action_prepare(item: dict, action_params: dict) -> dict:
+    logger.info(f"Preparing app stack '{item.get('id')}' with action_params: {action_params}")
     app = AppStackItem.from_item_dict(item)
     app_dir = app.app_dir_path
 
@@ -348,7 +355,7 @@ def handle_app_stack_action_prepare(item: dict, action_params: dict) -> dict:
         override_file = app_dir / "compose.override.yaml"
         with override_file.open("w") as f:
             yaml.dump(overrides, f, default_flow_style=False, indent=2)
-        print(f"Written compose overrides to '{override_file}'")
+        logger.info(f"Written compose overrides to '{override_file}'")
 
     # environment variables
     # dump the environment to the .env file, overwriting existing file
@@ -359,7 +366,7 @@ def handle_app_stack_action_prepare(item: dict, action_params: dict) -> dict:
 
     for k, v in environment.items():
         dotenv.set_key(compose_env_file, k, str(v), quote_mode="auto")
-    print(f"Written environment variables to '{compose_env_file}'")
+    logger.info(f"Written environment variables to '{compose_env_file}'")
 
     return {
         "status": "prepared",
@@ -375,6 +382,7 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     Deploy the app stack to the specified container host using Docker Compose.
     Raises ValueError if required properties are missing.
     """
+    logger.info(f"Deploying app stack '{item.get('id')}' with action_params: {action_params}")
     background = action_params.get("background", False)
     handle_app_stack_action_prepare(item, {})  # ensure app is prepared
 
@@ -405,16 +413,16 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
             project_stackfiles.append("mc.override.yaml")
 
     if background:
-        task = task_deploy_compose_stack.delay(project_name=app.id,
-                                               project_dir=str(project_dir.resolve()),
-                                               stackfile=project_stackfiles,
-                                               host_url=container_host_url)
+        task = task_deploy_compose_project.delay(project_name=app.id,
+                                                 project_dir=str(project_dir.resolve()),
+                                                 stackfile=project_stackfiles,
+                                                 host_url=container_host_url)
         return {"status": "deploying", "task_id": task.id}
 
-    return task_deploy_compose_stack(project_name=app.id,
-                                     project_dir=str(project_dir.resolve()),
-                                     stackfile=project_stackfiles,
-                                     host_url=container_host_url)
+    return task_deploy_compose_project(project_name=app.id,
+                                       project_dir=str(project_dir.resolve()),
+                                       stackfile=project_stackfiles,
+                                       host_url=container_host_url)
 
 
 def handle_app_stack_view_template_config(item: dict, view_params: dict) -> dict:

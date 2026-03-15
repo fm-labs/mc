@@ -4,7 +4,7 @@ import paramiko
 
 from mc.config import RESOURCES_DIR
 from mc.inventory.item.app_stack_helper import create_app_stack_from_template_dir
-from mc.tasks import task_deploy_compose_stack
+from mc.tasks import task_deploy_compose_project
 from mc.util.ssh_util import sftp_copy_file, ssh_mkdir_recursive
 from mc.util.sshpy_helper import ssh_connect
 
@@ -88,9 +88,9 @@ def handle_container_host_deploy_template(item: dict, action_params: dict) -> di
         if not template_dir_path.exists() or not template_dir_path.is_dir():
             raise FileNotFoundError(f"{template_dir_path} does not exist")
 
-        return task_deploy_compose_stack(host_url=host_url,
-                                      app_name=app_name,
-                                      app_dir=template_dir_path.name)
+        return task_deploy_compose_project(host_url=host_url,
+                                           app_name=app_name,
+                                           app_dir=template_dir_path.name)
     else:
         # the app dir is where the compose app will be created
         app_dir = Path(f"data/projects/{project_name}/apps/{app_name}")
@@ -99,9 +99,9 @@ def handle_container_host_deploy_template(item: dict, action_params: dict) -> di
                                                   template_dir=template_dir_path.name)
 
         # todo store the app stack item in inventory
-        return task_deploy_compose_stack(host_url=host_url,
-                                      app_name=app_name,
-                                      app_dir=app_dir.name)
+        return task_deploy_compose_project(host_url=host_url,
+                                           app_name=app_name,
+                                           app_dir=app_dir.name)
 
 
 actions = {

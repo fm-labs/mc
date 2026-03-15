@@ -6,9 +6,9 @@ services:
       dockerfile: Containerfile
     image: "mc:latest"
     ports:
-      - "13080:3080" # Nginx
-      - "13500:5000" # API
-      #- "13555:5555" # Flower
+      - "3080:3080" # Nginx
+      #- "5000:5000" # API
+      #- "5555:5555" # Flower
     networks:
       - mc-net
     #extra_hosts:
