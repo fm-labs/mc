@@ -31,7 +31,7 @@ class SqliteCacheStore:
         *,
         timeout: float = 5.0,          # sqlite3 connect timeout (seconds)
         busy_timeout_ms: int = 5000,    # PRAGMA busy_timeout (milliseconds)
-        wal: bool = True,
+        wal: bool = False,
         synchronous: str = "NORMAL",    # FULL | NORMAL | OFF
         cache_size_kib: int = -64_000,  # negative => KiB. e.g. -64000 ~= 64MiB
         mmap_size_bytes: int = 128 * 1024 * 1024,  # 128MiB
@@ -253,7 +253,8 @@ def default_cache_key(func, args, kwargs):
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 def default_cache_store():
-    return SqliteCacheStore(f"{config.DATA_DIR}/cache.sqlite")
+    os.makedirs(f"{config.DATA_DIR}/cache", exist_ok=True)
+    return SqliteCacheStore(f"{config.DATA_DIR}/cache/cached.sqlite")
 
 def cached(ttl=None, cachekey=None, store=None):
     """

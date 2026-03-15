@@ -19,18 +19,18 @@ export GIT_SSH_COMMAND
 DOCKER_SSH_COMMAND="ssh -F $SSH_CONFIG"
 export DOCKER_SSH_COMMAND
 
-VAULT_ENABLED=${VAULT_ENABLED:-true}
-VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
-VAULT_PASS_FILE=${VAULT_PASS_FILE:-/data/credentials.vault.pass}
-if [ ! -f "$VAULT_PASS_FILE" ]; then
-  #echo "Vault pass file not found, creating a new secure one..."
-  #head -c 32 /dev/urandom | base64 > "$VAULT_PASS_FILE"
-  #chmod 600 "$VAULT_PASS_FILE"
-  #echo "Vault pass file created at $VAULT_PASS_FILE"
-  echo "warning: Vault pass file not found at $VAULT_PASS_FILE"
-fi
-export VAULT_FILE
-export VAULT_PASS_FILE
+#VAULT_ENABLED=${VAULT_ENABLED:-true}
+#VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
+#VAULT_PASS_FILE=${VAULT_PASS_FILE:-/data/credentials.vault.pass}
+#if [ ! -f "$VAULT_PASS_FILE" ]; then
+#  #echo "Vault pass file not found, creating a new secure one..."
+#  #head -c 32 /dev/urandom | base64 > "$VAULT_PASS_FILE"
+#  #chmod 600 "$VAULT_PASS_FILE"
+#  #echo "Vault pass file created at $VAULT_PASS_FILE"
+#  echo "warning: Vault pass file not found at $VAULT_PASS_FILE"
+#fi
+#export VAULT_FILE
+#export VAULT_PASS_FILE
 
 REDIS_DATA_DIR=${REDIS_DATA_DIR:-/redis}
 export REDIS_DATA_DIR
