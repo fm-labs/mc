@@ -10,14 +10,14 @@ Run the following command to start the server:
 
 ```bash
 # from the project root directory
-uv run uvicorn --app-dir ./src --port 13080 server:app
+uv run uvicorn --app-dir ./src --port 3080 server:app
 
 # for development with auto-reload
-uv run uvicorn --app-dir ./src --reload --port 13080 server:app
+uv run uvicorn --app-dir ./src --reload --port 3080 server:app
 ```
 
 
-The API will be available at `http://localhost:13080`.
+The API will be available at `http://localhost:3080`.
 
 
 

@@ -2,8 +2,6 @@ import json
 import os.path
 from dataclasses import dataclass
 from pathlib import Path
-import shutil
-import re
 from typing import Literal
 
 import dotenv
@@ -17,43 +15,44 @@ from mc.tasks import clone_or_update_git_repo, task_deploy_compose_stack
 @dataclass(frozen=True)
 class AppStackItem:
     id: str | None = None  # e.g. my-app-project (used as compose project name)
+    type: Literal["container", "compose", "swarm", "kubernetes"] | None = None
+    label: str | None = None
     description: str | None = None
-    source_type: Literal["file", "git", "template"] | None = None  # currently only supports source_url as source type
-    source_url: str | None = None  # e.g. git://user/repo
-    stackfile: str | None = None  # e.g. path/to/docker-compose.yml
-    deployment_method: Literal["container", "compose", "swarm", "kubernetes"] | None = None
-    deployment_target: str | None = None  # e.g. my-container-host
+    repository: dict | None = None  # e.g. {"type": "git", "url": "git://user/repo", "branch": "main", "template_path": "path/to/stack/files"}
+    stackfile: str | None = None  # e.g. compose.yaml
+    target_node: str | None = None
     domain_name: str | None = None  # optional domain name for the app
     proxy_enabled: bool = False  # whether to auto-wire traefik labels
-    proxy_http_enabled: bool = False  # whether to auto-wire traefik labels
-    proxy_https_enabled: bool = False  # whether to auto-wire traefik labels
-    proxy_service_name: str | None = None  # name of the container service to apply traefik labels to
+    proxy_http_enabled: bool = False  # enable http routing
+    proxy_https_enabled: bool = False  # enable https routing
+    proxy_https_redirect: bool = False  # auto-redirect http to https
+    proxy_service_name: str | None = None  # name of the container service to route to
+    proxy_container_port: int | None = None  # port of the container service to route to
     proxy_network_name: str | None = None  # name of the docker network traefik is on
-    proxy_container_port: int | None = None  # port the app listens on, for traefik routing
     environment: dict | None = None  # environment variables for the app
 
     def __post_init__(self):
         if self.id is None or self.id == "":
             raise ValueError("AppStackItem 'name' cannot be empty")
 
-    @property
-    def slug(self) -> str:
-        # normalize app_name
-        # normalize with regex to only allow alphanumeric and hyphens
-        slug = (self.id.lower().replace(" ", "-").replace("_", "-")
-                .replace("/", "-"))
-        slug = re.sub(r"[^a-z0-9\-]", "", slug)
-        return slug
+    #@property
+    #def slug(self) -> str:
+    #    # normalize app_name
+    #    # normalize with regex to only allow alphanumeric and hyphens
+    #    slug = (self.id.lower().replace(" ", "-").replace("_", "-")
+    #            .replace("/", "-"))
+    #    slug = re.sub(r"[^a-z0-9\-]", "", slug)
+    #    return slug
 
     @property
     def app_dir_path(self) -> Path:
         return _build_app_dir_path(app_name=self.id)
 
-    @property
-    def template_config_path(self) -> Path:
-        return self.app_dir_path / "template.json"
+    #@property
+    #def template_config_path(self) -> Path:
+    #    return self.app_dir_path / "template.json"
 
-    def read_template_config(self) -> dict:
+    def read_stackconf(self) -> dict:
         """
         Read and return the template.json configuration for the app stack.
         The template.json file is expected to be in the app directory.
@@ -63,8 +62,8 @@ class AppStackItem:
         template_json_file = app_dir / "template.json"
         template_config = None
         if not template_json_file.exists() or not template_json_file.is_file():
-            #raise FileNotFoundError(
-            #    f"Template JSON file '{template_json_file}' does not exist for stack '{self.id}'")
+            raise FileNotFoundError(
+                f"Template JSON file '{template_json_file}' does not exist for stack '{self.id}'")
             return {}
         with template_json_file.open("r") as f:
             template_config = json.load(f)
@@ -77,7 +76,7 @@ class AppStackItem:
         Raises FileNotFoundError if the stackfile does not exist.
         """
         app_dir = self.app_dir_path
-        stackfile_name = os.path.basename(self.stackfile) or "compose.yaml"
+        stackfile_name = self.stackfile or "compose.yaml"
         stackfile_path = app_dir / stackfile_name
         if not stackfile_path.exists() or not stackfile_path.is_file():
             raise FileNotFoundError(
@@ -126,18 +125,11 @@ def _build_app_dir_path(app_name: str) -> Path:
     return app_dir
 
 
-def _build_template_repo_dir_path(repository_url: str) -> Path:
+def _build_repo_cache_path(repository_url: str) -> Path:
     repo_key = repository_url.replace("://", "-").replace("/", "-").replace(".", "-")
-    base_dir = Path(f"{DATA_DIR}/template_repos")
+    base_dir = Path(f"{DATA_DIR}/cache/repos")
     repo_dir = base_dir / repo_key
     return repo_dir
-
-
-def _generate_random_secret(length: int = 32) -> str:
-    import secrets
-    import string
-    alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 def _lookup_container_host_url(host_name: str) -> str:
@@ -245,37 +237,70 @@ def _build_appstack_compose_override(app: AppStackItem) -> dict:
     return overrides
 
 
-def handle_app_stack_action_prepare(item: dict, action_params: dict) -> dict:
+def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
+    """
+    Sync the app stack template repository to the local app directory.
+    Raises ValueError if the source_url is not defined or has unsupported schema.
+
+    :param item: The app stack inventory item.
+    :param action_params: Additional parameters for the sync action.
+        * background: Whether to perform the sync in the background (asynchronous task) or synchronously.
+    :return: A dictionary indicating the sync status and task ID.
+    """
+    background = action_params.get("background", False)
+
     app = AppStackItem.from_item_dict(item)
-    app_dir = app.app_dir_path
+    if app.repository:
+        repo_url = app.repository.get("url", "")
+        repo_path = app.repository.get("path", "")
+        if not repo_url:
+            raise ValueError(f"App stack '{app.id}' has repository defined but no URL for sync")
 
-    # compose overrides
-    # dump the compose overrides to compose.override.yaml
-    overrides = _build_appstack_compose_override(app)
-    print(overrides)
-    if len(overrides) > 0:
-        override_file = app_dir / "compose.override.yaml"
-        with override_file.open("w") as f:
-            yaml.dump(overrides, f, default_flow_style=False, indent=2)
-        print(f"Written compose overrides to '{override_file}'")
+        sschema, surl = repo_url.split("://", 1)
+        if sschema in ["http", "https"]:
+            # source_ssh_key_file = None
+            # source_ssh_key_name = props.get("source_ssh_key_name")
+            # if source_ssh_key_name is not None and source_ssh_key_name != "":
+            #     source_ssh_key_file = os.path.expanduser(f"~/.ssh/{source_ssh_key_name}")
+            #     if not os.path.exists(source_ssh_key_file):
+            #         raise FileNotFoundError(
+            #             f"SSH key file '{source_ssh_key_file}' for source_ssh_key_name '{source_ssh_key_name}' not found")
+            # return update_project_from_git(source_url, str(app_dir.resolve()), private_key_file=source_ssh_key_file)
 
-    # environment variables
-    # dump the environment to the .env file, overwriting existing file
-    compose_env_file = app_dir / ".env"
-    environment = app.environment or {}
-    if compose_env_file.exists():
-        compose_env_file.unlink()
 
-    for k, v in environment.items():
-        dotenv.set_key(compose_env_file, k, str(v), quote_mode="auto")
-    print(f"Written environment variables to '{compose_env_file}'")
+            checkout_path = _build_repo_cache_path(repo_url)
+            checkout_path.parent.mkdir(parents=True, exist_ok=True)
 
-    return {
-        "status": "prepared",
-        "app_dir": str(app_dir),
-        "overrides": overrides,
-        "environment": environment,
-    }
+            #if background:
+            #    task = clone_or_update_git_repo.delay(repo_url, str(checkout_path.resolve()))
+            #    return {"status": "syncing", "task_id": task.id}
+            #else:
+
+            clone_result = clone_or_update_git_repo(repo_url, str(checkout_path.resolve()))
+            if clone_result.get("return_code") != 0:
+                raise ValueError(f"Error syncing repository: {clone_result.get('stderr')}")
+
+            # after syncing the template repo, copy the stackfile and related files to the app dir
+            import shutil
+            target_dir = app.app_dir_path
+            template_dir = checkout_path / repo_path
+            if not template_dir.exists() or not template_dir.is_dir():
+                raise FileNotFoundError(f"Template directory '{template_dir}' does not exist in repository for app stack '{app.id}'")
+
+            # wipe the target dir if it exists
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+
+            shutil.copytree(str(template_dir), str(target_dir))
+
+            #handle_app_stack_action_configure(item, {})
+            return {"status": "synced", "app_dir": str(target_dir), "repo_url": repo_url, "repo_path": repo_path}
+
+        else:
+            raise ValueError(f"App stack '{app.id}' has unsupported source_url schema '{sschema}'")
+    else:
+        print(f"App stack '{app.id}' has no repository to sync")
+        return {"status": "no-op", "message": f"No repository to sync"}
 
 
 def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
@@ -311,47 +336,38 @@ def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
     return handle_app_stack_action_prepare(item, action_params)
 
 
-def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
-    """
-    Sync the app stack template repository to the local app directory.
-    Raises ValueError if the source_url is not defined or has unsupported schema.
-
-    :param item: The app stack inventory item.
-    :param action_params: Additional parameters for the sync action.
-        * background: Whether to perform the sync in the background (asynchronous task) or synchronously.
-    :return: A dictionary indicating the sync status and task ID.
-    """
+def handle_app_stack_action_prepare(item: dict, action_params: dict) -> dict:
     app = AppStackItem.from_item_dict(item)
-    source_type = app.source_type
-    source_url = app.source_url
-    if not source_url:
-        raise ValueError(f"App stack '{app.id}' does not have a source_url defined for sync")
+    app_dir = app.app_dir_path
 
-    background = action_params.get("background", False)
+    # compose overrides
+    # dump the compose overrides to compose.override.yaml
+    overrides = _build_appstack_compose_override(app)
+    print(overrides)
+    if len(overrides) > 0:
+        override_file = app_dir / "compose.override.yaml"
+        with override_file.open("w") as f:
+            yaml.dump(overrides, f, default_flow_style=False, indent=2)
+        print(f"Written compose overrides to '{override_file}'")
 
-    if source_type == "git":
-        sschema, surl = source_url.split("://", 1)
-        if sschema in ["git", "github", "http", "https"]:
-            # source_ssh_key_file = None
-            # source_ssh_key_name = props.get("source_ssh_key_name")
-            # if source_ssh_key_name is not None and source_ssh_key_name != "":
-            #     source_ssh_key_file = os.path.expanduser(f"~/.ssh/{source_ssh_key_name}")
-            #     if not os.path.exists(source_ssh_key_file):
-            #         raise FileNotFoundError(
-            #             f"SSH key file '{source_ssh_key_file}' for source_ssh_key_name '{source_ssh_key_name}' not found")
-            # return update_project_from_git(source_url, str(app_dir.resolve()), private_key_file=source_ssh_key_file)
+    # environment variables
+    # dump the environment to the .env file, overwriting existing file
+    compose_env_file = app_dir / ".env"
+    environment = app.environment or {}
+    if compose_env_file.exists():
+        compose_env_file.unlink()
 
-            template_repo_path = _build_template_repo_dir_path(source_url)
-            if background:
-                task = clone_or_update_git_repo.delay(source_url, str(template_repo_path.resolve()))
-                return {"status": "syncing", "task_id": task.id}
-            else:
-                return clone_or_update_git_repo(source_url, str(template_repo_path.resolve()))
-        else:
-            raise ValueError(f"App stack '{app.id}' has unsupported source_url schema '{sschema}'")
-    else:
-        print(f"App stack '{app.id}' has unsupported source_type '{source_type}' for sync")
-        return {"status": "no-op", "message": f"Unsupported source_type '{source_type}' for sync"}
+    for k, v in environment.items():
+        dotenv.set_key(compose_env_file, k, str(v), quote_mode="auto")
+    print(f"Written environment variables to '{compose_env_file}'")
+
+    return {
+        "status": "prepared",
+        "app_dir": str(app_dir),
+        "overrides": overrides,
+        "environment": environment,
+    }
+
 
 
 def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
@@ -364,32 +380,40 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
 
     app = AppStackItem.from_item_dict(item)
     item_name = app.id
-    if not app.deployment_target:
-        raise ValueError(f"App stack '{item_name}' does not have a container_host defined for deployment")
-    container_host_url = _lookup_container_host_url(app.deployment_target)
+    #target_node = app.target_node or "localdocker"
+    #if not app.target_node:
+    #    raise ValueError(f"App stack '{item_name}' does not have a container_host defined for deployment")
+    #container_host_url = _lookup_container_host_url(target_node)
+    container_host_url = os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
 
     app_dir = app.app_dir_path
     if not app_dir.exists() or not app_dir.is_dir():
         raise FileNotFoundError(f"App stack directory '{app_dir}' does not exist")
 
-    _stackfiles = []
+    project_dir = app_dir
+    project_stackfiles = []
     if app.stackfile:
-        _stackfiles.append(os.path.basename(app.stackfile))
+        stackfile_name = app.stackfile
+        project_stackfiles.append(stackfile_name)
         # check if an override file exists
-        override_file = app_dir / "compose.override.yaml"
+        override_file = project_dir / stackfile_name.replace(".yaml", ".override.yaml").replace(".yml", ".override.yaml")
         if override_file.exists() and override_file.is_file():
-            _stackfiles.append("compose.override.yaml")
+            project_stackfiles.append("compose.override.yaml")
+        # check if a mc override file exists
+        override_file = project_dir / "mc.override.yaml"
+        if override_file.exists() and override_file.is_file():
+            project_stackfiles.append("mc.override.yaml")
 
     if background:
         task = task_deploy_compose_stack.delay(project_name=app.id,
-                                               project_dir=str(app_dir.resolve()),
-                                               stackfile=_stackfiles,
+                                               project_dir=str(project_dir.resolve()),
+                                               stackfile=project_stackfiles,
                                                host_url=container_host_url)
         return {"status": "deploying", "task_id": task.id}
 
     return task_deploy_compose_stack(project_name=app.id,
-                                     project_dir=str(app_dir.resolve()),
-                                     stackfile=_stackfiles,
+                                     project_dir=str(project_dir.resolve()),
+                                     stackfile=project_stackfiles,
                                      host_url=container_host_url)
 
 
@@ -398,7 +422,7 @@ def handle_app_stack_view_template_config(item: dict, view_params: dict) -> dict
     Return the content of the template.json configuration for the app stack.
     """
     app = AppStackItem.from_item_dict(item)
-    return app.read_template_config()
+    return app.read_stackconf()
 
 
 def handle_app_stack_view_stackfile(item: dict, view_params: dict) -> dict:

@@ -110,11 +110,13 @@ def post_docker_container_action(alias: str, container_id: str, action: str,
                 container.reload()
             except Exception as e:
                 pass
-        #cache  cleanup
+
+        # reset relevant caches
         cache_key = f"containers_{alias}_container_{container_id}"
-        #if cache_key in cache:
-        #    del cache[cache_key]
         clear_cache(cache_key)
+        cache_key = f"containers_{alias}_containers"
+        clear_cache(cache_key)
+
         return {"action": action, "status": "ok", "message": f"Action {action} was successful"}
 
     except Exception as e:

@@ -145,9 +145,9 @@ CMD ["supervisor"]
 USER app
 
 # Nginx port
-EXPOSE 80
+EXPOSE 3080
 # API port
-EXPOSE 5000
+#EXPOSE 5000
 # Flower port
-EXPOSE 5555
+#EXPOSE 5555
 

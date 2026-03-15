@@ -8,7 +8,7 @@ rm -rf ./build/
 BUILD_DIST_DIR=${BUILD_DIST_DIR:-./dist/bin}
 mkdir -p "$BUILD_DIST_DIR"
 
-TARGET_TRIPLE=$(rustc --print host-tuple)
+#TARGET_TRIPLE=$(rustc --print host-tuple)
 
 uv sync --frozen
 

@@ -28,14 +28,18 @@ const AppStacksGrid = () => {
                                     <h2 className="mb-1 font-semibold flex space-x-2">
                                         <BlocksIcon/> <Link to={`/stacks/details/${item.id}`}>{item.id}</Link>
                                     </h2>
+                                    <div className={"text-sm"}>
+                                        {item?.properties?.repository?.url}
+                                    </div>
                                     <div className={"text-muted-foreground text-sm mb-1"}>
-                                        {item?.properties?.source_type} - {item?.properties?.source_url} - {item?.properties?.stackfile}
+                                        {item?.properties?.type} - {item?.properties?.stackfile}
                                     </div>
                                 </div>
                                 <div className={"text-right"}>
                                     <div className="flex gap-1 line-clamp-2 text-gray-500 text-sm mb-1">
+                                    <div className={"text-sm"}>{item?.properties?.domain_name}</div>
                                         <Badge variant={"outline"}>{item?.properties?.deployment_target}</Badge>
-                                        <Badge variant={"default"}>DEPLOYED</Badge>
+                                        <Badge variant={"default"}>NOT DEPLOYED</Badge>
                                     </div>
                                 </div>
                             </div>

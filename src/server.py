@@ -37,7 +37,7 @@ async def lifespan(main_app: FastAPI):
 
     async with AsyncExitStack() as stack:
         #main_app.state.redis = get_aioredis_client()
-        main_app.state.ccm = await bootstrap_container_connection_manager()
+        main_app.state.ccm = bootstrap_container_connection_manager()
 
         if mcp_enabled:
             # also enter the mounted app's lifespan:
@@ -49,7 +49,7 @@ async def lifespan(main_app: FastAPI):
         try:
             yield
         finally:
-            await main_app.state.ccm.close_all()
+            main_app.state.ccm.close_all()
             #await main_app.state.redis.aclose()
 
 

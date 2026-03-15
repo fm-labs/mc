@@ -24,9 +24,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 
-ENV CONFIG_DIR=/app/config
 ENV RESOURCES_DIR=/app/resources
-ENV DATA_DIR=/data
+ENV DATA_DIR=/opt/mc
+ENV CONFIG_DIR=/opt/mc/etc
 
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
 #ENV UV_COMPILE_BYTECODE=1
@@ -135,8 +135,9 @@ CMD ["supervisor"]
 USER app
 
 # Nginx port
-EXPOSE 80
+EXPOSE 3080
+#EXPOSE 3443
 # API port
-EXPOSE 5000
+#EXPOSE 5000
 # Flower port
-EXPOSE 5555
+#EXPOSE 5555

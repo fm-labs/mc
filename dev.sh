@@ -32,7 +32,7 @@ case $CMD in
     echo "Running docker container..."
     docker stop $CONTAINER_NAME || true
     docker rm $CONTAINER_NAME || true
-    docker run -d --name $CONTAINER_NAME -p 8000:8000 $IMAGE_NAME
+    docker run -d --name $CONTAINER_NAME -p 3080:3080 $IMAGE_NAME
     ;;
 
   stop-container)

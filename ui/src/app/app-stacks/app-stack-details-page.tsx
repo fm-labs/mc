@@ -17,6 +17,8 @@ import InventoryItemActionButtons from "@/app/inventory/components/inventory-ite
 import MyForm from "@/components/rjsf/my-form.tsx";
 import AppStackConfig from "@/app/app-stacks/components/app-stack-config.tsx";
 import AppStackStackfile from "@/app/app-stacks/components/app-stack-stackfile.tsx";
+import SectionCard from "@/components/section-card.tsx";
+import {RJSFSchema} from "@rjsf/utils";
 
 const networkConfigSchema = {
     title: "Network Configuration",
@@ -279,28 +281,14 @@ const AppStackDetailsPage = () => {
                     </div>
                 </Header>
 
-                <div className={"grid grid-cols-1 gap-6"}>
-                    <div className={"border rounded-lg"}><KeyValueTable data={kvValues} /></div>
-                </div>
+                <SectionCard><KeyValueTable data={kvValues} /></SectionCard>
+                <SectionCard title={"Variables"}><AppStackConfig /></SectionCard>
+                <SectionCard title={"Stack File"}><AppStackStackfile /></SectionCard>
 
-                <div className={""}>
-
-                    <h4 className={"h4 font-bold mb-1"}>Stack configuration</h4>
-                    <div className={"border p-2 mb-4 rounded-lg"}>
-                        <AppStackConfig />
-                    </div>
-
-                    <h4 className={"h4 font-bold mb-1"}>Stack file</h4>
-                    <div className={"border p-2 mb-4 rounded-lg"}>
-                        <AppStackStackfile />
-                    </div>
-
-
-                    {/*<MyForm schema={networkConfigSchema} />*/}
-                    {/*<MyForm schema={stackNetworkConfigSchema} />*/}
-                    {/*<MyForm schema={cspPolicyConfigSchema} />*/}
-                    {/*<MyForm schema={securityHeadersConfigSchema} />*/}
-                </div>
+                <SectionCard><MyForm schema={networkConfigSchema as RJSFSchema} /></SectionCard>
+                <SectionCard><MyForm schema={stackNetworkConfigSchema as RJSFSchema} /></SectionCard>
+                <SectionCard><MyForm schema={cspPolicyConfigSchema as RJSFSchema} /></SectionCard>
+                <SectionCard><MyForm schema={securityHeadersConfigSchema as RJSFSchema} /></SectionCard>
 
             </MainContent>
         </InventoryProvider>

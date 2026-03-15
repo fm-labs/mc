@@ -5,24 +5,7 @@
   "type": "object",
   "additionalProperties": true,
   "properties": {
-    "source_type": {
-      "type": "string",
-      "description": "The type of source for the application stack.",
-      "enum": [
-        "directory",
-        "git"
-      ]
-    },
-    "source_url": {
-      "type": "string",
-      "format": "uri",
-      "description": "Repository URL, e.g. 'git://user/repo'."
-    },
-    "stackfile": {
-      "type": "string",
-      "description": "Path to the stackfile within the repository."
-    },
-    "deployment_method": {
+    "type": {
       "type": "string",
       "description": "Deployment method for the application.",
       "enum": [
@@ -34,7 +17,57 @@
       ],
       "default": "compose"
     },
-    "deployment_target": {
+    "label": {
+        "type": "string",
+        "description": "A human-friendly label for the application stack."
+    },
+    "repository": {
+      "type": "object",
+      "description": "Repository information for the application stack.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Repository URL, e.g. 'git://user/repo'."
+        },
+        "branch": {
+          "type": "string",
+          "description": "The branch to use from the repository. Defaults to 'main'."
+        },
+        "path": {
+          "type": "string",
+          "description": "The base path within the repository where the stackfile is located. Defaults to '/'."
+        },
+        "private": {
+          "type": "boolean",
+          "description": "Requires authentication.",
+          "default": false
+        },
+        "auth": {
+          "type": "object",
+          "description": "Authentication information for private repositories.",
+          "properties": {
+            "username": {
+              "type": "string",
+              "description": "Username for repository authentication."
+            },
+            "password": {
+              "type": "string",
+              "description": "Password for repository authentication."
+            }
+          }
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "stackfile": {
+      "type": "string",
+      "description": "Name of stackfile."
+    },
+    "target_node": {
       "type": "string",
       "description": "The deployment target node."
     },
@@ -83,7 +116,6 @@
     }
   },
   "required": [
-    "source_url",
-    "deployment_target"
+    "type"
   ]
 }

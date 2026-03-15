@@ -6,7 +6,7 @@ from fastapi.params import Query
 from podman import PodmanClient
 from starlette.requests import Request
 
-from mc.plugin.containers.manager import ContainerClientsManager, bootstrap_container_connection_manager
+from mc.plugin.containers.manager import ContainerClientsManager
 
 
 def dep_ccm(request: Request) -> ContainerClientsManager:
@@ -57,7 +57,7 @@ async def dep_container_connections_manager(
         # todo handle this case properly
         os.remove(check_file)
 
-    if refresh:
-        print("Refreshing container connections")
-        await bootstrap_container_connection_manager()
+    #if refresh:
+    #    print("Refreshing container connections")
+    #    bootstrap_container_connection_manager()
     return manager

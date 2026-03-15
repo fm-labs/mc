@@ -1,6 +1,6 @@
 import os
 
-from mc.plugin.containers.compose_runner import LocalDockerComposeStackRunner, RemoteDockerComposeStackRunner
+from mc.docker.compose_runner import LocalDockerComposeStackRunner, RemoteDockerComposeStackRunner
 from mc.util.gitcli_util import git_update, git_clone
 from orchestra.celery import celery
 

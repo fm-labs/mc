@@ -17,12 +17,12 @@ PLUGINS_ENABLED = ["containers"]
 INVENTORY_ITEMS_ENABLED = ["app_stack", "container_registry", "mc_node"]
 
 # Paths
-SSH_CONFIG = os.getenv("SSH_CONFIG", os.getcwd() + "/config/ssh_config")
-DATA_DIR = os.getenv("DATA_DIR", os.getcwd() + "/data")
-CONFIG_DIR = os.getenv("CONFIG_DIR", os.getcwd() + "/config")
-RESOURCES_DIR = os.environ.get("RESOURCES_DIR", os.getcwd() + "/resources")
-HOST_DATA_DIR = os.getenv("HOST_DATA_DIR") # deprecated
-HOST_CONFIG_DIR = os.getenv("HOST_CONFIG_DIR") # deprecated
+DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
+CONFIG_DIR = os.getenv("CONFIG_DIR", f"{DATA_DIR}/etc")
+SSH_CONFIG = os.getenv("SSH_CONFIG", f"{DATA_DIR}/etc/ssh_config")
+RESOURCES_DIR = os.environ.get("RESOURCES_DIR", f"{DATA_DIR}/etc/resources")
+HOST_DATA_DIR = os.getenv("HOST_DATA_DIR", "/opt/mc") # deprecated
+HOST_CONFIG_DIR = os.getenv("HOST_CONFIG_DIR", "/opt/mc/etc") # deprecated
 
 # Mongodb connection settings
 MONGODB_URL = os.getenv("MONGODB_URL", "")
@@ -37,7 +37,7 @@ REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", "")
 
 # Vault settings
-VAULT_ENABLED = os.getenv("VAULT_ENABLED", "true").lower() == "true"
+VAULT_ENABLED = os.getenv("VAULT_ENABLED", "false").lower() == "true"
 VAULT_FILE = os.getenv("VAULT_FILE", f"{CONFIG_DIR}/credentials.vault")
 VAULT_PASS_FILE = os.getenv("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vault.pass")
 
