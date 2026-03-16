@@ -8,14 +8,12 @@ load_dotenv(".env.local")
 
 # Paths
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
-CONFIG_DIR = os.getenv("CONFIG_DIR", f"{DATA_DIR}/etc")
-RESOURCES_DIR = os.getenv("RESOURCES_DIR", f"{DATA_DIR}/resources")
-#SSH_CONFIG = os.getenv("SSH_CONFIG", f"{DATA_DIR}/etc/ssh_config")
-#HOST_DATA_DIR = os.getenv("HOST_DATA_DIR", "/opt/mc") # deprecated
-#HOST_CONFIG_DIR = os.getenv("HOST_CONFIG_DIR", "/opt/mc/etc") # deprecated
+
+load_dotenv(f"{DATA_DIR}/.env")
+load_dotenv(f"{DATA_DIR}/.env.local")
 
 def read_config():
-    configs_path = os.getenv("SETTINGS_JSON_PATH", f"{DATA_DIR}/mc.json")
+    configs_path = os.getenv("MC_CONFIG", f"{DATA_DIR}/mc.json")
     if os.path.exists(configs_path):
         print(f"Loading config from {configs_path}")
         try:
@@ -38,12 +36,15 @@ def get_env_var(name: str, default=None):
     return value
 
 
+# Additional paths
+CONFIG_DIR = get_env_var("CONFIG_DIR", f"{DATA_DIR}/etc")
+RESOURCES_DIR = get_env_var("RESOURCES_DIR", f"{DATA_DIR}/resources")
+#SSH_CONFIG = get_env_var("SSH_CONFIG", f"{DATA_DIR}/etc/ssh_config")
+#HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/opt/mc") # deprecated
+#HOST_CONFIG_DIR = get_env_var("HOST_CONFIG_DIR", "/opt/mc/etc") # deprecated
+
 # Admin credentials
-MC_ADMIN_EMAIL = get_env_var("MC_ADMIN_EMAIL", "johndoe@example.org")
-MC_ADMIN_PASSWORD = get_env_var("MC_ADMIN_PASSWORD", "secret")
-if get_env_var("MC_ADMIN_PASSWORD_FILE"):
-    with open(get_env_var("MC_ADMIN_PASSWORD_FILE"), "r") as f:
-        MC_ADMIN_PASSWORD = f.read().strip()
+USERS_FILE = f"{CONFIG_DIR}/users.json"
 
 # Mongodb connection settings
 MONGODB_URL = get_env_var("MONGODB_URL", "")

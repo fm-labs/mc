@@ -2,6 +2,8 @@
 import inspect
 from typing import Callable, Any, Literal
 
+from mc.util.random_util import generate_random_secret
+
 
 def rpc_ping(**kwargs) -> dict:
     """
@@ -15,6 +17,36 @@ def rpc_echo(message: str = None, **kwargs) -> dict:
     A simple echo handler that returns the received parameters.
     """
     return {"status": "success", "response": f"You said: {message}", "received_params": kwargs}
+
+
+def rpc_user_change_password(username: str, old_password, new_password: str, new_password2, **kwargs) -> dict:
+    """
+    Change a user's password. This is a wrapper around the users.change_password function.
+    """
+    from mc.users import change_password
+    try:
+        if new_password != new_password2:
+            raise ValueError("New passwords do not match")
+
+        change_password(username, old_password, new_password)
+        return {"status": "success", "message": f"Password for user '{username}' has been changed."}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def rpc_user_reset_password(username: str, **kwargs) -> dict:
+    """
+    Reset a user's password without checking the old one. This is a wrapper around the users.set_password function.
+    The new password will be printed to the console, so only server administrators should have access to see this.
+    """
+    from mc.users import set_password
+    try:
+        new_password = generate_random_secret(32)
+        set_password(username, new_password)
+        print(f"Password for user '{username}' has been reset: {new_password}.")
+        return {"status": "success", "message": f"Password for user '{username}' has been reset to a new random password."}
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def rpc_docker_info(**kwargs) -> dict:
@@ -147,6 +179,9 @@ RPC_HANDLERS = {
     "docker.swarm.join_token": rpc_docker_swarm_join_token,
     "docker.swarm.init": rpc_docker_swarm_init,
     "docker.swarm.leave": rpc_docker_swarm_leave,
+    # user handlers
+    "user.change_password": rpc_user_change_password,
+    "user.reset_password": rpc_user_reset_password,
 }
 
 def dispatch_rpc_method(method: str, params: dict) -> dict:
@@ -191,6 +226,9 @@ def _params_from_signature(fn: Callable[..., Any]) -> dict:
         print(f"Processing parameter '{name}' with annotation", annotation)
         if hasattr(annotation, "__origin__") and annotation.__origin__ is Literal:
             prop["enum"] = annotation.__args__
+
+        if name.endswith("password") or name.endswith("secret") or name.endswith("token"):
+            prop["format"] = "password"
 
         if param.default is inspect.Parameter.empty:
             required.append(name)

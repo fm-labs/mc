@@ -17,11 +17,6 @@ app_router = APIRouter()
 app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
 
-#app_router.include_router(findings_router, prefix="/api", tags=["findings"], dependencies=[Security(get_current_user)])
-#app_router.include_router(sse_router, prefix="/sse", tags=["sse"])
-#app_router.include_router(infra_router, prefix="/api", tags=["infrastructure"]) #, dependencies=[Security(get_current_user)])
-
-
 for plugin_name in PLUGINS_ENABLED:
     try:
         module = __import__(f"mc.plugin.{plugin_name}.routes", fromlist=["router"])
@@ -34,12 +29,12 @@ for plugin_name in PLUGINS_ENABLED:
 
 
 @app_router.get("/api/info", tags=["system"])
-async def info() -> dict:
+def info() -> dict:
     return {"version": "2.0.0"}
 
 
 @app_router.get("/api/health", tags=["system"])
-async def health():
+def health():
     return {"status": "OK"}
 
 
@@ -49,8 +44,8 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token1(data={"sub": user["username"]})
-    #refresh_token = create_refresh_token(user["username"])
+    token = create_access_token1(data={"sub": user.username})
+    #refresh_token = create_refresh_token(user.username)
     return {"access_token": token, "token_type": "bearer"}
 
 

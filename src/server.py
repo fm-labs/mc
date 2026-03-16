@@ -21,6 +21,7 @@ from mc.mcp.fastmcp_helper import init_mcp_http_app
 from mc.plugin.containers.manager import bootstrap_container_connection_manager
 from mc.server.models import Problem
 from mc.server.router import app_router
+from mc.setup import setup_admin_auth
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -34,6 +35,7 @@ if mcp_enabled:
 @asynccontextmanager
 async def lifespan(main_app: FastAPI):
     print("Setting up resources for main app lifespan...")
+    setup_admin_auth()
 
     async with AsyncExitStack() as stack:
         #main_app.state.redis = get_aioredis_client()
