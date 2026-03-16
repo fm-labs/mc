@@ -253,8 +253,12 @@ def default_cache_key(func, args, kwargs):
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 def default_cache_store():
-    os.makedirs(f"{config.DATA_DIR}/cache", exist_ok=True)
-    return SqliteCacheStore(f"{config.DATA_DIR}/cache/cached.sqlite")
+    try:
+        os.makedirs(f"{config.DATA_DIR}/cache", exist_ok=True)
+        return SqliteCacheStore(f"{config.DATA_DIR}/cache/cached.sqlite")
+    except Exception as e:
+        print(f"Error initializing SqliteCacheStore: {e}. Falling back to InMemoryStore.")
+        return InMemoryCacheStore()
 
 def cached(ttl=None, cachekey=None, store=None):
     """
