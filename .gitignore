@@ -4,21 +4,14 @@
 bak/
 config/
 tmp/
-src/x*.py
-projects.json
 .env.local
 .env.docker.local
 *.local
 _*.json
-rx.json
 .DS_Store
-x*.sh
 
-/dev/
 /data/
-/docs/
 /templates/
-/src/mc/plugin/ama/
 
 ### Python template
 # Byte-compiled / optimized / DLL files
