@@ -8,7 +8,7 @@ COPY ui/ .
 RUN pnpm run build
 
 
-FROM python:3.14.2-slim
+FROM python:3.14.3-slim
 
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
