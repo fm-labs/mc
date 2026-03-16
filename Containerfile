@@ -84,7 +84,7 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
   CMD ["/usr/bin/healthcheck"]
 
 # Create a non-root user and group and set permissions for app and home directory
-RUN groupadd -r app && useradd -r -g app app && \
+RUN groupadd --gid 33333 app && useradd --uid 33333 -g app app && \
     mkdir -p /app && \
     mkdir -p /home/app && \
     mkdir -p /var/log/supervisor && \
