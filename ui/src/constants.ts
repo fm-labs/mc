@@ -20,16 +20,6 @@ export const FEAT_APP_TEMPLATES_ENABLED =
 export const PORTAINER_TEMPLATE_URLS = [
     {
         format: 'portainer',
-        label: 'MissionControl Templates',
-        url: '/mc.templates.json',
-    },
-    {
-        format: 'portainer',
-        label: 'GSMC',
-        url: '/gsmc.templates.json',
-    },
-    {
-        format: 'portainer',
         label: 'Official Portainer Templates (v3)',
         url: 'https://raw.githubusercontent.com/portainer/templates/refs/heads/v3/templates.json',
     },

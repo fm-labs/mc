@@ -218,9 +218,9 @@ const PortainerTemplatesView = ({templateUrl}: PortainerTemplatesViewProps) => {
                 </div>
                 <Separator className="shadow-sm"/>
                 <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredTemplates.map((template: any) => (
+                    {filteredTemplates.map((template: any, idx) => (
                         <li
-                            key={template.title}
+                            key={template.title + idx}
                             className="rounded-lg border p-4 hover:shadow-md"
                         >
                             <div className="mb-8 flex items-center justify-between">
