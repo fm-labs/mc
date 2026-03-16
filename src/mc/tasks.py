@@ -4,13 +4,12 @@ import logging
 from mc import logs
 from mc.docker.compose_runner import LocalDockerComposeStackRunner, RemoteDockerComposeStackRunner
 from mc.util.gitcli_util import git_update, git_clone
-from orchestra.celery import celery
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logs.get_rotating_file_log_handler("tasks"))
 
-@celery.task(bind=True)
-def clone_or_update_git_repo(self, repo_url: str, checkout_dir: str, private_key_file=None) -> dict:
+#@celery.task(bind=True)
+def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=None) -> dict:
 
     stdout, stderr, rc = "", "", -1
     msg = ""
@@ -65,8 +64,8 @@ def clone_or_update_git_repo(self, repo_url: str, checkout_dir: str, private_key
     return {"status": "success", "app_dir": checkout_dir, "stdout": stdout, "stderr": stderr, "return_code": rc}
 
 
-@celery.task(bind=True)
-def task_deploy_compose_project(self, project_name: str, project_dir: str, stackfile: str | list, host_url: str):
+#@celery.task(bind=True)
+def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str):
     if host_url.startswith("unix://"):
         compose_runner = LocalDockerComposeStackRunner(
             project_name=project_name,

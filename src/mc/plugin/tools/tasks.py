@@ -1,12 +1,11 @@
 import os
 
 from mc.util.subprocess_helper2 import subprocess_run, subprocess_stream
-from orchestra.celery import celery
 from mc.plugin.tools.toolindex import get_tool_def
 
 SUBPROCESS_TIMEOUT = 300  # seconds, hard timeout for subprocesses
 
-@celery.task(bind=True)
+#@celery.task(bind=True)
 def task_subprocess_run(self, cmd: list, env: dict = None):
     """
     Synchronous version of subprocess_run, to be used in non-async contexts.
@@ -19,8 +18,8 @@ def task_subprocess_run(self, cmd: list, env: dict = None):
     return result
 
 
-@celery.task(bind=True)
-def task_subprocess_stream(self, cmd: list, env: dict = None):
+#@celery.task(bind=True)
+def task_subprocess_stream(cmd: list, env: dict = None):
 
     output = []
     bytes_received = 0
@@ -38,7 +37,7 @@ def task_subprocess_stream(self, cmd: list, env: dict = None):
 
         bytes_received += len(line)
         if bytes_received > 10 * 1024 * 1024:  # every 10 MB
-            self.update_state(state='PROGRESS', meta={"status": f"Received {bytes_received} bytes so far..."})
+            #self.update_state(state='PROGRESS', meta={"status": f"Received {bytes_received} bytes so far..."})
             bytes_received_total += bytes_received
             bytes_received = 0
 
@@ -47,8 +46,8 @@ def task_subprocess_stream(self, cmd: list, env: dict = None):
     return {"stdout": "".join(output), "returncode": rc}
 
 
-@celery.task(bind=True)
-def task_tool_exec(self, tool_name: str, command_name: str, **kwargs):
+#@celery.task(bind=True)
+def task_tool_exec(tool_name: str, command_name: str, **kwargs):
     tool = get_tool_def(tool_name)
     if not tool:
         return {"error": f"Tool '{tool_name}' not found."}
@@ -82,8 +81,8 @@ def task_tool_exec(self, tool_name: str, command_name: str, **kwargs):
         # todo evaluate and set environment variables from command definition
         env = os.environ.copy()
         result = subprocess_run(cmd, env)
-        if "error" in result:
-            self.update_state(state='FAILURE', meta=result)
+        #if "error" in result:
+        #    self.update_state(state='FAILURE', meta=result)
 
         return result
     except Exception as e:
