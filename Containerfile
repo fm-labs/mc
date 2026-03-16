@@ -86,20 +86,14 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
 # Create a non-root user and group and set permissions for app and home directory
 RUN groupadd -r app && useradd -r -g app app && \
     mkdir -p /app && \
-    chown -R app:app /app && \
     mkdir -p /home/app && \
-    chown -R app:app /home/app && \
-    usermod -a -G root app && \
     mkdir -p /var/log/supervisor && \
+    mkdir -p /opt/mc && \
+    chown -R app:app /app && \
+    chown -R app:app /home/app && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
-    chown -R app:app /run && \
-    mkdir -p /opt/mc && \
-    chown app:app /opt/mc && \
-    touch /var/run/docker.sock && chown app:app /var/run/docker.sock
-
-# Podman - Touch and own /var/run/podman.sock
-#RUN touch /var/run/podman.sock && chown app:app /var/run/podman.sock
+    chown app:app /opt/mc
 
 # SSH - Prepare /etc/ssh/ssh_config
 #RUN echo "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" >> /etc/ssh/ssh_config && \

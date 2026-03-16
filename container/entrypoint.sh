@@ -19,6 +19,16 @@ export GIT_SSH_COMMAND
 DOCKER_SSH_COMMAND="ssh -F $SSH_CONFIG"
 export DOCKER_SSH_COMMAND
 
+
+# DIND
+SOCK_GID=$(stat -c '%g' /var/run/docker.sock)
+echo "Docker socket group ID: $SOCK_GID"
+if ! getent group "$SOCK_GID" >/dev/null; then
+    groupadd -g "$SOCK_GID" dockerhost
+fi
+usermod -aG "$SOCK_GID" app
+
+
 #VAULT_ENABLED=${VAULT_ENABLED:-true}
 #VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
 #VAULT_PASS_FILE=${VAULT_PASS_FILE:-/data/credentials.vault.pass}
