@@ -95,7 +95,8 @@ RUN groupadd -r app && useradd -r -g app app && \
     chmod -R 755 /var/log/supervisor && \
     chown -R app:app /run && \
     mkdir -p /opt/mc && \
-    chown app:app /opt/mc
+    chown app:app /opt/mc && \
+    touch /var/run/docker.sock && chown app:app /var/run/docker.sock
 
 # Podman - Touch and own /var/run/podman.sock
 #RUN touch /var/run/podman.sock && chown app:app /var/run/podman.sock
