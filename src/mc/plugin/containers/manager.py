@@ -78,7 +78,7 @@ class ContainerClientsManager:
         """
         return self._urls
 
-    def add(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient:
+    def add(self, name: str, base_url: str, test_ping: bool = False) -> Optional[ContainerClient]:
         with self._lock:
             if name in self._clients:
                 raise ValueError(f"Client '{name}' already exists")
@@ -99,6 +99,7 @@ class ContainerClientsManager:
                     raise ValueError(f"Unknown container engine '{engine}' in URL '{base_url}'")
             except Exception as e:
                 logger.error(f"Failed to create container client for '{name}' with URL '{base_url}': {e}")
+                return None
 
             try:
                 if test_ping:
@@ -113,7 +114,7 @@ class ContainerClientsManager:
             self._urls[name] = base_url
             return c
 
-    def ensure(self, name: str, base_url: str, test_ping: bool = True) -> ContainerClient:
+    def ensure(self, name: str, base_url: str, test_ping: bool = True):
         existing = self.get(name)
         if existing:
             return existing
