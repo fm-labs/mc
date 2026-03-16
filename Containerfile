@@ -93,6 +93,7 @@ RUN groupadd -r app && useradd -r -g app app && \
     chown -R app:app /home/app && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
+    chmod -R app:app /run && \
     chown app:app /opt/mc
 
 # SSH - Prepare /etc/ssh/ssh_config
