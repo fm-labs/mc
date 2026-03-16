@@ -16,7 +16,7 @@ jobs:
       
     - name: Run Repo Scan
       id: repo-scan
-      uses: fm-labs/action-repo-scan@v1
+      uses: fm-labs/action-repo-scan@v1.0.1
       with:
         path: '.'  # Optional: defaults to '.'
         
