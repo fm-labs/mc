@@ -4,16 +4,17 @@ import React from "react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router";
 
-const WelcomePage = () => {
+const StartPage = () => {
     const { apiBaseUrl, setApiBaseUrl, api } = useApi();
     const navigate = useNavigate()
+    const [isConnecting, setIsConnecting] = React.useState(false);
 
-    const [inputValue, setInputValue] = React.useState<string>(apiBaseUrl);
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        // Handle input change if needed
-        setInputValue(e.target.value);
-    };
+    // const [inputValue, setInputValue] = React.useState<string>(apiBaseUrl);
+    //
+    // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     // Handle input change if needed
+    //     setInputValue(e.target.value);
+    // };
 
     const handleConnect = () => {
         // Handle connect action if needed
@@ -26,20 +27,27 @@ const WelcomePage = () => {
         //     }
         //     setApiBaseUrl(_url + "/");
         // }
-        toast.info("Connecting ...");
-        setTimeout(async () => {
-            //toast.success("Endpoint URL set successfully! Connecting...");
+        //toast.info("Connecting ...");
+        setIsConnecting(true);
 
-            // Test the connection
-            api.get("/api/info").then((_response: any) => {
-                toast.success("Connected to server!");
-                //window.location.href = "/auth/login";
-                navigate("/auth/login");
-            }).catch((_error: any) => {
-                toast.error("Failed to connect to server. Please check the URL and try again.");
-            });
-        }, 500);
+        // Test the connection
+        // todo Use a dedicated login-preflight endpoint instead of info
+        setIsConnecting(true);
+        api.get("/api/info").then((_response: any) => {
+            //toast.success("Mission Control connected successfully!");
+            //window.location.href = "/auth/login";
+            navigate("/auth/login");
+        }).catch((error: any) => {
+            toast.error(`Failed to connect to server. ${error?.message || "Unknown error occurred."}`);
+        }).finally(() => {
+            setIsConnecting(false);
+        });
     };
+
+    React.useEffect(() => {
+        // Auto-connect on mount
+        handleConnect();
+    }, [])
 
     return (
         <div className="h-svh">
@@ -58,9 +66,6 @@ const WelcomePage = () => {
                 {/*           className="border rounded-md px-2 py-1 w-80 text-center" />*/}
                 {/*</div>*/}
                 <div className="mt-4 flex gap-4">
-                    {/*<Button variant="outline" asChild>
-                        <Link to="/auth/login">Connect</Link>
-                    </Button>*/}
                     <Button variant="outline" onClick={handleConnect}>
                         Connect
                     </Button>
@@ -70,4 +75,4 @@ const WelcomePage = () => {
     );
 };
 
-export default WelcomePage;
+export default StartPage;

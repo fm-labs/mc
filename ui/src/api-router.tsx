@@ -9,12 +9,12 @@ import { NotFoundError } from "@/features/errors/not-found-error.tsx";
 import AuthenticatedRoute from "@/components/authenticated-route.tsx";
 
 // lazy load pages
+const StartPage = await import('@/app/start-page.tsx').then(mod => mod.default);
 const InventoryPage = await import('@/app/inventory/page.tsx').then(mod => mod.default);
 const ToolsPage = await import('@/app/tools/page.tsx').then(mod => mod.default);
 const ContainerHostsPage = await import('@/app/containers/container-hosts-page.tsx').then(mod => mod.default);
 const ContainerHostPage = await import('@/app/containers/container-host-page.tsx').then(mod => mod.default);
 const ContainerPage = await import('@/app/containers/container-page.tsx').then(mod => mod.default);
-const WelcomePage = await import('@/app/welcome/welcome-page.tsx').then(mod => mod.default);
 const LoginPage = await import('@/app/auth/login-page.tsx').then(mod => mod.default);
 const DashboardPage = await import('@/app/dashboard/page.tsx').then(mod => mod.default);
 const KitchensinkPage = await import('@/app/kitchensink/page.tsx').then(mod => mod.default);
@@ -32,7 +32,7 @@ const ApiRouter = () => {
             path: "/",
             Component: Root,
             children: [
-                { index: true, Component: WelcomePage },
+                { index: true, Component: StartPage },
                 {
                     path: "auth",
                     Component: AuthLayout,
