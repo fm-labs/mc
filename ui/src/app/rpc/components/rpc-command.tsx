@@ -40,6 +40,7 @@ const RpcCommand = () => {
 
     const [jsonRpcRequest, setJsonRpcRequest] = useState<JsonRpcRequest>();
     const [jsonRpcResponse, setJsonRpcResponse] = useState<JsonRpcResponse>();
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
     const formId: string = React.useMemo(() => {
         return `rpc-action-form-${command.method}`;
@@ -62,7 +63,8 @@ const RpcCommand = () => {
             "id": command?.type==="notification" ? undefined:generateJsonRpcRequestId(),
         };
         setJsonRpcRequest(jsonRpcReq);
-        api.post("/api/rpc", jsonRpcReq).then((response: JsonRpcResponse) => {
+        setIsSubmitting(true)
+        api.post("/api/rpc", jsonRpcReq, {timeout: 120000}).then((response: JsonRpcResponse) => {
             console.log("JSON RPC RESPONSE", response);
             if (command?.type==="notification") {
                 toast.success("Notification successfully sent.");
@@ -76,7 +78,9 @@ const RpcCommand = () => {
             }
         }).catch((error: any) => {
             toast.error(error?.message || "Something went wrong");
-        });
+        }).finally(() => {
+            setIsSubmitting(false);
+        })
     };
 
     // const handleChange = async ({ formData }: any): Promise<void> => {
@@ -111,6 +115,10 @@ const RpcCommand = () => {
                 </Button>
             </div>*/}
 
+            {isSubmitting && <div className={"my-4"}>
+                <span className={"loading loading-spinner"}></span>
+                <span className={"ml-2"}>Executing command...</span>
+            </div>}
             <div className={"bg-white flex flex-col gap-4 rounded-md"}>
                 {jsonRpcRequest && <div>
                     <h3>JSON RPC Request</h3>

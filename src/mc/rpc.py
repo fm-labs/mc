@@ -3,25 +3,23 @@ import inspect
 from typing import Callable, Any, Literal
 
 
-def handle_ping(**kwargs) -> dict:
+def rpc_ping(**kwargs) -> dict:
     """
     A simple ping handler for testing connectivity.
     """
     return {"status": "success", "response": "pong", "received_params": kwargs}
 
 
-def handle_echo(**kwargs) -> dict:
+def rpc_echo(message: str = None, **kwargs) -> dict:
     """
     A simple echo handler that returns the received parameters.
     """
-    return {"status": "success", "response": "echo", "received_params": kwargs}
+    return {"status": "success", "response": f"You said: {message}", "received_params": kwargs}
 
 
-def handle_get_docker_info(**kwargs) -> dict:
+def rpc_docker_info(**kwargs) -> dict:
     """
     Retrieve Docker system information using the Docker SDK for Python.
-
-    :param params: A dictionary of parameters sent with the request (not used in this handler).
     """
     import docker
     client = docker.from_env()
@@ -29,7 +27,7 @@ def handle_get_docker_info(**kwargs) -> dict:
     return {"status": "success", "data": info}
 
 
-def handle_self_update(**kwargs) -> dict:
+def rpc_self_update(**kwargs) -> dict:
     """
     Pull the latest image from the registry and restart the server.
     """
@@ -46,7 +44,7 @@ def handle_self_update(**kwargs) -> dict:
     return {"status": "success", "message": f"Image '{image_name}' pulled successfully. Please restart the server to apply the update."}
 
 
-def handle_container_action(container_id: str, action: Literal["start","stop","restart","pause","unpause"], **kwargs) -> dict:
+def rpc_container_action(container_id: str, action: Literal["start", "stop", "restart", "pause", "unpause"], **kwargs) -> dict:
     """
     Perform an action (start, stop, restart) on a Docker container.
 
@@ -74,16 +72,81 @@ def handle_container_action(container_id: str, action: Literal["start","stop","r
         return {"error": str(e)}
 
 
+def rpc_docker_swarm_info(**kwargs) -> dict:
+    """
+    Retrieve Docker Swarm information using the Docker SDK for Python.
+    """
+    import docker
+    client = docker.from_env()
+    try:
+        swarm_info = client.swarm.attrs
+        return {"status": "success", "data": swarm_info}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def rpc_docker_swarm_join_token(token_type: Literal["Worker", "Manager"], **kwargs) -> dict:
+    """
+    Retrieve the Docker Swarm join token for worker nodes.
+    """
+    import docker
+    client = docker.from_env()
+    try:
+        swarm_info = client.swarm.attrs
+        join_token = swarm_info.get("JoinTokens", {}).get(token_type)
+        if not join_token:
+            return {"error": "Swarm join token not found. Is this node part of a swarm?"}
+        return {"status": "success", "join_token": join_token}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def rpc_docker_swarm_init(advertise_addr: str|None = None, listen_addr: str = "0.0.0.0:2377", **kwargs) -> dict:
+    """
+    Initialize a Docker Swarm on this node.
+
+    :param advertise_addr: The address to advertise to other swarm nodes (e.g., "10.30.1[:2377]").
+    :param listen_addr: The address to listen on for swarm management traffic (e.g., "10.30.1:2377").
+    """
+    import docker
+    client = docker.from_env()
+    try:
+        client.swarm.init(advertise_addr=advertise_addr, listen_addr=listen_addr)
+        return {"status": "success", "message": "Swarm initialized successfully."}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def rpc_docker_swarm_leave(force: bool = False, **kwargs) -> dict:
+    """
+    Leave the Docker Swarm on this node.
+
+    :param force: If True, force the node to leave the swarm even if it is a manager.
+    """
+    import docker
+    client = docker.from_env()
+    try:
+        client.swarm.leave(force=force)
+        return {"status": "success", "message": "Swarm left successfully."}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # RPC registry and dispatcher
 
 RPC_HANDLERS = {
     # system handlers
-    "ping": handle_ping,
-    "echo": handle_echo,
-    "self_update": handle_self_update,
+    "ping": rpc_ping,
+    "echo": rpc_echo,
+    "self.update": rpc_self_update,
     # docker handlers
-    "docker.info": handle_get_docker_info,
-    "docker.container_action": handle_container_action,
+    "docker.info": rpc_docker_info,
+    "docker.container.action": rpc_container_action,
+    # swarm handlers
+    "docker.swarm.info": rpc_docker_swarm_info,
+    "docker.swarm.join_token": rpc_docker_swarm_join_token,
+    "docker.swarm.init": rpc_docker_swarm_init,
+    "docker.swarm.leave": rpc_docker_swarm_leave,
 }
 
 def dispatch_rpc_method(method: str, params: dict) -> dict:
