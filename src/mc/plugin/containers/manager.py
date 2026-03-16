@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logging
+import os
 import threading
 from typing import Dict, Iterable, Optional, Any
 
@@ -148,7 +149,7 @@ class ContainerClientsManager:
 def bootstrap_container_connection_manager() -> ContainerClientsManager:
     """Idempotent: make sure defaults exist (read from env/config if you like)."""
     m = ContainerClientsManager()
-    m.ensure("localdocker", "unix://var/run/docker.sock", test_ping=False)
+    m.ensure("localdocker", os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock"), test_ping=False)
 
     # storage = get_inventory_storage_instance()
     # items = storage.list_items("mc_node")
