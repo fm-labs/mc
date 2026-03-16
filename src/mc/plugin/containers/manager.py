@@ -60,6 +60,10 @@ class NodeContainerClient:
     def volumes(self) -> Any:
         return self.Volumes()
 
+    def close(self):
+        # todo self.client.close()
+        self.client = None
+
 
 class ContainerClientsManager:
     def __init__(self) -> None:
@@ -107,7 +111,7 @@ class ContainerClientsManager:
                     c.ping(timeout=10)
             except Exception:
                 c.close()
-                #raise
+                # raise
                 logger.error(f"Failed to ping container client '{name}' at '{base_url}' during add():", exc_info=True)
 
             print(f"Added container client '{name}' with URL '{base_url}'")
@@ -127,22 +131,26 @@ class ContainerClientsManager:
             if not c:
                 return False
             if close:
-                try: c.close()
-                except Exception: pass
+                try:
+                    c.close()
+                except Exception:
+                    pass
             self._urls.pop(name, None)
             return True
 
     def close_all(self) -> None:
         with self._lock:
             for c in list(self._clients.values()):
-                try: c.close()
-                except Exception: pass
+                try:
+                    c.close()
+                except Exception:
+                    pass
             self._clients.clear()
             self._urls.clear()
 
 
-#@lru_cache(maxsize=1)
-#def init_container_connection_manager() -> ContainerClientsManager:
+# @lru_cache(maxsize=1)
+# def init_container_connection_manager() -> ContainerClientsManager:
 #    return ContainerClientsManager()
 
 
@@ -184,9 +192,8 @@ def bootstrap_container_connection_manager() -> ContainerClientsManager:
     #             print(f"CCM: Unknown container engine '{engine}' for host '{url}'")
     #     except Exception as e:
     #         print(f"CCM: Failed to configure container host '{url}': {e}")
-    #m.ensure("local", "unix:///run/podman/podman.sock", test_ping=False)
+    # m.ensure("local", "unix:///run/podman/podman.sock", test_ping=False)
     return m
 
-
 # best-effort cleanup if the process exits without FastAPI shutdown
-#atexit.register(lambda: asyncio.run(init_container_connection_manager().close_all()))
+# atexit.register(lambda: asyncio.run(init_container_connection_manager().close_all()))
