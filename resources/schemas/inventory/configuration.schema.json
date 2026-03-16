@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "title": "Configuration",
+  "description": "A collection of key-value pairs representing configuration settings for the inventory item.",
+  "version": "1.0.0",
+  "$icon": "settings",
+  "properties": {
+    "values": {
+      "type": "array",
+      "title": "Values",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "value": {
+            "type": ["string", "number", "boolean"],
+            "title": "Value"
+          }
+        },
+        "required": ["key"]
+      }
+    }
+  },
+  "required": [
+    "values"
+  ]
+}

@@ -2,25 +2,23 @@
   "actions": [
     {
       "id": "ping",
-      "name": "Ping Host",
+      "name": "Ping Node",
       "type": "form",
       "inputSchema": {
         "type": "object",
         "properties": {},
         "required": []
-      },
-      "timeout": 10000
+      }
     },
     {
-      "id": "api_probe",
-      "name": "Probe API connectivity",
+      "id": "node_info",
+      "name": "Fetch Node Info from API",
       "type": "form",
       "inputSchema": {
         "type": "object",
         "properties": {},
         "required": []
-      },
-      "timeout": 10000
+      }
     }
   ]
 }

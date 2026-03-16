@@ -1,9 +1,9 @@
 {
   "type": "object",
-  "title": "Node",
-  "description": "MissionControl node",
+  "title": "Container Node",
+  "description": "A host node that runs docker with the MissionControl agent installed. This node can be used to run container workloads and collect inventory data about the containers running on it.",
   "version": "1.0.0",
-  "$icon": "node",
+  "$icon": "server",
   "properties": {
     "url": {
       "type": "string",
