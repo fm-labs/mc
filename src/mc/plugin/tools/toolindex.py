@@ -13,14 +13,15 @@ def load_tool_index():
     print("Loading tool index...")
     TOOL_INDEX.clear()
     # enumerate all json files in the tools directory
-    tool_names = [f[:-5] for f in os.listdir(TOOL_DIR) if f.endswith('.json')]
-    for tool_name in tool_names:
-        if tool_name.startswith('.') or tool_name.startswith('_'):
-            continue
-        tool_file = os.path.join(TOOL_DIR, f"{tool_name}.json")
-        with open(tool_file, 'r') as f:
-            tool_data = json.load(f)
-            TOOL_INDEX.append(tool_data)
+    if os.path.exists(TOOL_DIR):
+        tool_names = [f[:-5] for f in os.listdir(TOOL_DIR) if f.endswith('.json')]
+        for tool_name in tool_names:
+            if tool_name.startswith('.') or tool_name.startswith('_'):
+                continue
+            tool_file = os.path.join(TOOL_DIR, f"{tool_name}.json")
+            with open(tool_file, 'r') as f:
+                tool_data = json.load(f)
+                TOOL_INDEX.append(tool_data)
 
 
 def get_tool_index():

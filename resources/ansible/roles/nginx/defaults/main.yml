@@ -1,8 +1,0 @@
----
-
-nginx_setup_apt_repository: False
-nginx_setup_security: False
-nginx_setup_ssl: False
-nginx_setup_default_site: False
-nginx_setup_default_site_ssl: False
-nginx_setup_certbot: False

@@ -1,9 +1,0 @@
-[wireguard]
-enabled = true
-filter = wireguard
-action = iptables-multiport[name=wireguard, port=51820, protocol=udp]
-logpath = /var/log/kern.log
-backend = systemd
-maxretry = 5
-bantime = 3600
-findtime = 600

@@ -1,7 +1,0 @@
----
-
-kstack_create_admin_user: false
-
-kmc_default_installation: false
-kmc_image_name: "fmlabs/kmc:latest"
-kmc_container_name: "kmc"
