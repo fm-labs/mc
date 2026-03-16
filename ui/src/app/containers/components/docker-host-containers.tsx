@@ -17,6 +17,7 @@ import DockerContainerExec from "@/app/containers/components/docker-container-ex
 import { Layers } from "lucide-react";
 import DockerContainerInspect from "@/app/containers/components/docker-container-inspect.tsx";
 import DockerContainerUptime from "@/app/containers/components/docker-container-uptime.tsx";
+import {EventStreamReader} from "@/components/event-stream-reader.tsx";
 
 const logMessageFormatter = (message: string) => {
     try {
@@ -95,8 +96,12 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                         </TabsContent>
                         <TabsContent value="logs">
                             {containerLogStreamUrl}
-                            {containerLogStreamUrl
+                            {/*containerLogStreamUrl
                                 && (<EventSourceReader url={containerLogStreamUrl}
+                                    logFormatter={logMessageFormatter} />)*/}
+                            {containerLogStreamUrl
+                                && (<EventStreamReader url={containerLogStreamUrl}
+                                                       headers={{"Authorization": "Bearer " + localStorage.getItem("authToken")!}}
                                     logFormatter={logMessageFormatter} />)}
                         </TabsContent>
                     </div>

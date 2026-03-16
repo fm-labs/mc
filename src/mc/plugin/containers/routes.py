@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import List, Annotated, Any
+from typing import List, Annotated, Any, Literal
 
 import anyio
 from docker.models.containers import Container
@@ -19,6 +19,8 @@ from mc.plugin.containers.manager import ContainerClientsManager, NodeContainerC
 
 router = APIRouter()
 
+CACHE_TTL = 60  # seconds
+
 class CommandExecRequest(BaseModel):
     command: str
 
@@ -32,7 +34,7 @@ def get_container_hosts(manager:ContainerClientsManager=Depends(dep_container_co
     #     item_copy = item.copy()
     #     item_copy["connected"] = item.get("name") in manager.names()
     #     _items.append(item_copy)
-    # return mongodb_results_to_json(_items)
+
     hosts = []
     hosts.append({"id": "localdocker", "name": "localdocker", "connected": True, "properties": {
         "engine": "docker",
@@ -99,7 +101,7 @@ def get_docker_info(alias: str, client=Depends(dep_container_connection)) -> dic
     def fetch_info():
         _info = client.info()
         return jsonable_encoder(_info)
-    return cached_fn(f"containers_{alias}_info", fetch_info, ttl=120)()
+    return cached_fn(f"containers_{alias}_info", fetch_info, ttl=CACHE_TTL)()
 
 
 @router.get("/containers/{alias}/df")
@@ -107,7 +109,7 @@ def get_docker_info(alias: str, client=Depends(dep_container_connection)) -> dic
     def fetch_df():
         summary = client.df()
         return jsonable_encoder(summary)
-    return cached_fn(f"containers_{alias}_df", fetch_df, ttl=120)()
+    return cached_fn(f"containers_{alias}_df", fetch_df, ttl=CACHE_TTL)()
 
 
 @router.get("/containers/{alias}/containers")
@@ -119,7 +121,7 @@ def list_docker_containers(alias: str, client=Depends(dep_container_connection))
         for c in collection:
             _containers.append(c.attrs)
         return jsonable_encoder(_containers)
-    return cached_fn(f"containers_{alias}_containers", fetch_containers, ttl=60)()
+    return cached_fn(f"containers_{alias}_containers", fetch_containers, ttl=CACHE_TTL)()
 
 
 @router.get("/containers/{alias}/containers/{container_id}")
@@ -128,7 +130,7 @@ def get_docker_container(alias: str, container_id: str,
     def fetch_container():
         _container: Container = client.containers.get(container_id)
         return jsonable_encoder(_container.attrs)
-    return cached_fn(f"containers_{alias}_container_{container_id}", fetch_container, ttl=30)()
+    return cached_fn(f"containers_{alias}_container_{container_id}", fetch_container, ttl=CACHE_TTL)()
 
 
 @router.post("/containers/{alias}/containers/{container_id}/actions/{action}")
@@ -241,10 +243,10 @@ def stream_docker_container_logs(request: Request,
 
     # get log stream (blocking iterator)
     print(f"Opening log stream, container_id={container_id} follow={follow}")
-    log_stream = container.logs(**kwargs)
+    _log_stream = container.logs(**kwargs)
 
     # convert to async generator
-    async def event_generator():
+    async def event_generator(log_stream, format: Literal["sse","json"] = "json"):
         counter = 0
         try:
             # Run the blocking iterator in a thread so we don't block the event loop
@@ -258,8 +260,11 @@ def stream_docker_container_logs(request: Request,
                 counter += 1
 
                 # SSE framing
-                # yield f"event: log\n"
-                yield f"data: {json.dumps({'line': counter, 'log': payload})}\n\n"
+                if format == "sse":
+                    # yield f"event: log\n"
+                    yield f"data: {json.dumps({'line': counter, 'log': payload})}\n\n"
+                elif format == "json":
+                    yield json.dumps({'line': counter, 'log': payload}) + "\n"
 
         except (ClientDisconnect, anyio.EndOfStream):
             # client disconnected while writing
@@ -282,7 +287,7 @@ def stream_docker_container_logs(request: Request,
 
     # return SSE response
     return StreamingResponse(
-        event_generator(),
+        event_generator(_log_stream),
         media_type="text/plain",
         headers={
             "Cache-Control": "no-cache",
@@ -301,7 +306,7 @@ def list_docker_images(alias: str, client=Depends(dep_container_connection)) -> 
         for img in collection:
             images.append(img.attrs)
         return jsonable_encoder(images)
-    return cached_fn(f"containers_{alias}_images", fetch_images, ttl=60)()
+    return cached_fn(f"containers_{alias}_images", fetch_images, ttl=CACHE_TTL)()
 
 
 @router.get("/containers/{alias}/images/{image_id}")
@@ -309,7 +314,7 @@ def get_docker_image(alias: str, image_id: str, client=Depends(dep_container_con
     def fetch_image_details():
         image = client.images.get(image_id)
         return jsonable_encoder(image.attrs)
-    return cached_fn(f"containers_{alias}_image_{image_id}", fetch_image_details, ttl=60)()
+    return cached_fn(f"containers_{alias}_image_{image_id}", fetch_image_details, ttl=CACHE_TTL)()
 
 
 @router.get("/containers/{alias}/volumes")
@@ -321,7 +326,7 @@ def list_docker_volumes(alias: str, client=Depends(dep_container_connection)) ->
         for img in collection:
             volumes.append(img.attrs)
         return jsonable_encoder(volumes)
-    return cached_fn(f"containers_{alias}_volumes", fetch_volumes, ttl=60)()
+    return cached_fn(f"containers_{alias}_volumes", fetch_volumes, ttl=CACHE_TTL)()
 
 
 # @router.post("/containers/{alias}/compose/{project_name}/actions/{action}")
