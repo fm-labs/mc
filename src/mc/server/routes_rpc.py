@@ -1,11 +1,18 @@
 from fastapi import APIRouter
 
-from mc.rpc import dispatch_rpc_method
+from mc.rpc import dispatch_rpc_method, rpc_method_schemas
 
 router = APIRouter(prefix="/rpc", tags=["rpc"])
 
 
 # RPC REST endpoint
+@router.get("/methods")
+def list_rpc_methods() -> dict:
+    """
+    List available RPC methods.
+    """
+    return rpc_method_schemas()
+
 
 @router.post("/execute")
 def execute_json_rpc(request: dict) -> dict:

@@ -29,12 +29,12 @@ for plugin_name in PLUGINS_ENABLED:
         app_router.include_router(router, prefix="/api", tags=[plugin_name], dependencies=[Security(get_current_user)])
 
 
-@app_router.get("/api/info", tags=["info"])
+@app_router.get("/api/info", tags=["system"])
 async def info() -> dict:
-    return {"version": "0.1.0"}
+    return {"version": "2.0.0"}
 
 
-@app_router.get("/api/health", tags=["info"])
+@app_router.get("/api/health", tags=["system"])
 async def health():
     return {"status": "OK"}
 
