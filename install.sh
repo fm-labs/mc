@@ -33,6 +33,7 @@ $DOCKER pull ${MC_IMAGE} && \
 exec $DOCKER run -d \
   --name ${MC_CONTAINER_NAME} \
   --restart always \
+  --group-add $(stat -c '%g' ${DOCKER_SOCKET}) \
   -p ${MC_PORT}:3080 \
   -v ${DOCKER_SOCKET}:/var/run/docker.sock:ro \
   -v ${MC_DATA_DIR}:/opt/mc \

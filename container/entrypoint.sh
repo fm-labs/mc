@@ -21,12 +21,12 @@ export DOCKER_SSH_COMMAND
 
 
 # DIND
-SOCK_GID=$(stat -c '%g' /var/run/docker.sock)
-echo "Docker socket group ID: $SOCK_GID"
-if ! getent group "$SOCK_GID" >/dev/null; then
-    groupadd -g "$SOCK_GID" dockerhost
-fi
-usermod -aG "$SOCK_GID" app
+#SOCK_GID=$(stat -c '%g' /var/run/docker.sock)
+#echo "Docker socket group ID: $SOCK_GID"
+#if ! getent group "$SOCK_GID" >/dev/null; then
+#    groupadd -g "$SOCK_GID" dockerhost
+#fi
+#usermod -aG "$SOCK_GID" app
 
 
 #VAULT_ENABLED=${VAULT_ENABLED:-true}
