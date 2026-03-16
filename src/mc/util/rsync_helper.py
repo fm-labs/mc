@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from mc.util.subprocess_helper import rx_subprocess
-from mc.util.rx_util import split_url, toolcmd
+from mc.util.rx_util import split_url
+from mc.util.os_util import bin_cmd
 
 
 def rsync_execute(src: str, dest: str, mkdir=True, delete=False, exclude: list = None, ssh_config: dict = None, ):
@@ -81,5 +82,5 @@ def rsync_execute(src: str, dest: str, mkdir=True, delete=False, exclude: list =
     _dest = _dest.rstrip("/")
 
     rsync_args += [f"{_src}/", f"{_dest}"]
-    cmd = toolcmd("rsync", rsync_args)
+    cmd = bin_cmd("rsync", rsync_args)
     return rx_subprocess(cmd, cwd=str(Path(src).resolve().absolute()))

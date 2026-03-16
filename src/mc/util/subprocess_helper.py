@@ -4,7 +4,7 @@ import sys
 import asyncio
 
 
-def rx_subprocess(cmd: list[str]|str, cwd: str, env: dict = None, **kwargs) -> tuple[bytes, bytes, int]:
+def rx_subprocess(cmd: list[str]|str, cwd: str | None = None, env: dict = None, **kwargs) -> tuple[bytes, bytes, int]:
     print("[rx][subprocess] command:", " ".join(cmd))
     _env = os.environ.copy()
     _env.update(env or {})

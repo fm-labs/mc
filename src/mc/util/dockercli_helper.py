@@ -1,10 +1,12 @@
 import os
 import subprocess
-import time
 from tempfile import TemporaryFile
+import logging
 
-from mc.util.rx_util import toolcmd
+from mc.util.os_util import bin_cmd
+from mc.util.subprocess_helper import rx_subprocess
 
+logger = logging.getLogger(__name__)
 
 def dockercli(cmd: list[str], env=None) -> dict:
     """
@@ -13,38 +15,45 @@ def dockercli(cmd: list[str], env=None) -> dict:
     :param cmd: List of command arguments (e.g., ['docker', 'ps'])
     :param env: Optional environment variables to pass to the subprocess
     """
-
     _env = os.environ.copy()
     if env:
         _env.update(env)
 
     dockerhost = _env.get("DOCKER_HOST",  "")
-    print(f"Executing Docker command with DOCKER_HOST={dockerhost}: {' '.join(cmd)}")
+    logger.info(f"Executing Docker command with DOCKER_HOST={dockerhost}: {' '.join(cmd)}")
 
-    result = subprocess.run(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        check=False,
-        text=True,
-        env=_env,
-    )
+    # result = subprocess.run(
+    #     cmd,
+    #     stdout=subprocess.PIPE,
+    #     stderr=subprocess.PIPE,
+    #     check=False,
+    #     text=True,
+    #     env=_env,
+    # )
+    #
+    # if result.returncode != 0:
+    #    print("Docker command failed:", " ".join(cmd), result.stderr)
+    #    raise RuntimeError(result.stderr)
+    #
+    # print("Docker command executed successfully:", " ".join(cmd), result.stdout)
+    #
+    # # write the command output to a tmp file for debugging
+    # with open(f"/tmp/dockercli_output_{str(int(time.time()))}.txt", "w") as f:
+    #     f.write(result.stdout)
+    #
+    # return {
+    #     "out": result.stdout,
+    #     "err": result.stderr,
+    #     "rc": result.returncode,
+    # }
 
-    if result.returncode != 0:
-       print("Docker command failed:", " ".join(cmd), result.stderr)
-       raise RuntimeError(result.stderr)
+    out,err,rc = rx_subprocess(cmd, cwd=None, env=_env)
+    if rc != 0:
+        logger.error(f"Docker command {' '.join(cmd)} failed with code {rc}")
+        raise RuntimeError(f"Docker command failed with return code {rc}: {' '.join(cmd)}")
 
-    print("Docker command executed successfully:", " ".join(cmd), result.stdout)
-
-    # write the command output to a tmp file for debugging
-    with open(f"/tmp/dockercli_output_{str(int(time.time()))}.txt", "w") as f:
-        f.write(result.stdout)
-
-    return {
-        "out": result.stdout,
-        "err": result.stderr,
-        "rc": result.returncode,
-    }
+    logger.info(f"Docker command {' '.join(cmd)} executed successfully with return code {rc}")
+    return {"stdout": out.decode(), "stderr": err.decode(), "rc": rc}
 
 
 def dockercli_login(username: str, password: str, registry="https://docker.io", env=None) -> dict:
@@ -56,9 +65,6 @@ def dockercli_login(username: str, password: str, registry="https://docker.io", 
     :param registry: Docker registry URL (default: Docker Hub)
     :param env: Optional environment variables to pass to the subprocess
     """
-    if not registry.startswith("http"):
-        registry = "https://" + registry
-
     # write password to a temporary file to avoid exposing it in process list
     with TemporaryFile() as tmp_file:
         tmp_file.write(bytes(password, "utf-8"))
@@ -69,7 +75,7 @@ def dockercli_login(username: str, password: str, registry="https://docker.io", 
         if env:
             _env.update(env)
 
-        cmd = toolcmd("docker", ["login", "--username", username, "--password-stdin", registry])
+        cmd = bin_cmd("docker", ["login", "--username", username, "--password-stdin", registry])
         print(cmd)
         print(_env)
         result = subprocess.run(
@@ -87,8 +93,8 @@ def dockercli_login(username: str, password: str, registry="https://docker.io", 
             raise RuntimeError(result.stderr.decode())
 
         return {
-            "out": result.stdout.decode(),
-            "err": result.stderr.decode(),
+            "stdout": result.stdout.decode(),
+            "stderr": result.stderr.decode(),
             "rc": result.returncode,
         }
 
@@ -100,7 +106,7 @@ def dockercli_image_pull(image: str, env=None) -> dict:
     :param image: Docker image name (e.g., 'nginx:latest')
     :param env: Optional environment variables to pass to the subprocess
     """
-    cmd = toolcmd("docker", ["image", "pull", image])
+    cmd = bin_cmd("docker", ["image", "pull", image])
     return dockercli(cmd, env=env)
 
 
@@ -111,7 +117,7 @@ def dockercli_image_push(image: str, env=None) -> dict:
     :param image: Docker image name (e.g., 'nginx:latest')
     :param env: Optional environment variables to pass to the subprocess
     """
-    cmd = toolcmd("docker", ["image", "push", image])
+    cmd = bin_cmd("docker", ["image", "push", image])
     return dockercli(cmd, env=env)
 
 
