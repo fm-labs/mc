@@ -89,7 +89,7 @@ RUN groupadd -r app && useradd -r -g app app && \
     chown -R app:app /app && \
     mkdir -p /home/app && \
     chown -R app:app /home/app && \
-    usermod -a -G docker app && \
+    usermod -a -G root app && \
     mkdir -p /var/log/supervisor && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
