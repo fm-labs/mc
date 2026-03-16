@@ -1,24 +1,24 @@
 import * as React from "react";
 
-import { NavInventory } from "@/components/layout/nav-inventory.tsx";
-import { NavSecondary } from "@/components/layout/nav-secondary.tsx";
-import { NavUser } from "@/components/layout/nav-user.tsx";
+import {NavInventory} from "@/components/layout/nav-inventory.tsx";
+import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
+import {NavUser} from "@/components/layout/nav-user.tsx";
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
 } from "@/components/ui/sidebar.tsx";
-import { InventoryMetadata } from "@/features/inventory/inventory.types.ts";
-import { useApi } from "@/context/api-context.tsx";
-import { navigationData } from "@/components/layout/data/app-navigation-data.ts";
-import { TeamSwitcher } from "@/components/layout/team-switcher.tsx";
-import { appSidebarData } from "@/components/layout/data/app-sidebar-data.ts";
-import { NavigationItem } from "@/components/layout/data/types.ts";
+import {InventoryMetadata} from "@/features/inventory/inventory.types.ts";
+import {useApi} from "@/context/api-context.tsx";
+import {navigationData} from "@/components/layout/data/app-navigation-data.ts";
+import {TeamSwitcher} from "@/components/layout/team-switcher.tsx";
+import {appSidebarData} from "@/components/layout/data/app-sidebar-data.ts";
+import {NavigationItem} from "@/components/layout/data/types.ts";
 import DevOnly from "@/components/dev-only.tsx";
 
-export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-    const { api } = useApi()
+export function AdminSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
+    const {api} = useApi()
     const [inventoryNavData, setInventoryNavData] = React.useState<NavigationItem[] | null>(null);
 
     const fetchInventoryMetadata = React.useCallback(async (): Promise<InventoryMetadata[]> => {
@@ -70,16 +70,14 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
                     </SidebarMenuItem>
                 </SidebarMenu>*/}
                 {/*<AppTitle />*/}
-                <TeamSwitcher teams={appSidebarData.teams} />
+                <TeamSwitcher teams={appSidebarData.teams}/>
             </SidebarHeader>
             <SidebarContent>
-                <NavInventory items={inventoryNavData as any[]} />
-                <DevOnly>
-                    <NavSecondary items={navigationData?.navAdmin as any[]} className="mt-auto" />
-                </DevOnly>
+                <NavInventory items={inventoryNavData as any[]}/>
+                <NavSecondary items={navigationData?.navAdmin as any[]} className="mt-auto"/>
             </SidebarContent>
             <SidebarFooter>
-                <NavUser />
+                <NavUser/>
             </SidebarFooter>
         </Sidebar>
     );
