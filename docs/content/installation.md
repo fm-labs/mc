@@ -58,9 +58,20 @@ docker container run -d \
   -p 3080:3080 \
   -p 80:80 \
   -p 443:443 \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v mc_data:/app/data \
-  --group-add $(stat -c '%g' /var/run/docker.sock) \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v /opt/mc:/opt/mc \
   --restart unless-stopped \
+  --group-add $(stat -c '%g' /var/run/docker.sock) \
   fmlabs/mc:latest
+```
+
+
+## Data directory permission issues
+
+The container user/group IDs are set to `33333:33333` by default.
+
+If you encounter permission issues with the data directory, you can change the ownership of the directory to match the container's user/group IDs.
+
+```bash
+sudo chown -R 33333:33333 /opt/mc
 ```
