@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import logging
 import threading
 from typing import Dict, Iterable, Optional, Any
 
@@ -7,10 +7,10 @@ from docker import DockerClient
 from podman import PodmanClient
 
 from mc.client.apiclient import McApiClient
-from mc.inventory.storage import get_inventory_storage_instance
 
 ContainerClient = PodmanClient | DockerClient
 
+logger = logging.getLogger(__name__)
 
 class NodeContainerClient:
 
@@ -89,20 +89,24 @@ class ContainerClientsManager:
             else:
                 engine, url = "docker", base_url  # default to docker if no engine specified
 
-            if engine == "docker":
-                use_ssh = url.startswith("ssh")
-                c = DockerClient(base_url=url, timeout=15, use_ssh_client=use_ssh)
-            elif engine == "podman":
-                c = PodmanClient(base_url=url, timeout=10)
-            else:
-                raise ValueError(f"Unknown container engine '{engine}' in URL '{base_url}'")
+            try:
+                if engine == "docker":
+                    use_ssh = url.startswith("ssh")
+                    c = DockerClient(base_url=url, timeout=15, use_ssh_client=use_ssh)
+                elif engine == "podman":
+                    c = PodmanClient(base_url=url, timeout=10)
+                else:
+                    raise ValueError(f"Unknown container engine '{engine}' in URL '{base_url}'")
+            except Exception as e:
+                logger.error(f"Failed to create container client for '{name}' with URL '{base_url}': {e}")
 
             try:
                 if test_ping:
                     c.ping(timeout=10)
             except Exception:
                 c.close()
-                raise
+                #raise
+                logger.error(f"Failed to ping container client '{name}' at '{base_url}' during add():", exc_info=True)
 
             print(f"Added container client '{name}' with URL '{base_url}'")
             self._clients[name] = c
