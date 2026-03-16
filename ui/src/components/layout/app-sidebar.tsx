@@ -38,6 +38,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarContent>
                 <NavMain items={navigationData?.navMain as any[]} />
                 {/*<NavFindings items={navigationData?.navFindings} />*/}
+                <NavSecondary items={navigationData?.navSecondary as any[]} className="mt-auto" />
             </SidebarContent>
             <SidebarFooter>
                 <NavUser />

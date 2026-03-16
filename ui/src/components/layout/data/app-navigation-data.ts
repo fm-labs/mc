@@ -32,19 +32,8 @@ export const navigationData: AppNavigationData = {
             //icon: IconTool,
             iconName: "stacks",
         },
-        // {
-        //     title: "Domains",
-        //     url: "/infrastructure/domains",
-        //     //icon: IconTool,
-        //     iconName: "domain",
-        // },
-        // {
-        //     title: "Containers",
-        //     url: "/containers",
-        //     //icon: IconTool,
-        //     iconName: "container",
-        // },
     ],
+    navSecondary: [],
     navInventory: [
         {
             title: "Kitchensink",
@@ -112,124 +101,20 @@ export const navigationData: AppNavigationData = {
     navAdmin: [
         // {
         //     title: "Settings",
-        //     url: "/settings/profile",
+        //     url: "/settings",
         //     iconName: "settings",
         // },
         {
-            title: "Tools",
-            url: "/admin/tools",
-            //icon: IconTool,
-            iconName: "tool",
+            title: "RPC",
+            url: "/admin/rpc",
+            //icon: IconDashboard,
+            iconName: "xterm",
         },
         // {
-        //     title: "Integrations",
-        //     url: "/admin/integrations",
+        //     title: "Tools",
+        //     url: "/admin/tools",
         //     //icon: IconTool,
-        //     iconName: "apps",
-        // },
-        // {
-        //     title: "Tasks",
-        //     url: "/admin/tasks",
-        //     //icon: IconTool,
-        //     iconName: "tasks",
-        // },
-        // {
-        //     title: "Ansible",
-        //     url: "/admin/ansible",
-        //     //icon: IconTool,
-        //     iconName: "ansible",
-        // },
-        // {
-        //     title: "MCP Servers",
-        //     url: "/mcp-servers",
-        //     //icon: IconTool,
-        //     iconName: "mcp",
-        // },
-        // {
-        //     title: "Docker MCP",
-        //     url: "/docker-mcp",
-        //     //icon: IconTool,
-        //     iconName: "docker-mcp",
-        // },
-        // {
-        //     title: "Xterm",
-        //     url: "/xterm",
-        //     //icon: IconTool,
-        //     iconName: "xterm",
-        // },
-        // {
-        //     title: "Get Help",
-        //     url: "/",
-        //     icon: IconHelp,
-        // },
-        // {
-        //     title: "Search",
-        //     url: "#",
-        //     icon: IconSearch,
-        // },
-        // {
-        //     title: "Access Control",
-        //     url: "#",
-        //     icon: IconUsers,
+        //     iconName: "tool",
         // },
     ],
-    // navInventory: [
-    //     // {
-    //     //     title: "Repositories",
-    //     //     url: "/inventory/repository",
-    //     //     //icon: IconListDetails,
-    //     //     iconName: "repository",
-    //     // },
-    //     // {
-    //     //     title: "Hosts",
-    //     //     url: "/inventory/host",
-    //     //     //icon: IconCloud,
-    //     //     iconName: "server",
-    //     // },
-    //     // {
-    //     //     title: "Clouds",
-    //     //     url: "/inventory/cloud",
-    //     //     //icon: IconCloud,
-    //     //     iconName: "cloud",
-    //     // },
-    //     // {
-    //     //     title: "Container Images",
-    //     //     url: "/inventory/container-image",
-    //     //     //icon: IconContainer,
-    //     //     iconName: "container",
-    //     // },
-    //     // {
-    //     //     title: "Domains",
-    //     //     url: "/inventory/dns-domain",
-    //     //     //icon: IconGlobe,
-    //     //     iconName: "globe",
-    //     // },
-    //     // {
-    //     //     title: "Container Hosts",
-    //     //     url: "/inventory/container-host",
-    //     //     //icon: IconGlobe,
-    //     //     iconName: "container",
-    //     // },
-    //     // {
-    //     //     title: "Compose Apps",
-    //     //     url: "/inventory/compose-app",
-    //     //     //icon: IconGlobe,
-    //     //     iconName: "apps",
-    //     // },
-    //     // {
-    //     //     name: "Data Library",
-    //     //     url: "#",
-    //     //     icon: IconDatabase,
-    //     // },
-    //     // {
-    //     //     name: "Reports",
-    //     //     url: "#",
-    //     //     icon: IconReport,
-    //     // },
-    //     // {
-    //     //     name: "Word Assistant",
-    //     //     url: "#",
-    //     //     icon: IconFileWord,
-    //     // },
-    // ],
 };

@@ -35,7 +35,7 @@ def handle_self_update(**kwargs) -> dict:
     """
     import docker
     client = docker.from_env()
-    image_name = "docker.io/fm/mc:latest"
+    image_name = "docker.io/fmlabs/mc:latest"
     try:
         print(f"Pulling latest image: {image_name}")
         client.images.pull(image_name)
@@ -138,12 +138,13 @@ def _params_from_signature(fn: Callable[..., Any]) -> dict:
     return schema
 
 
-def rpc_method_schemas() -> dict[str, dict]:
+def rpc_schemas() -> list[dict]:
     """Generate JSON-Schema method definitions for all registered RPC handlers."""
-    schemas: dict[str, dict] = {}
+    schemas: list[dict] = []
     for method_name, handler in RPC_HANDLERS.items():
-        schemas[method_name] = {
+        schemas.append({
+            "method": method_name,
             "description": handler.__doc__ or "",
-            "parameters": _params_from_signature(handler)
-        }
+            "inputSchema": _params_from_signature(handler)
+        })
     return schemas

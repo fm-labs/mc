@@ -21,6 +21,8 @@ const KitchensinkPage = await import('@/app/kitchensink/page.tsx').then(mod => m
 const PortainerTemplatesPage = await import('@/app/app-stacks/portainer-templates-page.tsx').then(mod => mod.default);
 const AppStacksPage = await import('@/app/app-stacks/app-stacks-page.tsx').then(mod => mod.default);
 const AppStackDetailsPage = await import('@/app/app-stacks/app-stack-details-page.tsx').then(mod => mod.default);
+const RpcPage = await import('@/app/rpc/rpc-page.tsx').then(mod => mod.default);
+
 
 const ApiRouter = () => {
     const { api: apiClient } = useApi()
@@ -110,6 +112,10 @@ const ApiRouter = () => {
                                 //     path: "tasks",
                                 //     Component: TasksPage,
                                 // },
+                                {
+                                    path: "rpc",
+                                    Component: RpcPage,
+                                },
                                 {
                                     path: "tools",
                                     Component: ToolsPage,
