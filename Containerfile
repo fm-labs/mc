@@ -90,12 +90,12 @@ RUN groupadd -r app && useradd -r -g app app && \
     mkdir -p /home/app && \
     chown -R app:app /home/app && \
     usermod -a -G root app && \
-    mkdir -p /data && \
-    chown app:app /data && \
     mkdir -p /var/log/supervisor && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
-    chown -R app:app /run
+    chown -R app:app /run && \
+    mkdir -p /opt/mc && \
+    chown app:app /opt/mc
 
 # Podman - Touch and own /var/run/podman.sock
 #RUN touch /var/run/podman.sock && chown app:app /var/run/podman.sock

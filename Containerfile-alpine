@@ -62,8 +62,8 @@ RUN adduser app ping
 
 # Set file and directory permissions
 RUN mkdir -p /app && mkdir -p /app/config && chown -R app:app /app && \
-    mkdir -p /data && \
-    chown app:app /data && \
+    mkdir -p /opt/mc && \
+    chown app:app /opt/mc && \
     mkdir -p /var/log/supervisor && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
@@ -139,7 +139,7 @@ ENV PYTHONPATH=/app/src
 
 ENV CONFIG_DIR=/app/config
 ENV RESOURCES_DIR=/app/resources
-ENV DATA_DIR=/data
+ENV DATA_DIR=/opt/mc
 
 CMD ["supervisor"]
 USER app
