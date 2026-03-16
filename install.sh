@@ -9,7 +9,7 @@
 # - MC_IMAGE: The name of the MissionControl Docker image to use (default: fmlabs/mc:latest)
 # - MC_CONTAINER_NAME: The name of the MissionControl container to create (default: mc)
 # - MC_PORT: The port to expose for the MissionControl web interface (default: 3443)
-set -xe
+set -e
 DOCKER=$(which docker)
 DOCKER_HOME=${DOCKER_HOME:-/var/lib/docker}
 DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
@@ -25,6 +25,8 @@ echo "DOCKER_SOCKET=${DOCKER_SOCKET}"
 echo "MC_IMAGE=${MC_IMAGE}"
 echo "MC_CONTAINER_NAME=${MC_CONTAINER_NAME}"
 echo "MC_PORT=${MC_PORT}"
+
+mkdir -p ${MC_DATA_DIR}
 
 $DOCKER stop ${MC_CONTAINER_NAME} && $DOCKER rm ${MC_CONTAINER_NAME}
 $DOCKER pull ${MC_IMAGE} && \
