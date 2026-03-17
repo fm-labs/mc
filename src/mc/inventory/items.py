@@ -63,7 +63,9 @@ def update_inventory_item(item_type: str, id: str, data: dict) -> dict:
         return {"error": "Item not found"}
 
     data["id"] = id
-    data["item_type"] = item_type
+    # fix: remove item_type from data if exists, since it's not stored in item properties
+    if "item_type" in item:
+        del item["item_type"]
     item.update(data)
     print("Updated item:", item)
     if not storage.save_item(_item_type, item):

@@ -34,6 +34,7 @@ class AppStackItem:
     proxy_container_port: int | None = None  # port of the container service to route to
     proxy_network_name: str | None = None  # name of the docker network traefik is on
     environment: dict | None = None  # environment variables for the app
+    item_type: str = "app_stack" # todo remove
 
     def __post_init__(self):
         if self.id is None or self.id == "":
