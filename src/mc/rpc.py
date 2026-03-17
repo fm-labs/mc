@@ -19,13 +19,13 @@ def rpc_echo(message: str = None, **kwargs) -> dict:
     return {"status": "success", "response": f"You said: {message}", "received_params": kwargs}
 
 
-def rpc_user_change_password(username: str, old_password, new_password: str, new_password2, **kwargs) -> dict:
+def rpc_user_change_password(username: str, old_password, new_password: str, repeat_password, **kwargs) -> dict:
     """
     Change a user's password. This is a wrapper around the users.change_password function.
     """
     from mc.users import change_password
     try:
-        if new_password != new_password2:
+        if new_password != repeat_password:
             raise ValueError("New passwords do not match")
 
         change_password(username, old_password, new_password)
