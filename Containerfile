@@ -51,9 +51,17 @@ RUN apt update && apt install -yy \
     iputils-ping \
     ca-certificates \
     awscli \
-    docker-cli \
-    docker-compose \
     redis-server \
+    && install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && . /etc/os-release \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $VERSION_CODENAME stable" \
+      > /etc/apt/sources.list.d/docker.list \
+    && apt update \
+    && apt install -y --no-install-recommends \
+      docker-ce-cli \
+      docker-compose-plugin \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -85,6 +93,7 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
 
 # Create a non-root user and group and set permissions for app and home directory
 RUN groupadd --gid 33333 app && useradd --uid 33333 -g app app && \
+    usermod -aG root app && \
     mkdir -p /app && \
     mkdir -p /home/app && \
     mkdir -p /var/log/supervisor && \
