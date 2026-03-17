@@ -1,5 +1,5 @@
 ## UI Build stage
-FROM node:24-alpine AS ui-builder
+FROM node:25-alpine AS ui-builder
 RUN npm install -g pnpm
 WORKDIR /builder
 COPY ui/package.json ui/pnpm-lock.yaml ./
@@ -8,7 +8,7 @@ COPY ui/ .
 RUN pnpm run build
 
 
-FROM python:3.14.3-slim
+FROM python:3.14.3-slim AS final
 
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
