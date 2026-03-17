@@ -74,7 +74,7 @@ WORKDIR /app
 
 # Install python dependencies
 COPY ./pyproject.toml ./uv.lock /app/
-RUN uv sync --no-cache-dir
+RUN uv sync --no-cache-dir --frozen --no-install-project
 
 # Copy the rest of the files
 COPY ./src /app/src
