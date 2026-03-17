@@ -43,7 +43,7 @@
         "properties": {
           "background": {
             "type": "boolean",
-            "default": true,
+            "default": false,
             "description": "Run deployment in the background.",
             "title": "Run in Background"
           },
