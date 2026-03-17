@@ -9,7 +9,7 @@
 # - DOCKERHUB_REPONAME
 
 
-name: Publish image to Docker Hub
+name: Publish alpine image to Docker Hub
 
 on:
   push:

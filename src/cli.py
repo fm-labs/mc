@@ -1,9 +1,7 @@
-import os
 import logging
 from rich.logging import RichHandler
 import click
 
-from mc.cli.credentials import credentials
 from mc.cli.apps import apps
 
 logging.basicConfig(
