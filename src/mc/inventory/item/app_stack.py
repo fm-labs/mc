@@ -120,6 +120,7 @@ class AppStackItem:
         #item_name = item.get("name")
         #props = item
         #props["name"] = item_name
+        #rint("FROM ITEM DICT", item)
         return AppStackItem(**item)
 
 
@@ -272,16 +273,27 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             #             f"SSH key file '{source_ssh_key_file}' for source_ssh_key_name '{source_ssh_key_name}' not found")
             # return update_project_from_git(source_url, str(app_dir.resolve()), private_key_file=source_ssh_key_file)
 
-
             checkout_path = _build_repo_cache_path(repo_url)
             checkout_path.parent.mkdir(parents=True, exist_ok=True)
+
+            is_private = app.repository.get("private", False)
+            if is_private and "@" not in repo_url:
+                repo_auth_username = app.repository.get("auth", {}).get("username", "")
+                repo_auth_password = app.repository.get("auth", {}).get("password", "")
+                repo_url = repo_url.replace("://", f"://{repo_auth_username}:{repo_auth_password}@", 1)
 
             #if background:
             #    task = clone_or_update_git_repo.delay(repo_url, str(checkout_path.resolve()))
             #    return {"status": "syncing", "task_id": task.id}
             #else:
 
-            clone_result = clone_or_update_git_repo(repo_url, str(checkout_path.resolve()))
+            logger.info(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
+            _repo_url = os.path.expandvars(repo_url)
+            # todo add support for ssh key auth by looking up the key file path from the inventory based on a reference in the repository config
+            logger.debug(f"Expanded repository URL: '{_repo_url}'")
+            #print(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
+
+            clone_result = clone_or_update_git_repo(_repo_url, str(checkout_path.resolve()))
             if clone_result.get("return_code") != 0:
                 raise ValueError(f"Error syncing repository: {clone_result.get('stderr')}")
 
