@@ -46,9 +46,9 @@ const Item = ({ item, onClick }: { item: any, isActive: boolean, onClick: () => 
     //     setCurrentItem(item)
     // }, [item])
 
-    return (<li className={`break-inside-avoid border-b-1 ${isActive ? 'bg-gray-100 dark:bg-gray-600 border-l-4 border-lime-500' : ''}`}>
+    return (<li className={`break-inside-avoid border-0 mt-1 pb-1 ps-1 border-l-4 ${isActive ? 'border-lime-500' : ''} dark:hover:bg-transparent`}>
         <div className={`hover:underline cursor-pointer ${isActive ? 'font-bold text-lime-500' : ''}`}
-             onClick={onClick}>{item.name}
+             onClick={onClick}>{item.id}
         </div>
         {isActive
             && <div
