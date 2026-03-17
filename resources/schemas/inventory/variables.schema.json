@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "title": "Variables",
+  "description": "Environment variables and secrets inventory item",
+  "version": "1.0.0",
+  "$icon": "settings",
+  "properties": {
+    "type": {
+      "type": "string",
+      "title": "Variable Type",
+      "enum": [
+        "environment",
+        "secret"
+      ],
+      "default": "environment"
+    },
+    "scope": {
+      "type": "string",
+      "title": "Variable Scope",
+      "description": "The scope of the variable (e.g. global, app:app-name)",
+      "default": "global"
+    },
+    "name": {
+      "type": "string",
+      "title": "Variable Name"
+    },
+    "value": {
+      "type": "string",
+      "title": "Variable Value",
+      "description": "Leave blank for secrets to avoid exposing sensitive information in the inventory"
+    }
+  },
+  "required": [
+    "type",
+    "scope",
+    "name"
+  ]
+}

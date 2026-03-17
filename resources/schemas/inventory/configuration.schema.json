@@ -5,9 +5,13 @@
   "version": "1.0.0",
   "$icon": "settings",
   "properties": {
-    "values": {
+    "name": {
+      "type": "string",
+      "title": "Configuration Name"
+    },
+    "data": {
       "type": "array",
-      "title": "Values",
+      "title": "Configuration Data",
       "items": {
         "type": "object",
         "properties": {
@@ -16,7 +20,7 @@
             "title": "Key"
           },
           "value": {
-            "type": ["string", "number", "boolean"],
+            "type": ["string"],
             "title": "Value"
           }
         },
@@ -25,6 +29,7 @@
     }
   },
   "required": [
-    "values"
+    "name",
+    "data"
   ]
 }
