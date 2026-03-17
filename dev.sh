@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -xe
+
 PROJECT_NAME="mc"
 CONTAINER_NAME="${PROJECT_NAME}-dev"
 IMAGE_NAME="${PROJECT_NAME}:dev"
@@ -47,7 +49,7 @@ case $CMD in
 
   stack-up)
     echo "Starting docker stack..."
-    docker compose -f $DOCKER_COMPOSE_FILE -p $PROJECT_NAME --build -d
+    docker compose -f $DOCKER_COMPOSE_FILE -p $PROJECT_NAME up --build -d
     ;;
 
   cluster-up)
