@@ -12,8 +12,8 @@ FROM python:3.14.3-slim
 
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
-    org.opencontainers.image.description="Smart orchestration tool" \
-    org.opencontainers.image.version="v0.1.0" \
+    org.opencontainers.image.description="Container orchestration tool" \
+    org.opencontainers.image.version="v2.0.0" \
     org.opencontainers.image.url="https://github.com/fm-labs/mc" \
     org.opencontainers.image.source="https://github.com/fm-labs/mc" \
     org.opencontainers.image.documentation="https://github.com/fm-labs/mc"
@@ -66,7 +66,6 @@ RUN apt update && apt install -yy \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
-#RUN pip install --no-cache-dir uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Working directory
@@ -74,7 +73,7 @@ WORKDIR /app
 
 # Install python dependencies
 COPY ./pyproject.toml ./uv.lock /app/
-RUN uv sync --no-cache-dir --frozen --no-install-project
+RUN uv sync --no-cache-dir --frozen --no-install-project --no-dev
 
 # Copy the rest of the files
 COPY ./src /app/src

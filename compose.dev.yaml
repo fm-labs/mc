@@ -3,7 +3,7 @@ services:
   server:
     build:
       context: .
-      dockerfile: Containerfile
+      dockerfile: Dockerfile
     image: "mc:latest"
     ports:
       - "3080:3080" # Nginx
@@ -55,7 +55,7 @@ services:
         #- action: rebuild
         #  path: ./ui
         - action: rebuild
-          path: Containerfile
+          path: Dockerfile
         - action: restart
           path: ./.env.docker.local
 
@@ -63,7 +63,7 @@ services:
   node01:
     build:
       context: .
-      dockerfile: Containerfile
+      dockerfile: Dockerfile
     image: "mc:node01"
     ports:
       - "3081:3080"
@@ -80,7 +80,7 @@ services:
   node02:
     build:
       context: .
-      dockerfile: Containerfile
+      dockerfile: Dockerfile
     image: "mc:node02"
     ports:
       - "3082:3080"

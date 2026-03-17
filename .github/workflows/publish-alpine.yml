@@ -50,24 +50,24 @@ jobs:
           set -xe
           
           docker buildx build \
-            -t $REGISTRY/$REPO_NAME:$IMAGE_TAG \
-            -t $REGISTRY/$REPO_NAME:latest \
+            -t $REGISTRY/$REPO_NAME:$IMAGE_TAG-alpine \
+            -t $REGISTRY/$REPO_NAME:latest-alpine \
             --progress=plain \
             --sbom=true \
             --provenance=true \
             --platform linux/amd64,linux/arm64 \
-            -f ./Dockerfile \
+            -f ./Dockerfile-alpine \
             --push \
             .
           
-          echo "image=$REGISTRY/$REPO_NAME:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image=$REGISTRY/$REPO_NAME:$IMAGE_TAG-alpine" >> $GITHUB_OUTPUT
 
 
 #      - name: Build, tag, and push image to Docker Hub
 #        uses: docker/build-push-action@v6
 #        with:
 #          context: .
-#          file: ./Dockerfile
+#          file: ./Dockerfile-alpine
 #          platforms: linux/amd64,linux/arm64
 #          push: true
 #          tags: |

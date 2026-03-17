@@ -52,6 +52,11 @@ case $CMD in
     docker compose -f $DOCKER_COMPOSE_FILE -p $PROJECT_NAME up --build -d
     ;;
 
+  alpine-up)
+    echo "Starting docker stack..."
+    docker compose -f "compose.dev.alpine.yaml" -p $PROJECT_NAME up --build -d
+    ;;
+
   cluster-up)
     echo "Starting docker stack..."
     docker compose -f $DOCKER_COMPOSE_FILE -p $PROJECT_NAME --profile cluster up --build -d

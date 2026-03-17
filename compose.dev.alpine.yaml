@@ -1,0 +1,13 @@
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile-alpine
+    image: "mc:alpine"
+    ports:
+      - "3080:3080" # Nginx
+      #- "5000:5000" # API
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${PWD}/data/local:/opt/mc
