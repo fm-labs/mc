@@ -24,17 +24,61 @@ def read_config():
             print(f"Error reading mc.json: {e}")
     return None
 
+# def write_config(config: dict):
+#     configs_path = os.getenv("MC_CONFIG", f"{DATA_DIR}/mc.json")
+#     try:
+#         with open(configs_path, "w") as f:
+#             json.dump(config, f, indent=4)
+#     except Exception as e:
+#         print(f"Error writing mc.json: {e}")
+
+# def write_dotenv(config: dict):
+#     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
+#     try:
+#         with open(env_path, "w") as f:
+#             for key, value in config.items():
+#                 f.write(f"{key}={value}\n")
+#     except Exception as e:
+#         print(f"Error writing .env file: {e}")
+
+def set_dotenv_var(key: str, value: str):
+    env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path, "r") as f:
+            lines = f.readlines()
+    with open(env_path, "w") as f:
+        found = False
+        for line in lines:
+            if line.startswith(f"{key}="):
+                f.write(f"{key}={value}\n")
+                found = True
+            else:
+                f.write(line)
+        if not found:
+            f.write(f"{key}={value}\n")
+
+
 CONFIG = read_config() or {}
 
+# def set_config_var(name: str, value: str, persist=False):
+#     CONFIG[name] = value
+#     if persist:
+#         write_config(CONFIG)
+
+
 def get_env_var(name: str, default=None):
-    if name in CONFIG:
-        return CONFIG[name]
+    if "environment" in CONFIG and name in CONFIG["environment"]:
+        return CONFIG["environment"][name]
 
     value = os.getenv(name, default)
     if value is None:
         print(f"Warning: Environment variable {name} is not set and no default value provided.")
     return value
 
+def set_env_var(name: str, value: str):
+    os.environ[name] = value
+    set_dotenv_var(name, value)
 
 # Additional paths
 CONFIG_DIR = get_env_var("CONFIG_DIR", f"{DATA_DIR}/etc")

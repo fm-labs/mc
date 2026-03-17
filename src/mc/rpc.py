@@ -2,6 +2,7 @@
 import inspect
 from typing import Callable, Any, Literal
 
+from mc.config import get_env_var, set_env_var
 from mc.util.random_util import generate_random_secret
 
 
@@ -17,6 +18,44 @@ def rpc_echo(message: str = None, **kwargs) -> dict:
     A simple echo handler that returns the received parameters.
     """
     return {"status": "success", "response": f"You said: {message}", "received_params": kwargs}
+
+
+# def rpc_set_config_var(key: str, value: str, persist=False, **kwargs) -> dict:
+#     """
+#     Set an environment variable in the local config file.
+#
+#     """
+#     try:
+#         set_config_var(key, value, persist=bool(persist))
+#         return {"status": "success", "message": f"Environment variable '{key}' has been set."}
+#     except Exception as e:
+#         return {"error": str(e)}
+
+
+def rpc_set_env(key: str, value: str, **kwargs) -> dict:
+    """
+    Set an environment variable in the local config file.
+    """
+    try:
+        set_env_var(key, value)
+        return {"status": "success", "message": f"Environment variable '{key}' has been set."}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def rpc_get_env(key: str, **kwargs) -> dict:
+    """
+    Get an environment variable from the local config file.
+    """
+    value = get_env_var(key)
+    if value is None:
+        return {"error": f"Environment variable '{key}' is not set."}
+    if "password" in key.lower() or "secret" in key.lower() or "token" in key.lower():
+        if len(value) > 12:
+            value = value[:3] + "*****" + value[-3:]
+        else:
+            value = "*****" + value[-1:]
+    return {"status": "success", "key": key, "value": value}
 
 
 def rpc_user_change_password(username: str, old_password, new_password: str, repeat_password, **kwargs) -> dict:
@@ -168,9 +207,12 @@ def rpc_docker_swarm_leave(force: bool = False, **kwargs) -> dict:
 
 RPC_HANDLERS = {
     # system handlers
-    "ping": rpc_ping,
-    "echo": rpc_echo,
-    "self.update": rpc_self_update,
+    "test.ping": rpc_ping,
+    "test.echo": rpc_echo,
+    "system.update": rpc_self_update,
+    # config handlers
+    "config.set_env": rpc_set_env,
+    "config.get_env": rpc_get_env,
     # docker handlers
     "docker.info": rpc_docker_info,
     "docker.container.action": rpc_container_action,

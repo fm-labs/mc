@@ -44,15 +44,15 @@ const RpcCommand = () => {
 
     const formId: string = React.useMemo(() => {
         return `rpc-action-form-${command.method}`;
-    }, [command.method]);
+    }, [command]);
 
     const jsonSchema: RJSFSchema = React.useMemo(() => {
         return command?.inputSchema || {};
-    }, [command?.inputSchema]);
+    }, [command]);
 
     const uiSchema: any = React.useMemo(() => {
         return command?.uiSchema || {};
-    }, [command?.uiSchema]);
+    }, [command]);
 
     const handleSubmit = async (data: any): Promise<void> => {
         console.log("handleSubmit", data.formData);

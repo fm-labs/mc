@@ -26,7 +26,7 @@ const RpcPage = () => {
         setRpcCommand(selectedCommand);
     }
 
-    const fetchCommands = async () => {
+    const fetchCommands = React.useCallback(async () => {
         try {
             const response = await api.get("/api/rpc");
             console.log("Fetched RPC commands:", response);
@@ -34,11 +34,11 @@ const RpcPage = () => {
         } catch (error) {
             console.error("Failed to fetch RPC commands:", error);
         }
-    }
+    }, [api]);
 
     React.useEffect(() => {
         fetchCommands();
-    }, []);
+    }, [fetchCommands]);
 
     return (
         <>
