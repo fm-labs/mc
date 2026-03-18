@@ -119,11 +119,12 @@ COPY ./container/supervisord.conf /etc/supervisord.conf
 COPY ./container/supervisor/* /etc/supervisor.d/
 
 # Nginx
-COPY ./container/nginx/site.default.conf /etc/nginx/sites-available/default
+COPY ./container/nginx/* /etc/nginx/sites-available/
 RUN mkdir -p /etc/nginx/ssl/ && \
     mkdir -p /var/log/nginx/ && \
-    mkdir -p /var/log/nginx && \
-    chown -R app:app /var/lib/nginx /var/log/nginx
+    chown -R app:app /var/lib/nginx /var/log/nginx /etc/nginx/ssl /etc/nginx/sites-enabled && \
+    ln -sf /etc/nginx/sites-available/site.default.conf /etc/nginx/sites-enabled/default.conf && \
+    ln -sf /etc/nginx/sites-available/site.ssl.conf /etc/nginx/sites-enabled/site.ssl.conf
 
 # Redis
 RUN mkdir -p /redis && chown app:redis /redis

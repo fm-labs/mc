@@ -2,7 +2,7 @@ export const MC_BRAND_NAME =
     import.meta.env.VITE_MC_BRAND_NAME || 'mission control'
 
 export const MC_API_BASE_URL =
-    import.meta.env.VITE_MC_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:3080`
+    import.meta.env.VITE_MC_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
 
 export const FEAT_SETTINGS_ENABLED =
     import.meta.env.VITE_FEAT_SETTINGS_ENABLED === 'true' || false

@@ -7,6 +7,7 @@ services:
     image: "mc:latest"
     ports:
       - "3080:3080" # Nginx
+      - "3443:3443" # Nginx
       #- "5000:5000" # API
       #- "5555:5555" # Flower
     networks:

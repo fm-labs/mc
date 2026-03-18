@@ -20,15 +20,6 @@ DOCKER_SSH_COMMAND="ssh -F $SSH_CONFIG"
 export DOCKER_SSH_COMMAND
 
 
-# DIND
-#SOCK_GID=$(stat -c '%g' /var/run/docker.sock)
-#echo "Docker socket group ID: $SOCK_GID"
-#if ! getent group "$SOCK_GID" >/dev/null; then
-#    groupadd -g "$SOCK_GID" dockerhost
-#fi
-#usermod -aG "$SOCK_GID" app
-
-
 #VAULT_ENABLED=${VAULT_ENABLED:-true}
 #VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
 #VAULT_PASS_FILE=${VAULT_PASS_FILE:-/data/credentials.vault.pass}
@@ -44,6 +35,63 @@ export DOCKER_SSH_COMMAND
 
 REDIS_DATA_DIR=${REDIS_DATA_DIR:-/redis}
 export REDIS_DATA_DIR
+
+
+
+init_ssl() {
+  echo "Initializing SSL configuration ..."
+  mkdir -p ${CONFIG_DIR}/ssl
+
+  # Generate custom self-signed certificate
+  if [[ ! -f ${CONFIG_DIR}/ssl/self-signed.crt ]]; then
+    echo "Generating self-signed certificate ..."
+    openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ${CONFIG_DIR}/ssl/self-signed.key -out ${CONFIG_DIR}/ssl/self-signed.crt -subj '/CN=localhost'
+    RC=$?
+    if [[ $RC != 0 ]]; then
+      echo "ERROR: Failed to generate self-signed certificate"
+      exit 1
+    fi
+  fi
+
+  # Generate custom dhparam.pem
+  if [[ ! -f ${CONFIG_DIR}/ssl/dhparam.pem ]]; then
+    echo "Generating dhparam.pem ..."
+    openssl dhparam -out ${CONFIG_DIR}/ssl/dhparam.pem 2048
+    RC=$?
+    if [[ $RC != 0 ]]; then
+      echo "ERROR: Failed to generate dhparam.pem"
+      exit 1
+    fi
+  fi
+
+  # Use self signed cert, if no other cert is available
+  if [[ ! -f /etc/nginx/ssl/cert.pem ]]; then
+    echo "Using self signed cert ..."
+    ln -sf ${CONFIG_DIR}/ssl/self-signed.crt /etc/nginx/ssl/cert.pem
+    ln -sf ${CONFIG_DIR}/ssl/self-signed.key /etc/nginx/ssl/key.pem
+  fi
+
+  # Use custom dhparam.pem, if no other dhparam.pem is available
+  if [[ ! -f /etc/nginx/ssl/dhparam.pem ]]; then
+    echo "Using self signed cert ..."
+    ln -sf ${CONFIG_DIR}/ssl/dhparam.pem /etc/nginx/ssl/dhparam.pem
+  fi
+
+  # alpine-specific adjustments
+  #if [[ "${MC_ALPINE}" == "1" ]]; then
+  #  echo "Running in alpine mode, adjusting nginx configuration for alpine ..."
+  #fi
+
+  # Test nginx configuration
+  ls -la /etc/nginx/ssl
+  if ! nginx -t ; then
+    echo "ERROR: Failed to test nginx configuration"
+    exit 1
+  fi
+}
+
+
+
 
 CMD=$1
 shift
@@ -62,6 +110,7 @@ case $CMD in
     ;;
 
   nginx)
+    init_ssl
     echo "Starting nginx..."
     exec nginx -g "daemon off;"
     ;;
