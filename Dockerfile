@@ -1,5 +1,5 @@
 ## UI Build stage
-FROM node:25-alpine AS ui-builder
+FROM docker.io/library/node:25-alpine AS ui-builder
 RUN npm install -g pnpm
 WORKDIR /builder
 COPY ui/package.json ui/pnpm-lock.yaml ./
@@ -8,7 +8,7 @@ COPY ui/ .
 RUN pnpm run build
 
 
-FROM python:3.14.3-slim AS final
+FROM docker.io/library/python:3.14-slim-trixie
 
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
@@ -141,7 +141,7 @@ USER app
 
 # Nginx port
 EXPOSE 3080
-#EXPOSE 3443
+EXPOSE 3443
 # API port
 #EXPOSE 5000
 # Flower port
