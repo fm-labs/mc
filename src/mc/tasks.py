@@ -64,6 +64,23 @@ def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=
     return {"status": "success", "app_dir": checkout_dir, "stdout": stdout, "stderr": stderr, "return_code": rc}
 
 
+def get_compose_runner(project_name: str, project_dir: str, stackfile: str | list, host_url: str):
+    if host_url.startswith("unix://"):
+        return LocalDockerComposeStackRunner(
+            project_name=project_name,
+            local_dir=project_dir,
+            stackfile=stackfile,
+            docker_host=host_url
+        )
+    elif host_url.startswith("ssh://"):
+        return RemoteDockerComposeStackRunner(
+            project_name=project_name,
+            local_dir=project_dir,
+            stackfile=stackfile,
+            docker_host=host_url
+        )
+    return None
+
 #@celery.task(bind=True)
 def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs) -> dict:
     """
@@ -76,21 +93,8 @@ def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: 
     :param kwargs: Additional keyword arguments for the Docker Compose up command (e.g., build, remove_orphans, force_recreate).
     :return: A dictionary containing the status, message, and output of the deployment process.
     """
-    if host_url.startswith("unix://"):
-        compose_runner = LocalDockerComposeStackRunner(
-            project_name=project_name,
-            local_dir=project_dir,
-            stackfile=stackfile,
-            docker_host=host_url
-        )
-    elif host_url.startswith("ssh://"):
-        compose_runner = RemoteDockerComposeStackRunner(
-            project_name=project_name,
-            local_dir=project_dir,
-            stackfile=stackfile,
-            docker_host=host_url
-        )
-    else:
+    compose_runner = get_compose_runner(project_name, project_dir, stackfile, host_url)
+    if not compose_runner:
         raise ValueError(f"Unsupported host URL scheme: {host_url}")
 
     compose_runner.stop()
@@ -107,4 +111,34 @@ def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: 
     stdout, stderr, rc = compose_runner.up(**up_args)
     return {"status": "success",
             "message": f"App {project_name} deployed to {host_url}",
+            "stdout": stdout.decode(), "stderr": stderr.decode(), "return_code": rc}
+
+
+#@celery.task(bind=True)
+def task_stop_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs) -> dict:
+    compose_runner = get_compose_runner(project_name, project_dir, stackfile, host_url)
+    if not compose_runner:
+        raise ValueError(f"Unsupported host URL scheme: {host_url}")
+
+    stop_args = {
+        "timeout": kwargs.get("timeout", 30),
+    }
+    stdout, stderr, rc = compose_runner.stop(**stop_args)
+    return {"status": "success",
+            "message": f"App {project_name} stopped on {host_url}",
+            "stdout": stdout.decode(), "stderr": stderr.decode(), "return_code": rc}
+
+
+#@celery.task(bind=True)
+def task_destroy_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs) -> dict:
+    compose_runner = get_compose_runner(project_name, project_dir, stackfile, host_url)
+    if not compose_runner:
+        raise ValueError(f"Unsupported host URL scheme: {host_url}")
+
+    down_args = {
+        "timeout": kwargs.get("timeout", 30),
+    }
+    stdout, stderr, rc = compose_runner.down(**down_args)
+    return {"status": "success",
+            "message": f"App {project_name} destroyed on {host_url}",
             "stdout": stdout.decode(), "stderr": stderr.decode(), "return_code": rc}

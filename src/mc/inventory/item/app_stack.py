@@ -11,10 +11,11 @@ import yaml
 from mc import logs
 from mc.config import DATA_DIR
 from mc.inventory.storage import get_inventory_storage_instance
-from mc.tasks import clone_or_update_git_repo, task_deploy_compose_project
+from mc.tasks import clone_or_update_git_repo, task_deploy_compose_project, task_destroy_compose_project
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logs.get_rotating_file_log_handler("app_stack"))
+
 
 @dataclass(frozen=True)
 class AppStackItem:
@@ -34,14 +35,14 @@ class AppStackItem:
     proxy_container_port: int | None = None  # port of the container service to route to
     proxy_network_name: str | None = None  # name of the docker network traefik is on
     environment: dict | None = None  # environment variables for the app
-    item_type: str = "app_stack" # todo remove
+    item_type: str = "app_stack"  # todo remove
 
     def __post_init__(self):
         if self.id is None or self.id == "":
             raise ValueError("AppStackItem 'name' cannot be empty")
 
-    #@property
-    #def slug(self) -> str:
+    # @property
+    # def slug(self) -> str:
     #    # normalize app_name
     #    # normalize with regex to only allow alphanumeric and hyphens
     #    slug = (self.id.lower().replace(" ", "-").replace("_", "-")
@@ -53,8 +54,8 @@ class AppStackItem:
     def app_dir_path(self) -> Path:
         return _build_app_dir_path(app_name=self.id)
 
-    #@property
-    #def template_config_path(self) -> Path:
+    # @property
+    # def template_config_path(self) -> Path:
     #    return self.app_dir_path / "template.json"
 
     def read_stackconf(self) -> dict:
@@ -118,10 +119,10 @@ class AppStackItem:
 
     @staticmethod
     def from_item_dict(item: dict) -> "AppStackItem":
-        #item_name = item.get("name")
-        #props = item
-        #props["name"] = item_name
-        #rint("FROM ITEM DICT", item)
+        # item_name = item.get("name")
+        # props = item
+        # props["name"] = item_name
+        # rint("FROM ITEM DICT", item)
         return AppStackItem(**item)
 
 
@@ -166,8 +167,8 @@ def _build_app_key(owner_id: str, item_name: str, version: str) -> str:
 
 def _build_appstack_compose_override(app: AppStackItem) -> dict:
     item_name = app.id
-    #app_version = app.version or "latest"
-    #app_hash = _build_app_hash(project_name, item_name, app_version)
+    # app_version = app.version or "latest"
+    # app_hash = _build_app_hash(project_name, item_name, app_version)
     service_key = _build_app_key("default", item_name, "")
 
     override_networks = {}
@@ -177,7 +178,7 @@ def _build_appstack_compose_override(app: AppStackItem) -> dict:
     service_labels = [
         "mc.app.managed=true",
         f"mc.app.name={item_name}",
-        #f"mc.app.version={app_version}",
+        # f"mc.app.version={app_version}",
         # f"mc.app.project={project_name}",
         # f"mc.app.hash=sha256:{app_hash}",
         # f"mc.app.key={app_key}",
@@ -283,16 +284,16 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
                 repo_auth_password = app.repository.get("auth", {}).get("password", "")
                 repo_url = repo_url.replace("://", f"://{repo_auth_username}:{repo_auth_password}@", 1)
 
-            #if background:
+            # if background:
             #    task = clone_or_update_git_repo.delay(repo_url, str(checkout_path.resolve()))
             #    return {"status": "syncing", "task_id": task.id}
-            #else:
+            # else:
 
             logger.info(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
             _repo_url = os.path.expandvars(repo_url)
             # todo add support for ssh key auth by looking up the key file path from the inventory based on a reference in the repository config
             logger.debug(f"Expanded repository URL: '{_repo_url}'")
-            #print(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
+            # print(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
 
             clone_result = clone_or_update_git_repo(_repo_url, str(checkout_path.resolve()))
             if clone_result.get("return_code") != 0:
@@ -303,7 +304,8 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             target_dir = app.app_dir_path
             template_dir = checkout_path / repo_path
             if not template_dir.exists() or not template_dir.is_dir():
-                raise FileNotFoundError(f"Template directory '{template_dir}' does not exist in repository for app stack '{app.id}'")
+                raise FileNotFoundError(
+                    f"Template directory '{template_dir}' does not exist in repository for app stack '{app.id}'")
 
             # wipe the target dir if it exists
             if target_dir.exists():
@@ -311,7 +313,7 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
 
             shutil.copytree(str(template_dir), str(target_dir))
 
-            #handle_app_stack_action_configure(item, {})
+            # handle_app_stack_action_configure(item, {})
             return {"status": "synced", "app_dir": str(target_dir), "repo_url": repo_url, "repo_path": repo_path}
 
         else:
@@ -344,9 +346,9 @@ def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
         # filter out None and empty string values
         env_vars = {k: v for k, v in env_vars.items() if v is not None and v != ""}
         # update item properties
-        #if "properties" not in item:
+        # if "properties" not in item:
         #    item["properties"] = {}
-        #item["properties"]["environment"] = env_vars
+        # item["properties"]["environment"] = env_vars
         item["environment"] = env_vars
 
         storage = get_inventory_storage_instance()
@@ -389,24 +391,28 @@ def handle_app_stack_action_prepare(item: dict, action_params: dict) -> dict:
     }
 
 
-
 def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     """
     Deploy the app stack to the specified container host using Docker Compose.
     Raises ValueError if required properties are missing.
     """
     logger.info(f"Deploying app stack '{item.get('id')}' with action_params: {action_params}")
+    confirm = action_params.get("confirm", False)
     background = action_params.get("background", False)
-    handle_app_stack_action_prepare(item, {})  # ensure app is prepared
+    up_args = {
+        "build": action_params.get("build", False),
+        "remove_orphans": action_params.get("remove_orphans", False),
+        # "timeout": action_params.get("timeout", 120),
+    }
 
+    if not confirm:
+        raise ValueError("Please confirm")
+
+    # ensure app is prepared
+    handle_app_stack_action_prepare(item, {})
+
+    # validate app directory and stackfile
     app = AppStackItem.from_item_dict(item)
-    item_name = app.id
-    #target_node = app.target_node or "localdocker"
-    #if not app.target_node:
-    #    raise ValueError(f"App stack '{item_name}' does not have a container_host defined for deployment")
-    #container_host_url = _lookup_container_host_url(target_node)
-    container_host_url = os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
-
     app_dir = app.app_dir_path
     if not app_dir.exists() or not app_dir.is_dir():
         raise FileNotFoundError(f"App stack directory '{app_dir}' does not exist")
@@ -417,7 +423,8 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
         stackfile_name = app.stackfile
         project_stackfiles.append(stackfile_name)
         # check if an override file exists
-        override_file = project_dir / stackfile_name.replace(".yaml", ".override.yaml").replace(".yml", ".override.yaml")
+        override_file = project_dir / stackfile_name.replace(".yaml", ".override.yaml").replace(".yml",
+                                                                                                ".override.yaml")
         if override_file.exists() and override_file.is_file():
             project_stackfiles.append("compose.override.yaml")
         # check if a mc override file exists
@@ -425,17 +432,73 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
         if override_file.exists() and override_file.is_file():
             project_stackfiles.append("mc.override.yaml")
 
-    if background:
-        task = task_deploy_compose_project.delay(project_name=app.id,
-                                                 project_dir=str(project_dir.resolve()),
-                                                 stackfile=project_stackfiles,
-                                                 host_url=container_host_url)
-        return {"status": "deploying", "task_id": task.id}
+    # target_node = app.target_node or "localdocker"
+    # if not app.target_node:
+    #    raise ValueError(f"App stack '{item_name}' does not have a container_host defined for deployment")
+    # container_host_url = _lookup_container_host_url(target_node)
+    container_host_url = os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+
+    # if background:
+    #     task = task_deploy_compose_project.delay(project_name=app.id,
+    #                                              project_dir=str(project_dir.resolve()),
+    #                                              stackfile=project_stackfiles,
+    #                                              host_url=container_host_url)
+    #     return {"status": "deploying", "task_id": task.id}
 
     return task_deploy_compose_project(project_name=app.id,
                                        project_dir=str(project_dir.resolve()),
                                        stackfile=project_stackfiles,
-                                       host_url=container_host_url)
+                                       host_url=container_host_url,
+                                       **up_args)
+
+
+def handle_app_stack_redeploy(item: dict, action_params: dict) -> dict:
+    """
+    Redeploy the app stack by performing a down followed by an up deployment.
+    Raises ValueError if required properties are missing.
+    """
+    logger.info(f"Redeploying app stack '{item.get('id')}' with action_params: {action_params}")
+    confirm = action_params.get("confirm", False)
+    background = False  # action_params.get("background", False)
+    sync = action_params.get("sync", False)
+    build = action_params.get("build", False)
+    remove_orphans = action_params.get("remove_orphans", False)
+
+    if not confirm:
+        raise ValueError("Please confirm")
+
+    if sync:
+        handle_app_stack_action_sync(item, {"confirm": True})
+
+    handle_app_stack_action_configure(item, {"confirm": True, "background": background})
+    # handle_app_stack_action_prepare(item, {"confirm": confirm}) # prepare is called inside configure
+    return handle_app_stack_action_deploy(item, {"confirm": True, "background": background,
+                                                 "build": build, "remove_orphans": remove_orphans})
+
+
+def handle_app_stack_action_destroy(item: dict, action_params: dict) -> dict:
+    """Destroy the app stack by removing the deployed containers and related resources from the target container host."""
+    confirm = action_params.get("confirm", False)
+    background = action_params.get("background", False)
+    destroy_args = {
+        "timeout": action_params.get("timeout", 30),
+    }
+
+    if not confirm:
+        raise ValueError("Please confirm")
+
+    app = AppStackItem.from_item_dict(item)
+    app_dir = app.app_dir_path
+    if not app_dir.exists() or not app_dir.is_dir():
+        raise FileNotFoundError(f"App stack directory '{app_dir}' does not exist")
+    project_dir = app_dir
+    container_host_url = os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
+
+    return task_destroy_compose_project(project_name=app.id,
+                                        project_dir=str(project_dir.resolve()),
+                                        stackfile=[],
+                                        host_url=container_host_url,
+                                        **destroy_args)
 
 
 def handle_app_stack_view_template_config(item: dict, view_params: dict) -> dict:
@@ -456,9 +519,11 @@ def handle_app_stack_view_stackfile(item: dict, view_params: dict) -> dict:
 
 
 actions = {
+    "sync": handle_app_stack_action_sync,
     "configure": handle_app_stack_action_configure,
     "deploy": handle_app_stack_action_deploy,
-    "sync": handle_app_stack_action_sync,
+    "redeploy": handle_app_stack_redeploy,
+    "destroy": handle_app_stack_action_destroy,
 }
 
 views = {

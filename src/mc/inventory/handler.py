@@ -1,4 +1,6 @@
 import asyncio
+import inspect
+
 
 def get_inventory_item_action_handler(item_type: str, action_name: str):
     """
@@ -96,7 +98,7 @@ async def handle_inventory_item_view(item_type: str, item: dict, view_name: str,
     view_params = view_params or {}
     # if the method is async, await it directly
     print("View method type:", type(method))
-    if asyncio.iscoroutinefunction(method):
+    if inspect.iscoroutinefunction(method):
         print("Handling async view method")
         result = await method(item, view_params)
         print("View result:", result)

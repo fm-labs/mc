@@ -19,7 +19,7 @@ from mc.plugin.containers.manager import ContainerClientsManager, NodeContainerC
 
 router = APIRouter()
 
-CACHE_TTL = 60  # seconds
+CACHE_TTL = 30  # seconds
 
 class CommandExecRequest(BaseModel):
     command: str
@@ -109,7 +109,7 @@ def get_docker_info(alias: str, client=Depends(dep_container_connection)) -> dic
     def fetch_df():
         summary = client.df()
         return jsonable_encoder(summary)
-    return cached_fn(f"containers_{alias}_df", fetch_df, ttl=CACHE_TTL)()
+    return cached_fn(f"containers_{alias}_df", fetch_df, ttl=CACHE_TTL*2)()
 
 
 @router.get("/containers/{alias}/containers")

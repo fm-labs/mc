@@ -53,29 +53,91 @@
             "description": "Remove containers for services not defined in the template.",
             "title": "Remove Orphans"
           },
-          "confirm": {
-            "type": "boolean",
-            "default": true,
-            "description": "Confirm publishing this item.",
-            "title": "Confirm"
-          },
           "background": {
             "type": "boolean",
             "default": false,
             "description": "Run deployment in the background.",
             "title": "Run in Background"
+          },
+          "confirm": {
+            "type": "boolean",
+            "default": false,
+            "description": "Confirm publishing this item.",
+            "title": "Confirm"
+          }
+        }
+      }
+    },
+    {
+      "id": "redeploy",
+      "name": "Redeploy Stack",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sync": {
+            "type": "boolean",
+            "default": false,
+            "description": "Sync before deploy.",
+            "title": "Sync"
+          },
+          "build": {
+            "type": "boolean",
+            "default": false,
+            "description": "Force build of images before deploying the stack.",
+            "title": "Build Images"
+          },
+          "remove_orphans": {
+            "type": "boolean",
+            "default": false,
+            "description": "Remove containers for services not defined in the template.",
+            "title": "Remove Orphans"
+          },
+          "background": {
+            "type": "boolean",
+            "default": false,
+            "description": "Run redeployment in the background.",
+            "title": "Run in Background"
+          },
+          "confirm": {
+            "type": "boolean",
+            "default": false,
+            "description": "Confirm redeploying this item.",
+            "title": "Confirm"
+          }
+        }
+      }
+    },
+    {
+      "id": "destroy",
+      "name": "Destroy Stack",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "background": {
+            "type": "boolean",
+            "default": false,
+            "description": "Run redeployment in the background.",
+            "title": "Run in Background"
+          },
+          "confirm": {
+            "type": "boolean",
+            "default": false,
+            "description": "Confirm redeploying this item.",
+            "title": "Confirm"
           }
         }
       }
     },
     {
       "id": "template",
-      "name": "View Template",
+      "name": "Template",
       "type": "view"
     },
     {
       "id": "stackfile",
-      "name": "View Stackfile",
+      "name": "Stackfile",
       "type": "view"
     }
   ]
