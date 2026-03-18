@@ -65,7 +65,17 @@ def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=
 
 
 #@celery.task(bind=True)
-def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str):
+def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs) -> dict:
+    """
+    Deploy a Docker Compose project to a specified host.
+
+    :param project_name: The name of the project (used as the Docker Compose project name).
+    :param project_dir: The local directory containing the Docker Compose stack file.
+    :param stackfile: The path to the Docker Compose stack file (can be a single file or a list of files).
+    :param host_url: The URL of the Docker host to deploy to (e.g., "unix:///var/run/docker.sock" for local, "ssh://user@remotehost" for remote).
+    :param kwargs: Additional keyword arguments for the Docker Compose up command (e.g., build, remove_orphans, force_recreate).
+    :return: A dictionary containing the status, message, and output of the deployment process.
+    """
     if host_url.startswith("unix://"):
         compose_runner = LocalDockerComposeStackRunner(
             project_name=project_name,
@@ -86,7 +96,15 @@ def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: 
     compose_runner.stop()
     compose_runner.sync()
 
-    stdout, stderr, rc = compose_runner.up()
+    up_args = {
+        "detach": True, # always detach!
+        "build": kwargs.get("build", False),
+        "remove_orphans": kwargs.get("remove_orphans", False),
+        "force_recreate": kwargs.get("force_recreate", False),
+        #"quiet_pull": kwargs.get("quiet_pull", True),
+        #"yes": kwargs.get("yes", True),
+    }
+    stdout, stderr, rc = compose_runner.up(**up_args)
     return {"status": "success",
             "message": f"App {project_name} deployed to {host_url}",
             "stdout": stdout.decode(), "stderr": stderr.decode(), "return_code": rc}

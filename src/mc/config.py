@@ -6,7 +6,10 @@ from dotenv import load_dotenv
 load_dotenv(".env")
 load_dotenv(".env.local")
 
-# Paths
+# Zero-config settings
+API_NAME = "account"
+API_VERSION = "2.0.0"
+API_PREFIX = "/api"
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
 
 load_dotenv(f"{DATA_DIR}/.env")
@@ -79,6 +82,9 @@ def get_env_var(name: str, default=None):
 def set_env_var(name: str, value: str):
     os.environ[name] = value
     set_dotenv_var(name, value)
+
+
+DEV_MODE = get_env_var("DEV_MODE", "false").lower() == "true"
 
 # Additional paths
 CONFIG_DIR = get_env_var("CONFIG_DIR", f"{DATA_DIR}/etc")

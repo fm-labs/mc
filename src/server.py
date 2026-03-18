@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from mc import config
 #from mc.db.redis import get_aioredis_client
 from mc.mcp.app import mcp as mcp_app
 from mc.mcp.fastmcp_helper import init_mcp_http_app
@@ -54,8 +55,16 @@ async def lifespan(main_app: FastAPI):
             main_app.state.ccm.close_all()
             #await main_app.state.redis.aclose()
 
+app = FastAPI(
+    title=config.API_NAME,
+    version=config.API_VERSION,
+    openapi_url=f"{config.API_PREFIX}/openapi.json" if config.DEV_MODE else None,
+    docs_url="/docs" if config.DEV_MODE else None,
+    redoc_url="/redoc" if config.DEV_MODE else None,
+    #generate_unique_id_function=custom_generate_unique_id,
+    lifespan=lifespan,
+)
 
-app = FastAPI(title="MissionControl API", version="0.1.0", lifespan=lifespan)
 #if mcp_enabled:
 #app.mount("/mcp", mcp_http_app)
 
