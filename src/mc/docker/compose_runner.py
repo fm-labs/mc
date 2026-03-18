@@ -106,11 +106,11 @@ class DockerComposeStackRunner(abc.ABC):
         print(f"Starting project {self.project_name}")
         kwargs['detach'] = True if 'detach' not in kwargs else kwargs['detach']
         kwargs['build'] = False if 'build' not in kwargs else kwargs['build']
-        kwargs['force-recreate'] = False if 'force-recreate' not in kwargs else kwargs['force-recreate']
-        kwargs['remove-orphans'] = False if 'remove-orphans' not in kwargs else kwargs['remove-orphans']
+        kwargs['force_recreate'] = False if 'force_recreate' not in kwargs else kwargs['force_recreate']
+        kwargs['remove_orphans'] = False if 'remove_orphans' not in kwargs else kwargs['remove_orphans']
         kwargs['yes'] = True if 'yes' not in kwargs else kwargs['yes'] # Assume "yes" as answer to all prompts and run non-interactively
-        kwargs['quiet-pull'] = True if 'quiet-pull' not in kwargs else kwargs['quiet-pull'] # Pull without printing progress information
-        kwargs['no-color'] = True if 'no-color' not in kwargs else kwargs['no-color'] # Produce monochrome output
+        kwargs['quiet_pull'] = True if 'quiet_pull' not in kwargs else kwargs['quiet_pull'] # Pull without printing progress information
+        kwargs['no_color'] = True if 'no_color' not in kwargs else kwargs['no_color'] # Produce monochrome output
         #kwargs['wait-timeout'] = '300' if 'wait-timeout' not in kwargs else kwargs['wait-timeout'] # wait up to 5 minutes for services to be healthy
         return self._compose("up", **kwargs)
 
