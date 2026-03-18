@@ -221,6 +221,7 @@ def stream_docker_container_logs(request: Request,
                                  until: Annotated[int, Query()] = None,
                                  tail: Annotated[int, Query()] = 1000,
                                  follow: Annotated[bool, Query()] = True,
+                                 format: Annotated[Literal["sse","json"], Query()] = "json",
                                  client=Depends(dep_container_connection),
                                  ) -> StreamingResponse:
     print("Streaming logs for container", container_id)
@@ -254,6 +255,7 @@ def stream_docker_container_logs(request: Request,
 
                 # if client went away, stop
                 if await request.is_disconnected():
+                    print("Client disconnected from log stream, stopping generator, container_id={container_id}")
                     break
 
                 payload = chunk.decode("utf-8", errors="replace")
@@ -285,16 +287,28 @@ def stream_docker_container_logs(request: Request,
                 pass
             print(f"Log stream closed, container_id={container_id}")
 
-    # return SSE response
-    return StreamingResponse(
-        event_generator(_log_stream),
-        media_type="text/plain",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "Content-Type": "text/event-stream",
-        }
-    )
+
+    if format == "sse":
+        return StreamingResponse(
+            event_generator(_log_stream, format=format),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream"
+            }
+        )
+    else:
+        return StreamingResponse(
+            event_generator(_log_stream, format=format),
+            media_type="application/x-ndjson",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "application/x-ndjson",
+                "Transfer-Encoding": "chunked",
+            }
+        )
 
 
 @router.get("/containers/{alias}/images")

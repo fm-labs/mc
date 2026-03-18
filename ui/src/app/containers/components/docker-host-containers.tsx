@@ -32,8 +32,15 @@ const logMessageFormatter = (message: string) => {
 
 export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
     const { container, buildLogStreamUrl } = useDockerContainer()
-    const containerLogStreamUrl = buildLogStreamUrl(container?.Id);
     const [showDetails, setShowDetails] = React.useState(open || false);
+    const [activeTab, setActiveTab] = React.useState("logs");
+
+    const containerLogStreamUrl = React.useMemo(() => {
+        if (!container || activeTab !== "logs") {
+            return null;
+        }
+        return buildLogStreamUrl(container?.Id)
+    }, [activeTab, container]);
 
     return <div className={showDetails ? "py-1 pl-1 bg-accent border-b":"py-1 pl-1"}>
         <div className={"flex flex-start space-x-2"}>
@@ -58,9 +65,9 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                 <div className={"text-muted-foreground text-xs ml-6"}><DockerContainerPorts
                     ports={container?.NetworkSettings?.Ports} /></div>
 
-                <Tabs defaultValue="logs" className={"mt-1"}>
+                <Tabs defaultValue="logs" className={"mt-1"} onValueChange={setActiveTab}>
                     <div className={"flex justify-between items-center"}>
-                        <TabsList>
+                        <TabsList variant="line">
                             <TabsTrigger value="logs">Logs</TabsTrigger>
                             <TabsTrigger value="inspect">Inspect</TabsTrigger>
                             <TabsTrigger value="labels">Labels</TabsTrigger>

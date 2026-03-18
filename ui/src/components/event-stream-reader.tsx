@@ -20,16 +20,25 @@ export const EventStreamReader = ({url, headers, ...props}: EventStreamReaderPro
     const [enableStreaming, setEnableStreaming] = React.useState<boolean>(false);
     const [findText, setFindText] = React.useState<string>("");
 
-    const fetchEventStream = async () => {
+    const readerRef = React.useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
+    const abortControllerRef = React.useRef<AbortController | null>(null);
+
+    const fetchEventStream = React.useCallback(async () => {
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         // using fetch API to read a stream of JSON-LD events from the server
         // a line is delimited by \n and each line is a JSON-LD event
+        console.log("Connecting to event stream at URL:", url);
         const response = await fetch(url, {
             method: "GET",
             headers: {
                 "Accept": "application/json",
                 ...headers
-            }
+            },
+            signal: controller.signal
         }).catch(error => {
+            console.error("Error connecting to event stream:", error);
             appendLog(`Error connecting to event stream: ${error.message}`);
             setEnableStreaming(false);
             //props.onError?.(error);
@@ -41,11 +50,17 @@ export const EventStreamReader = ({url, headers, ...props}: EventStreamReaderPro
             setEnableStreaming(false);
             throw new Error("No response body");
         }
-        const reader = response.body.getReader();
+        //const reader = response.body.getReader();
+        readerRef.current = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
         let buffer = "";
         const readStream = () => {
-            reader.read().then(({ done, value }) => {
+            if (!readerRef.current) {
+                appendLog("No reader available for event stream.");
+                setEnableStreaming(false);
+                return;
+            }
+            readerRef.current.read().then(({ done, value }) => {
                 if (done) {
                     appendLog("Event stream closed by server.");
                     setEnableStreaming(false);
@@ -66,22 +81,24 @@ export const EventStreamReader = ({url, headers, ...props}: EventStreamReaderPro
                 });
                 readStream();
             }).catch(error => {
+                console.log("Error reading event stream:", error);
                 appendLog(`Error reading event stream: ${error.message}`);
                 setEnableStreaming(false);
                 //props.onError?.(error);
             });
         };
+        console.log("Connected to event stream, starting to read...");
         readStream();
-    }
+    }, [url, headers]);
 
 
-    const clearLog = () => {
+    const clearLog = React.useCallback(() => {
         if (logRef.current) {
             logRef.current.innerHTML = "";
         }
-    };
+    }, []);
 
-    const appendLog = (message: string) => {
+    const appendLog = React.useCallback((message: string) => {
         if (logRef.current) {
             let _message = message;
             if (props.logFormatter) {
@@ -94,9 +111,9 @@ export const EventStreamReader = ({url, headers, ...props}: EventStreamReaderPro
             logRef.current.appendChild(newLogEntry);
             logRef.current.scrollTop = logRef.current.scrollHeight;
         }
-    };
+    }, [props.logFormatter]);
 
-    const findInLog = (text: string, lastIndex: number) => {
+    const findInLog = React.useCallback((text: string, lastIndex: number) => {
         if (logRef.current) {
             const logEntries = logRef.current.children;
             for (let i = lastIndex; i < logEntries.length; i++) {
@@ -107,7 +124,24 @@ export const EventStreamReader = ({url, headers, ...props}: EventStreamReaderPro
                 }
             }
         }
-    }
+    }, []);
+
+    const stopStreaming = React.useCallback(() => {
+        console.log("Stopping event stream...");
+        setEnableStreaming(false);
+
+        if (readerRef.current) {
+            readerRef.current.cancel().catch((error) => {
+                console.error("Error cancelling reader:", error);
+            });
+            readerRef.current = null;
+        }
+
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+    }, []);
 
     React.useEffect(() => {
         if (findText === "") return;
@@ -118,7 +152,7 @@ export const EventStreamReader = ({url, headers, ...props}: EventStreamReaderPro
             const entry = logRef.current.children[lastIndex - 1] as HTMLDivElement;
             entry.scrollIntoView({behavior: "smooth", block: "center"});
         }
-    })
+    }, [findText]);
 
     // const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     //     const container = e.currentTarget;
@@ -134,19 +168,23 @@ export const EventStreamReader = ({url, headers, ...props}: EventStreamReaderPro
     //     console.log('Clicked child div:', child.textContent);
     // };
 
-    React.useEffect(() => {
+     React.useEffect(() => {
         if (enableStreaming) {
             clearLog();
             fetchEventStream();
+        } else {
+            stopStreaming();
         }
-    }, [enableStreaming, url]);
+    }, [enableStreaming]);
 
     React.useEffect(() => {
-        setEnableStreaming(true);
-        if (bytesReceivedRef.current) {
-            bytesReceivedRef.current = 0;
-        }
-    }, [url])
+        setEnableStreaming(!!url);
+        bytesReceivedRef.current = 0;
+
+        return () => {
+            stopStreaming();
+        };
+    }, [url, stopStreaming]);
 
     const renderStatus = () => {
         if (enableStreaming) {
