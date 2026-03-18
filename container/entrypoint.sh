@@ -196,6 +196,12 @@ case $CMD in
     exec uv run --directory /app src/mcp_server.py
     ;;
 
+  mcp-server-http)
+    export MCP_TRANSPORT=streamable-http
+    export MCP_HOST=0.0.0.0
+    exec uv run --directory /app src/mcp_server.py
+    ;;
+
   help)
     echo "Usage: $0 {api|celery-worker|supervisor|help}"
     exit 0

@@ -3,10 +3,11 @@
 # MISSION CONTROL MCP SERVER (Standalone)
 ####################################
 import asyncio
-import os
 import sys
 
 from fastmcp import FastMCP
+
+from mc.config import get_env_var
 
 sys.path.append('.')
 
@@ -39,11 +40,11 @@ async def init_mcp() -> 'FastMCP':
         raise
 
 async def main():
-    transport = os.environ.get("MCP_TRANSPORT", "stdio")
-    host = os.getenv("MCP_HOST", "127.0.0.1")
-    port = int(os.getenv("MCP_PORT", 5000))
-    path = os.getenv("MCP_PATH", None)
-    log_level = os.getenv("MCP_LOG_LEVEL", "info")
+    transport = get_env_var("MCP_TRANSPORT", "stdio")
+    host = get_env_var("MCP_HOST", "127.0.0.1")
+    port = int(get_env_var("MCP_PORT", "5000"))
+    path = get_env_var("MCP_PATH", None)
+    log_level = get_env_var("MCP_LOG_LEVEL", "info")
 
     available_transports = ["streamable-http", "sse", "http", "stdio"]
     if transport not in available_transports:
