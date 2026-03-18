@@ -1,7 +1,7 @@
 import React from "react";
 import MainContent from "@/components/layout/main-content.tsx";
-import { useState } from "react";
-import { RpcCommandDef, RpcCommandProvider } from "@/app/rpc/components/rpc-command-provider.tsx";
+import {useState} from "react";
+import {RpcCommandDef, RpcCommandProvider} from "@/app/rpc/components/rpc-command-provider.tsx";
 import {
     Select,
     SelectContent,
@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/select.tsx";
 import RpcCommand from "@/app/rpc/components/rpc-command.tsx";
 import {useApi} from "@/context/api-context.tsx";
+import Header from "@/components/header.tsx";
+import SectionCard from "@/components/section-card.tsx";
 
 
 const RpcPage = () => {
@@ -44,32 +46,36 @@ const RpcPage = () => {
         <>
             <MainContent>
                 <div>
-                    <h1 className="text-2xl font-bold">Admin RPC</h1>
+                    <Header title={"Admin RPC"} subtitle={'Run admin RPC commands against your server.'}/>
                     <p className="mb-4 text-muted-foreground">
-                        Administrative gameserver controls
+                        Select a command from the dropdown.
                     </p>
                 </div>
-                <div>
-                    <Select onValueChange={handleSelectChange}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select a command" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectGroup>
-                                <SelectLabel>Available commands</SelectLabel>
-                                {commands.map((command) => (
-                                    <SelectItem key={command.method} value={command.method}>{command.method}</SelectItem>
-                                ))}
-                            </SelectGroup>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <hr />
-                <div>
-                    {rpcCommand && <RpcCommandProvider command={rpcCommand}>
-                        <RpcCommand />
-                    </RpcCommandProvider>}
-                </div>
+
+                <SectionCard title={"Execute RPC Command"}>
+                    <div>
+                        <Select onValueChange={handleSelectChange}>
+                            <SelectTrigger className="w-[180px]">
+                                <SelectValue placeholder="Select a command"/>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    <SelectLabel>Available commands</SelectLabel>
+                                    {commands.map((command) => (
+                                        <SelectItem key={command.method}
+                                                    value={command.method}>{command.method}</SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        {rpcCommand && <RpcCommandProvider command={rpcCommand}>
+                            <hr className={"my-4"}/>
+                            <RpcCommand/>
+                        </RpcCommandProvider>}
+                    </div>
+                </SectionCard>
             </MainContent>
         </>
     );
