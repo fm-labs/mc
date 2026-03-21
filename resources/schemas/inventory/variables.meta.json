@@ -1,3 +1,22 @@
 {
-  "actions": []
+  "actions": [
+    {
+      "id": "set_value",
+      "name": "Set Value",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value",
+            "description": "The value of the variable"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      }
+    }
+  ]
 }
