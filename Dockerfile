@@ -51,24 +51,17 @@ RUN addgroup --gid 33333 -S app && \
 
 RUN apk update && apk add --no-cache \
     file \
-    openssh \
-    autossh \
     bash \
     supervisor \
-    docker-cli \
-    docker-compose \
-    podman \
-    openssl \
     git \
     curl \
     rsync \
     iputils \
-    libc-utils \
     nginx \
-    aws-cli \
     ca-certificates \
+    docker-cli \
+    docker-compose \
     && rm -rf /var/cache/apk/*
-
 
 
 # pre-create a directory for the SSH agent socket
