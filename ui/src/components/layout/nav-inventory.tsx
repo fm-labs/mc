@@ -27,6 +27,7 @@ import { NavLink } from "react-router";
 import AppIcon from "@/components/app-icon.tsx";
 import TypewriterText from "@/components/typewriter-text.tsx";
 import { NavigationItem } from "@/components/layout/data/types.ts";
+import {FolderIcon} from "lucide-react";
 
 export function NavInventory({
                                  items,
@@ -43,7 +44,7 @@ export function NavInventory({
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
                             <NavLink to={item.url}>
-                                <AppIcon icon={item?.iconName} />
+                                <AppIcon icon={/*item?.iconName ||*/FolderIcon} />
                                 <span><TypewriterText delay={0} limit={2000} text={item.title} /></span>
                             </NavLink>
                         </SidebarMenuButton>

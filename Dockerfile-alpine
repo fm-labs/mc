@@ -92,7 +92,7 @@ RUN chown -R app:app /app
 
 
 # Entry point script
-COPY ./container/entrypoint.sh /entrypoint
+COPY ./container/entrypoint.sh /usr/bin/entrypoint
 RUN ["chmod", "+x", "/usr/bin/entrypoint"]
 ENTRYPOINT ["/usr/bin/entrypoint"]
 

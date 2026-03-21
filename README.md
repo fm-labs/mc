@@ -71,6 +71,7 @@ It is safe to run multiple times, but the initial credentials will only be print
   - [ ] Pull image
   - [x] Remove image
   - [ ] Inspect image
+  - [ ] Remove image
 - [ ] Networks
   - [x] List networks
   - [ ] Inspect network
@@ -81,7 +82,6 @@ It is safe to run multiple times, but the initial credentials will only be print
   - [ ] List compose stacks
     - [x] List compose stacks from local filesystem
     - [x] List compose stacks from container labels
-    - [ ] List compose stacks from registered repositories
   - [ ] Inspect compose stack
   - [x] Start compose stack (compose up)
   - [x] Stop compose stack (compose stop)
