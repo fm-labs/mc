@@ -66,7 +66,7 @@ const DockerHostImages = () => {
             header: "Image Id",
             cell: ({row}) => (
                 <div className="font-bold" title={row.original.Id}>
-                    {row.original.Id.substring(7, 19)}
+                    <Data data={row.original} />{' '}{row.original.Id.substring(7, 19)}
                 </div>
             ),
         },
@@ -76,7 +76,6 @@ const DockerHostImages = () => {
             cell: ({row}) => (
                 <div className="">
                     {row.original?.RepoTags.join(", ") || "<none>"}
-                    <Data data={row.original} />
                 </div>
             ),
         },
@@ -110,7 +109,6 @@ const DockerHostImages = () => {
 
     React.useEffect(() => {
         const loadImages = async () => {
-            setImages(undefined)
             const data = await fetchImages()
             setImages(data)
         }

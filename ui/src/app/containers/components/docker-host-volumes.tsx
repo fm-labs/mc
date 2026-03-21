@@ -20,8 +20,7 @@ const DockerHostVolumes = () => {
         header: "Name",
         cell: ({ row }) => (
             <div className={`font-bold ${row.original?.UsageData?.RefCount > 0 ? "text-green-500" : ""}`} title={row.original.Name}>
-                {row.original?.Name || "<none>"}
-                <Data data={row.original} />
+                <Data data={row.original} />{' '}{row.original?.Name || "<none>"}
             </div>
         ),
     },

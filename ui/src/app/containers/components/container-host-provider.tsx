@@ -16,6 +16,7 @@ type ContainerHostContextType = {
     summary?: any,
     containers?: Record<string, any>,
     //images?: Record<string, any>,
+    getHostApiEndpointUrl: (path: string) => string,
     fetchContainerData: (path: string) => Promise<any>,
     fetchInfo: (force?: boolean) => Promise<any>,
     fetchSummary: (force?: boolean) => Promise<any>,
@@ -32,7 +33,7 @@ export const ContainerHostContext = React.createContext<ContainerHostContextType
 
 
 export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: InventoryItem<ContainerHost> }> = ({ children, host }) => {
-    const { api } = useApi()
+    const { api, apiBaseUrl } = useApi()
 
     const [error, setError] = React.useState<string | null>(null);
     const [info, setInfo] = React.useState<any>(null);
@@ -42,6 +43,10 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
     const [autorefreshInterval, setAutoRefreshInterval] = React.useState<number>(30000);
 
     const config = { hostId: host.name, connected: host?.connected }
+
+    const getHostApiEndpointUrl = React.useCallback((path: string) => {
+        return `${apiBaseUrl}/api/containers/${config.hostId}/${path}`;
+    }, [config.hostId])
 
     const _fetchContainerData = React.useCallback(async (path: string) => {
         try {
@@ -164,6 +169,7 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
             info,
             summary,
             containers,
+            getHostApiEndpointUrl,
             fetchContainerData,
             fetchInfo,
             fetchSummary,

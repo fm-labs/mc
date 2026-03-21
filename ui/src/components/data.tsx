@@ -40,7 +40,7 @@ const Data = ({data, asButton}: { data: any, asButton?: boolean }) => {
         <div className={"inline-block ml-1"}>
             {asButton ? <Button size={"sm"} variant="outline" onClick={toggleShowData} title="Show Data">
                 <InfoIcon size={12}/>
-            </Button> : <span onClick={toggleShowData} className={"cursor-pointer text-blue-500 underline"}>
+            </Button> : <span onClick={toggleShowData} className={"cursor-pointer text-blue-300 underline"}>
                 <InfoIcon size={14}/>
             </span>}
 
@@ -71,7 +71,8 @@ const Data = ({data, asButton}: { data: any, asButton?: boolean }) => {
                                 src={data}
                                 name={false}
                                 collapsed={false}
-                                enableClipboard={true}
+                                enableClipboard={false}
+                                displayObjectSize={false}
                                 displayDataTypes={false}/>
                         </div>
                     </div>

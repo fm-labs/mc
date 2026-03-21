@@ -356,6 +356,65 @@ def list_docker_volumes(alias: str, client=Depends(dep_container_connection)) ->
     return cached_fn(f"containers_{alias}_volumes", fetch_volumes, ttl=CACHE_TTL)()
 
 
+@router.get("/containers/{alias}/volumes/{volume_id}")
+def get_docker_volume(alias: str, volume_id: str, client=Depends(dep_container_connection)) -> dict:
+    def fetch_volume_details():
+        volume = client.volumes.get(volume_id)
+        return jsonable_encoder(volume.attrs)
+    return cached_fn(f"containers_{alias}_volume_{volume_id}", fetch_volume_details, ttl=CACHE_TTL)()
+
+
+@router.get("/containers/{alias}/networks")
+def list_docker_networks(alias: str, client=Depends(dep_container_connection)) -> List[dict]:
+    def fetch_networks():
+        collection = client.networks.list()
+        print("Networks", collection)
+        networks = []
+        for img in collection:
+            networks.append(img.attrs)
+        return jsonable_encoder(networks)
+    return cached_fn(f"containers_{alias}_networks", fetch_networks, ttl=CACHE_TTL)()
+
+
+@router.get("/containers/{alias}/events/stream")
+async def stream_docker_events(request: Request, alias: str, client=Depends(dep_container_connection)) -> StreamingResponse:
+    event_stream = client.events(decode=True)
+
+    async def event_generator():
+        try:
+            async for chunk in iterate_in_threadpool(event_stream):
+                if await request.is_disconnected():
+                    print("Client disconnected from event stream, stopping generator")
+                    break
+
+                yield json.dumps(chunk) + "\n"
+        except (ClientDisconnect, anyio.EndOfStream):
+            print("Client disconnected from event stream")
+            pass
+        except asyncio.CancelledError:
+            print("Event stream cancelled")
+            pass
+        finally:
+            try:
+                close = getattr(event_stream, "close", None)
+                if callable(close):
+                    close()
+            except Exception:
+                pass
+            print("Event stream closed")
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="application/x-ndjson",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "application/x-ndjson",
+            "Transfer-Encoding": "chunked",
+        }
+    )
+
+
 # @router.post("/containers/{alias}/compose/{project_name}/actions/{action}")
 # def post_docker_compose_action(alias: str, project_name: str, action: str,
 #                                  client=Depends(dep_container_connection)) -> dict:

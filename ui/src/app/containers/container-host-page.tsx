@@ -8,6 +8,8 @@ import ContainersLayout from "@/components/layout/containers-layout.tsx";
 import {ContainerHostsProvider, useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
 import DockerHostImages from "@/app/containers/components/docker-host-images.tsx";
 import DockerHostVolumes from "@/app/containers/components/docker-host-volumes.tsx";
+import DockerHostNetworks from "@/app/containers/components/docker-host-networks.tsx";
+import DockerHostEvents from "@/app/containers/components/docker-host-events.tsx";
 
 const ContainerHost = ({hostId, view}: {hostId: string, view?: string}) => {
     const {hosts} = useContainerHosts()
@@ -21,6 +23,8 @@ const ContainerHost = ({hostId, view}: {hostId: string, view?: string}) => {
             {!view || view === "container" && <DockerHostContainers/>}
             {view === "images" && <DockerHostImages/>}
             {view === "volumes" && <DockerHostVolumes/>}
+            {view === "networks" && <DockerHostNetworks/>}
+            {view === "events" && <DockerHostEvents/>}
         </ContainerHostProvider>
     </div>;
 }

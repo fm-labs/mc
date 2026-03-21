@@ -60,6 +60,16 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                     url: `/containers/${host.id}/volumes`,
                     icon: "container-volume"
                 },
+                {
+                    title: "Networks",
+                    url: `/containers/${host.id}/networks`,
+                    icon: "container-network"
+                },
+                {
+                    title: "Events",
+                    url: `/containers/${host.id}/events`,
+                    icon: "container-events"
+                },
             ],
         }))
 

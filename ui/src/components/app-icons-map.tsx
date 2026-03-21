@@ -115,6 +115,7 @@ const appIconsMap: {[key: string]: any} = {
     "container-host": IconDocker,
     "container-image": IconCube3dSphere,
     "container-volume": IconDatabase,
+    "container-network": IconNetwork,
     "dns-domain": IconGlobe,
     "compose-project": IconDashboard,
     "docker-mcp": IconDocker,

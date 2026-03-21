@@ -8,7 +8,7 @@ type DockerContainerContextType = {
     hostId: string;
     container: any,
     handleContainerActionClick: (action: string, payload?: any) => () => Promise<void | TaskStatusResponse>
-    buildLogStreamUrl: (containerId: string) => string
+    getContainerApiEndpointUrl: (containerId: string) => string
 }
 
 const DockerContainerContext = React.createContext<DockerContainerContextType | undefined>(undefined);
@@ -33,16 +33,15 @@ export const DockerContainerProvider = ({
         return api.post(`/api/containers/${config.hostId}/containers/${containerId}/actions/${_action}`, _payload)
     };
 
-    const buildLogStreamUrl = (containerId: string) => {
-        //return `${apiBaseUrl}/api/containers/${config.hostId}/containers/${containerId}/logs/stream?t=${localStorage.getItem("authToken") || ""}`;
-        return `${apiBaseUrl}/api/containers/${config.hostId}/containers/${containerId}/logs/stream`;
+    const getContainerApiEndpointUrl = (containerId: string) => {
+        return `${apiBaseUrl}/api/containers/${config.hostId}/containers/${containerId}`;
     }
 
     return (<DockerContainerContext.Provider value={{
             hostId: config.hostId,
             container,
             handleContainerActionClick: handleContainerActionClick(container.Id),
-            buildLogStreamUrl,
+            getContainerApiEndpointUrl: getContainerApiEndpointUrl,
         }}>
             {children}
         </DockerContainerContext.Provider>

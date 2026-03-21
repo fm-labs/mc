@@ -32,7 +32,7 @@ const logMessageFormatter = (message: string) => {
 };
 
 export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
-    const { container, buildLogStreamUrl } = useDockerContainer()
+    const { container, getContainerApiEndpointUrl } = useDockerContainer()
     const [showDetails, setShowDetails] = React.useState(open || false);
     const [activeTab, setActiveTab] = React.useState("logs");
 
@@ -40,7 +40,7 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
         if (!container || activeTab !== "logs") {
             return null;
         }
-        return buildLogStreamUrl(container?.Id)
+        return getContainerApiEndpointUrl(container?.Id + "/logs/stream")
     }, [activeTab, container]);
 
     return <div className={showDetails ? "py-1 pl-1 bg-accent border-b":"py-1 pl-1"}>
