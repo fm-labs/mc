@@ -30,6 +30,11 @@ case $CMD in
     docker build -t $IMAGE_NAME -f ./Dockerfile .
     ;;
 
+  buildx-image)
+    echo "Building docker image with buildx..."
+    docker buildx build --platform linux/amd64,linux/arm64 -t $IMAGE_NAME -f ./Dockerfile .
+    ;;
+
   run-container)
     echo "Running docker container..."
     docker stop $CONTAINER_NAME || true

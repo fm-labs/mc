@@ -8,7 +8,8 @@ COPY ui/ .
 RUN pnpm run build
 
 
-FROM docker.io/library/python:3.14-slim-trixie
+FROM docker.io/library/python:3.14-slim-trixie@sha256:fb83750094b46fd6b8adaa80f66e2302ecbe45d513f6cece637a841e1025b4ca
+
 
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
