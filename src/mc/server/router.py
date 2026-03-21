@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from mc.users import authenticate_user
 from mc.inventory.routes import router as inventory_router
+from mc.plugin.containers.routes import router as containers_router
 from mc.server.routes_rpc import router as rpc_router
 from mc.server.auth import get_current_user
 from mc.util.jwt_util import create_access_token1
@@ -16,16 +17,17 @@ PLUGINS_ENABLED = ["containers"]
 app_router = APIRouter()
 app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
+app_router.include_router(containers_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
 
-for plugin_name in PLUGINS_ENABLED:
-    try:
-        module = __import__(f"mc.plugin.{plugin_name}.routes", fromlist=["router"])
-    except ModuleNotFoundError:
-        continue
-
-    router = getattr(module, "router")
-    if router:
-        app_router.include_router(router, prefix="/api", tags=[plugin_name], dependencies=[Security(get_current_user)])
+# for plugin_name in PLUGINS_ENABLED:
+#     try:
+#         module = __import__(f"mc.plugin.{plugin_name}.routes", fromlist=["router"])
+#     except ModuleNotFoundError:
+#         continue
+#
+#     router = getattr(module, "router")
+#     if router:
+#         app_router.include_router(router, prefix="/api", tags=[plugin_name], dependencies=[Security(get_current_user)])
 
 
 @app_router.get("/api/info", tags=["system"])

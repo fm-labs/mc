@@ -9,14 +9,15 @@ import logging
 import os
 from contextlib import AsyncExitStack, asynccontextmanager
 
+import uvicorn
 from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+import mc.include # do not remove
 from mc import config
-#from mc.db.redis import get_aioredis_client
 from mc.mcp.app import mcp as mcp_app
 from mc.mcp.fastmcp_helper import init_mcp_http_app
 from mc.plugin.containers.manager import bootstrap_container_connection_manager
@@ -25,6 +26,7 @@ from mc.server.router import app_router
 from mc.setup import setup_admin_auth
 
 logging.basicConfig(level=logging.DEBUG)
+
 
 # Load MCP server app with specified transport
 mcp_enabled = os.getenv("MCP_ENABLED", "false").lower() == "true"
@@ -41,6 +43,7 @@ async def lifespan(main_app: FastAPI):
     async with AsyncExitStack() as stack:
         #main_app.state.redis = get_aioredis_client()
         main_app.state.ccm = bootstrap_container_connection_manager()
+        #main_app.state.inventory_storage = get_inventory_storage_instance()
 
         if mcp_enabled:
             # also enter the mounted app's lifespan:
@@ -124,3 +127,6 @@ default_error_responses = {
 }
 
 app.include_router(app_router, responses=default_error_responses)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=5000)

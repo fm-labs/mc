@@ -1,0 +1,44 @@
+FROM python:3.14-alpine
+
+RUN apk update && apk add --no-cache \
+    bash \
+    docker-cli \
+    docker-compose \
+    openssl \
+    git \
+    curl \
+    rsync \
+    iputils \
+    libc-utils \
+    nginx \
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Working directory
+WORKDIR /app
+
+# Install python dependencies
+COPY ./pyproject.toml ./uv.lock /app/
+RUN uv sync --no-cache-dir --frozen --no-install-project --no-dev
+
+# Copy the rest of the files
+COPY ./src /app/src
+COPY ./resources /app/resources
+
+# Environment variables
+ENV MC_ALPINE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src
+
+ENV RESOURCES_DIR=/app/resources
+ENV DATA_DIR=/opt/mc
+ENV CONFIG_DIR=/opt/mc/etc
+
+
+CMD ["uv", "run", "--app-dir", "/app/src", "--host", "0.0.0.0", "--port", "3080", "server:app"]
+USER app
+EXPOSE 3080
+

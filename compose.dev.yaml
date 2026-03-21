@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: "mc:latest"
+    image: "mc:dev"
     ports:
       - "3080:3080" # Nginx
       - "3443:3443" # Nginx
@@ -36,16 +36,16 @@ services:
       #- mongodb
     develop:
       watch:
-        - action: sync+exec
-          path: ./src
-          target: /app/src
-          ignore:
-            - "__pycache__/"
-            - "*.pyc"
-            - "*.egg-info/"
-            - "x*.py"
-          exec:
-            command: ["supervisorctl", "restart", "all"]
+        #- action: sync+exec
+        #  path: ./src
+        #  target: /app/src
+        #  ignore:
+        #    - "__pycache__/"
+        #    - "*.pyc"
+        #    - "*.egg-info/"
+        #    - "x*.py"
+        #  exec:
+        #    command: ["supervisorctl", "restart", "all"]
         - action: sync
           path: ./resources
           target: /app/resources

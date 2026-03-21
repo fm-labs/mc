@@ -2,6 +2,7 @@ import logging
 from rich.logging import RichHandler
 import click
 
+import mc.include # do not remove
 from mc.cli.apps import apps
 
 logging.basicConfig(
@@ -18,6 +19,7 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
 
 @click.group()
 @click.pass_context

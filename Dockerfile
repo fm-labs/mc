@@ -8,8 +8,32 @@ COPY ui/ .
 RUN pnpm run build
 
 
-FROM docker.io/library/python:3.14-slim-trixie@sha256:fb83750094b46fd6b8adaa80f66e2302ecbe45d513f6cece637a841e1025b4ca
+FROM python:3.14-alpine AS builder
+WORKDIR /builder
 
+# Install build dependencies for pyinstaller
+RUN apk add --no-cache \
+    bash \
+    build-base \
+    python3-dev
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Install python dependencies
+COPY ./pyproject.toml ./uv.lock /builder/
+RUN uv sync --no-cache-dir --frozen --no-install-project --no-dev
+
+# Copy the rest of the files
+COPY ./src /builder/src
+COPY ./build_bin.sh /builder/build_bin.sh
+RUN ls -la /builder
+RUN mkdir -p ./build && mkdir -p ./dist && \
+    chmod +x /builder/build_bin.sh && \
+    bash /builder/build_bin.sh
+
+
+
+FROM alpine:latest
 
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
@@ -19,71 +43,89 @@ LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.source="https://github.com/fm-labs/mc" \
     org.opencontainers.image.documentation="https://github.com/fm-labs/mc"
 
-# Environment variables
-ENV PATH="/app/.venv/bin:$PATH"
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app/src
+# Set a non-root user
+RUN addgroup --gid 33333 -S app && \
+    adduser --uid 33333 -S app -G app && \
+    adduser app root # to allow docker socket access
 
-ENV RESOURCES_DIR=/app/resources
-ENV DATA_DIR=/opt/mc
-ENV CONFIG_DIR=/opt/mc/etc
 
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
-#ENV UV_COMPILE_BYTECODE=1
-
-# Ref: https://docs.astral.sh/uv/guides/integration/docker/#caching
-ENV UV_LINK_MODE=copy
-
-# Install system dependencies
-RUN apt update && apt install -yy \
-    htop \
-    procps \
-    bash \
-    curl \
-    git \
-    openssh-client \
+RUN apk update && apk add --no-cache \
+    file \
+    openssh \
     autossh \
+    bash \
     supervisor \
-    nginx \
+    docker-cli \
+    docker-compose \
     podman \
     openssl \
+    git \
+    curl \
     rsync \
-    iputils-ping \
+    iputils \
+    libc-utils \
+    nginx \
+    aws-cli \
     ca-certificates \
-    awscli \
-    redis-server \
-    && install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
-    && chmod a+r /etc/apt/keyrings/docker.asc \
-    && . /etc/os-release \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $VERSION_CODENAME stable" \
-      > /etc/apt/sources.list.d/docker.list \
-    && apt update \
-    && apt install -y --no-install-recommends \
-      docker-ce-cli \
-      docker-compose-plugin \
-    && apt clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/cache/apk/*
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Working directory
-WORKDIR /app
 
-# Install python dependencies
-COPY ./pyproject.toml ./uv.lock /app/
-RUN uv sync --no-cache-dir --frozen --no-install-project --no-dev
+# pre-create a directory for the SSH agent socket
+#RUN mkdir -p /ssh-agent && chown -R app:app /ssh-agent
+#ENV SSH_AUTH_SOCK=/ssh-agent/agent.sock
 
-# Copy the rest of the files
-COPY ./src /app/src
+# Touch and own /var/run/podman.sock
+#RUN touch /var/run/podman.sock && chown app:app /var/run/podman.sock
+
+# Prepare /etc/ssh/ssh_config
+#RUN echo "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" >> /etc/ssh/ssh_config && \
+#    chown app:app /etc/ssh/ssh_config && \
+#    chmod 644 /etc/ssh/ssh_config
+
+# Prepare /home/app/.ssh directory
+#RUN mkdir -p /home/app/.ssh && chown -R app:app /home/app/.ssh && chmod 700 /home/app/.ssh
+
+# Copy binaries
+COPY --from=builder /builder/dist/bin/* /usr/bin/
 COPY ./resources /app/resources
 
+# UI
+COPY --from=ui-builder /builder/dist/ /var/www/html/
+
+# Nginx configuration
+COPY ./container/nginx/site.default.conf /etc/nginx/http.d/default.conf
+
+# Supervisor
+COPY ./container/supervisord.conf /etc/supervisord.conf
+COPY ./container/supervisor/* /etc/supervisor.d/
+
+# Set file and directory permissions
+RUN mkdir -p /app && \
+    mkdir -p /app/config && \
+    chown -R app:app /app && \
+    mkdir -p /opt/mc && \
+    chown -R app:app /opt/mc && \
+    mkdir -p /var/log/supervisor && \
+    chown -R app:app /var/log/supervisor && \
+    chmod -R 755 /var/log/supervisor && \
+    chown -R app:app /run && \
+    mkdir -p /etc/nginx/ssl/ && \
+    mkdir -p /var/log/nginx/ && \
+    mkdir -p /var/lib/nginx/logs && \
+    touch /var/lib/nginx/logs/error.log && \
+    touch /var/lib/nginx/logs/access.log && \
+    chown -R app:app /var/lib/nginx/logs/error.log && \
+    chown -R app:app /var/lib/nginx/logs/access.log && \
+    chown -R app:app /var/lib/nginx /var/lib/nginx/logs /run/nginx /etc/nginx/ssl && \
+    chmod +x /usr/bin/*
+
+
 # Entry point script
-COPY ./container/entrypoint.sh /entrypoint
-RUN ["chmod", "+x", "/entrypoint"]
-ENTRYPOINT ["/entrypoint"]
+COPY ./container/entrypoint.sh /usr/bin/entrypoint
+RUN ["chmod", "+x", "/usr/bin/entrypoint"]
+ENTRYPOINT ["/usr/bin/entrypoint"]
 
 # Healthcheck
 COPY ./container/healthcheck.sh /usr/bin/healthcheck
@@ -91,51 +133,14 @@ RUN ["chmod", "+x", "/usr/bin/healthcheck"]
 HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
   CMD ["/usr/bin/healthcheck"]
 
-# Create a non-root user and group and set permissions for app and home directory
-RUN groupadd --gid 33333 app && useradd --uid 33333 -g app app && \
-    usermod -aG root app && \
-    mkdir -p /app && \
-    mkdir -p /home/app && \
-    mkdir -p /var/log/supervisor && \
-    mkdir -p /opt/mc && \
-    chown -R app:app /app && \
-    chown -R app:app /home/app && \
-    chown -R app:app /var/log/supervisor && \
-    chmod -R 755 /var/log/supervisor && \
-    chown -R app:app /run && \
-    chown app:app /opt/mc
+# Environment variables
+ENV MC_ALPINE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/src
 
-# SSH - Prepare /etc/ssh/ssh_config
-#RUN echo "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" >> /etc/ssh/ssh_config && \
-#    chown app:app /etc/ssh/ssh_config && \
-#    chmod 644 /etc/ssh/ssh_config
-RUN mkdir -p /home/app/.ssh && chown -R app:app /home/app/.ssh && chmod 700 /home/app/.ssh
-
-# SSHAgent - pre-create a directory for the SSH agent socket
-RUN mkdir -p /ssh-agent && chown -R app:app /ssh-agent
-ENV SSH_AUTH_SOCK=/ssh-agent/agent.sock
-
-# Supervisor
-COPY ./container/supervisord.conf /etc/supervisord.conf
-COPY ./container/supervisor/* /etc/supervisor.d/
-
-# Nginx
-COPY ./container/nginx/* /etc/nginx/sites-available/
-RUN mkdir -p /etc/nginx/ssl/ && \
-    mkdir -p /var/log/nginx/ && \
-    chown -R app:app /var/lib/nginx /var/log/nginx /etc/nginx/ssl /etc/nginx/sites-enabled && \
-    ln -sf /etc/nginx/sites-available/site.default.conf /etc/nginx/sites-enabled/default.conf && \
-    ln -sf /etc/nginx/sites-available/site.ssl.conf /etc/nginx/sites-enabled/site.ssl.conf
-
-# Redis
-RUN mkdir -p /redis && chown app:redis /redis
-COPY ./container/redis/redis.conf /etc/redis/redis.conf
-RUN chown app:redis /etc/redis/redis.conf
-RUN usermod -aG redis app
-
-# UI
-# Copy from the builder stage and configure nginx
-COPY --from=ui-builder /builder/dist/ /var/www/html/
+ENV RESOURCES_DIR=/app/resources
+ENV DATA_DIR=/opt/mc
+ENV CONFIG_DIR=/opt/mc/etc
 
 CMD ["supervisor"]
 USER app
@@ -147,3 +152,4 @@ EXPOSE 3443
 #EXPOSE 5000
 # Flower port
 #EXPOSE 5555
+
