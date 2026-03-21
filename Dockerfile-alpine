@@ -93,8 +93,8 @@ RUN chown -R app:app /app
 
 # Entry point script
 COPY ./container/entrypoint.sh /entrypoint
-RUN ["chmod", "+x", "/entrypoint"]
-ENTRYPOINT ["/entrypoint"]
+RUN ["chmod", "+x", "/usr/bin/entrypoint"]
+ENTRYPOINT ["/usr/bin/entrypoint"]
 
 # Healthcheck
 COPY ./container/healthcheck.sh /usr/bin/healthcheck
