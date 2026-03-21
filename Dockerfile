@@ -32,8 +32,7 @@ RUN mkdir -p ./build && mkdir -p ./dist && \
     bash /builder/build_bin.sh
 
 
-
-FROM alpine:latest
+FROM alpine:3.23
 
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
