@@ -6,7 +6,7 @@ import anyio
 from docker.models.containers import Container
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
-from fastapi.params import Query, Path
+from fastapi.params import Query, Path, Body
 from pydantic import BaseModel
 from starlette.concurrency import iterate_in_threadpool
 from starlette.requests import Request, ClientDisconnect
@@ -329,6 +329,19 @@ def get_docker_image(alias: str, image_id: str, client=Depends(dep_container_con
         image = client.images.get(image_id)
         return jsonable_encoder(image.attrs)
     return cached_fn(f"containers_{alias}_image_{image_id}", fetch_image_details, ttl=CACHE_TTL)()
+
+
+class PullImageRequest(BaseModel):
+    image: str
+
+@router.post("/containers/{alias}/images/pull")
+def pull_docker_image(alias: str, body: PullImageRequest, client=Depends(dep_container_connection)) -> dict:
+    try:
+        # todo - this can take a long time, make it async and stream progress
+        pulled_image = client.images.pull(body.image)
+        return jsonable_encoder(pulled_image.attrs)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/containers/{alias}/volumes")

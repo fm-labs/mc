@@ -23,7 +23,7 @@ export const DockerHostsGridItem = ({host}: {host: any}) => {
             <Button asChild variant={"outline"}>
                 <div>
                     <DockerHostStatus />
-                    <Link to={`${host.name}`}>{summary ? "Connected" : "Disconnected"}</Link>
+                    <Link to={`${host.name}/container`}>{summary ? "Connected" : "Disconnected"}</Link>
                 </div>
             </Button>
         </div>
@@ -42,7 +42,7 @@ export const DockerHostsGrid = () => {
 
     return (
         <div>
-            <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 md:grid-cols-2 lg:grid-cols-3">
+            <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 md:grid-cols-1 lg:grid-cols-2">
                 {hosts && hosts.length > 0 && hosts.map((host) => (
                     <ContainerHostProvider host={host} key={host.id}>
                         <DockerHostsGridItem host={host} />

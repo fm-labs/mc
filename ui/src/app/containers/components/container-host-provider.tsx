@@ -22,6 +22,7 @@ type ContainerHostContextType = {
     fetchContainers: (force?: boolean) => Promise<any>,
     fetchImages: (force?: boolean) => Promise<any>,
     fetchVolumes: (force?: boolean) => Promise<any>,
+    pullImage: (imageName: string) => Promise<void>,
     autorefreshInterval: number,
     setAutoRefreshInterval: (interval: number) => void,
     error?: string | null,
@@ -96,6 +97,21 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
         return await fetchContainerData("volumes", force, 120000);
     }, [fetchContainerData])
 
+    const pullImage = React.useCallback(async (imageName: string) => {
+        try {
+            if (!config || config.hostId === undefined || config.hostId === null) {
+                throw new Error("No hostId configured");
+            }
+            const hostId = config.hostId;
+            await api.post(`/api/containers/${hostId}/images/pull`, { image: imageName });
+            // Refresh images and summary after pulling
+            await Promise.all([fetchImages(true), fetchSummary(true)]);
+        } catch (error) {
+            console.error("Error pulling image:", error);
+            throw error;
+        }
+    }, [config, api, fetchImages, fetchSummary])
+
     // const updateAll = React.useCallback(async (force?: boolean) => {
     //     await Promise.all([
     //         //fetchInfo(),
@@ -154,6 +170,7 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
             fetchContainers,
             fetchImages,
             fetchVolumes,
+            pullImage,
             autorefreshInterval,
             setAutoRefreshInterval,
             error

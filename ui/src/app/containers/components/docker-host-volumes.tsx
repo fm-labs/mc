@@ -3,6 +3,7 @@ import {useContainerHost} from "@/app/containers/components/container-host-provi
 import {ColumnDef} from "@tanstack/react-table";
 import {DataTableGeneric} from "@/components/data-table/data-table-generic.tsx";
 import Data from "@/components/data.tsx";
+import DockerHostHeader from "@/app/containers/components/docker-host-header.tsx";
 
 const DockerHostVolumes = () => {
     const { summary, fetchVolumes } = useContainerHost()
@@ -76,7 +77,8 @@ const DockerHostVolumes = () => {
 
     return (
         <div>
-            <h3 className={"font-bold text-lg"}>Volumes</h3>
+            <DockerHostHeader title={"Volumes"}/>
+
             {volumes?.length === 0 ? (
                 <p>No volumes found.</p>
             ) : (

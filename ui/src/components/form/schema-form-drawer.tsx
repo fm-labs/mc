@@ -13,7 +13,7 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 
-type FormDrawerProps = {
+type SchemaFormDrawerProps = {
     open: boolean
     onOpenChange?: (open: boolean) => void
     onSubmit: (values: any) => void
@@ -25,7 +25,7 @@ type FormDrawerProps = {
     initialValues?: any
 }
 
-export function FormDrawer({
+export function SchemaFormDrawer({
                                open,
                                onOpenChange,
                                onSubmit,
@@ -35,7 +35,7 @@ export function FormDrawer({
                                title,
                                description,
                                initialValues,
-                           }: FormDrawerProps) {
+                           }: SchemaFormDrawerProps) {
 
     const [formData, setFormData] = React.useState<any>(initialValues || {});
 

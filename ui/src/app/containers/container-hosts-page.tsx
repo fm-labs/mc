@@ -5,7 +5,6 @@ import ContainersLayout from "@/components/layout/containers-layout.tsx";
 import { ContainerHostsProvider } from "@/app/containers/components/container-hosts-provider.tsx";
 import DockerHostsKitchensink from "@/app/containers/components/docker-host-kitchensink.tsx";
 
-
 const ContainerHostsPage = () => {
     return <ContainerHostsProvider>
         <ContainersLayout>

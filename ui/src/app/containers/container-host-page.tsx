@@ -18,7 +18,6 @@ const ContainerHost = ({hostId, view}: {hostId: string, view?: string}) => {
 
     return <div>
         <ContainerHostProvider host={host}>
-            <DockerHostHeader subtitle={view}/>
             {!view || view === "container" && <DockerHostContainers/>}
             {view === "images" && <DockerHostImages/>}
             {view === "volumes" && <DockerHostVolumes/>}

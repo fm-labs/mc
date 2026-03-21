@@ -18,6 +18,7 @@ import { Layers } from "lucide-react";
 import DockerContainerInspect from "@/app/containers/components/docker-container-inspect.tsx";
 import DockerContainerUptime from "@/app/containers/components/docker-container-uptime.tsx";
 import {EventStreamReader} from "@/components/event-stream-reader.tsx";
+import DockerHostHeader from "@/app/containers/components/docker-host-header.tsx";
 
 const logMessageFormatter = (message: string) => {
     try {
@@ -144,6 +145,7 @@ const DockerHostContainers = () => {
 
     return (
         <div>
+            <DockerHostHeader title={"Container"}/>
             {Object.entries(groupedData).map(([group, _containers]: [string, any]) => {
                 return (<div key={group} className={"mb-2"}>
                     <h3 className={"text-muted-foreground font-bold border-l-4 pl-1"}>
