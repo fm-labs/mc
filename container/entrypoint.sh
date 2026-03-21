@@ -106,8 +106,8 @@ case $CMD in
     echo "Starting API server: Waiting for other services ..."
     sleep 5 # wait for other services to be ready
     echo "Starting API server: Starting on 0.0.0.0:5000 ..."
-    #exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
-    exec /usr/bin/mc-srv
+    exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
+    #exec /usr/bin/mc-srv
     ;;
 
   nginx)
@@ -243,15 +243,15 @@ case $CMD in
 
   mcp-server-stdio)
     export MCP_TRANSPORT=stdio
-    #exec uv run --directory /app src/mcp_server.py
-    exec /usr/bin/mc-mcp
+    exec uv run --directory /app src/mcp_server.py
+    #exec /usr/bin/mc-mcp
     ;;
 
   mcp-server-http)
     export MCP_TRANSPORT=streamable-http
     export MCP_HOST=0.0.0.0
-    #exec uv run --directory /app src/mcp_server.py
-    exec /usr/bin/mc-mcp
+    exec uv run --directory /app src/mcp_server.py
+    #exec /usr/bin/mc-mcp
     ;;
 
   help)

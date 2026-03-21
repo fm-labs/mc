@@ -8,40 +8,31 @@ COPY ui/ .
 RUN pnpm run build
 
 
-FROM python:3.14-alpine AS builder
-WORKDIR /builder
+#FROM python:3.14-alpine AS builder
+#WORKDIR /builder
+#
+## Install build dependencies for pyinstaller
+#RUN apk add --no-cache \
+#    bash \
+#    build-base \
+#    python3-dev
+## Install uv
+#COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+#
+## Install python dependencies
+#COPY ./pyproject.toml ./uv.lock /builder/
+#RUN uv sync --no-cache-dir --frozen --no-install-project --no-dev
+#
+## Copy the rest of the files
+#COPY ./src /builder/src
+#COPY ./build_bin.sh /builder/build_bin.sh
+#RUN ls -la /builder
+#RUN mkdir -p ./build && mkdir -p ./dist && \
+#    chmod +x /builder/build_bin.sh && \
+#    bash /builder/build_bin.sh
 
-# Install build dependencies for pyinstaller
-RUN apk add --no-cache \
-    bash \
-    build-base \
-    python3-dev
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Install python dependencies
-COPY ./pyproject.toml ./uv.lock /builder/
-RUN uv sync --no-cache-dir --frozen --no-install-project --no-dev
-
-# Copy the rest of the files
-COPY ./src /builder/src
-COPY ./build_bin.sh /builder/build_bin.sh
-RUN ls -la /builder
-RUN mkdir -p ./build && mkdir -p ./dist && \
-    chmod +x /builder/build_bin.sh && \
-    bash /builder/build_bin.sh
-
-
-FROM alpine:3.23
-
-LABEL org.opencontainers.image.vendor="fmlabs" \
-    org.opencontainers.image.title="mission control 🚀" \
-    org.opencontainers.image.description="Container orchestration tool" \
-    org.opencontainers.image.version="v2.0.0" \
-    org.opencontainers.image.url="https://github.com/fm-labs/mc" \
-    org.opencontainers.image.source="https://github.com/fm-labs/mc" \
-    org.opencontainers.image.documentation="https://github.com/fm-labs/mc"
-
+FROM python:3.14-alpine
 
 # Set a non-root user
 RUN addgroup --gid 33333 -S app && \
@@ -79,8 +70,14 @@ RUN apk update && apk add --no-cache \
 # Prepare /home/app/.ssh directory
 #RUN mkdir -p /home/app/.ssh && chown -R app:app /home/app/.ssh && chmod 700 /home/app/.ssh
 
-# Copy binaries
-COPY --from=builder /builder/dist/bin/* /usr/bin/
+# Install python dependencies
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+WORKDIR /app
+COPY ./pyproject.toml ./uv.lock /app/
+RUN uv sync --no-cache-dir --frozen --no-install-project --no-dev
+
+# Copy the rest of the files
+COPY ./src /app/src
 COPY ./resources /app/resources
 
 # UI
@@ -110,8 +107,7 @@ RUN mkdir -p /app && \
     touch /var/lib/nginx/logs/access.log && \
     chown -R app:app /var/lib/nginx/logs/error.log && \
     chown -R app:app /var/lib/nginx/logs/access.log && \
-    chown -R app:app /var/lib/nginx /var/lib/nginx/logs /run/nginx /etc/nginx/ssl && \
-    chmod +x /usr/bin/*
+    chown -R app:app /var/lib/nginx /var/lib/nginx/logs /run/nginx /etc/nginx/ssl
 
 
 # Entry point script
@@ -145,3 +141,10 @@ EXPOSE 3443
 # Flower port
 #EXPOSE 5555
 
+LABEL org.opencontainers.image.vendor="fmlabs" \
+    org.opencontainers.image.title="mission control 🚀" \
+    org.opencontainers.image.description="Container orchestration tool" \
+    org.opencontainers.image.version="v2.0.0" \
+    org.opencontainers.image.url="https://github.com/fm-labs/mc" \
+    org.opencontainers.image.source="https://github.com/fm-labs/mc" \
+    org.opencontainers.image.documentation="https://github.com/fm-labs/mc"

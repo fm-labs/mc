@@ -36,16 +36,16 @@ services:
       #- mongodb
     develop:
       watch:
-        #- action: sync+exec
-        #  path: ./src
-        #  target: /app/src
-        #  ignore:
-        #    - "__pycache__/"
-        #    - "*.pyc"
-        #    - "*.egg-info/"
-        #    - "x*.py"
-        #  exec:
-        #    command: ["supervisorctl", "restart", "all"]
+        - action: sync+exec
+          path: ./src
+          target: /app/src
+          ignore:
+            - "__pycache__/"
+            - "*.pyc"
+            - "*.egg-info/"
+            - "x*.py"
+          exec:
+            command: ["supervisorctl", "restart", "all"]
         - action: sync
           path: ./resources
           target: /app/resources
