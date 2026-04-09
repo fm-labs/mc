@@ -52,8 +52,10 @@ RUN apk update && apk add --no-cache \
     nginx \
     ca-certificates \
     docker-cli \
+    docker-cli-buildx \
     docker-compose \
     aws-cli \
+    openssh-client \
     && rm -rf /var/cache/apk/*
 
 
