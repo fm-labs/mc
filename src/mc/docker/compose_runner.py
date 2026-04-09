@@ -1,6 +1,7 @@
 import abc
 import os
 import subprocess
+import logging
 from pathlib import Path
 
 from docker.constants import DEFAULT_TIMEOUT_SECONDS
@@ -11,10 +12,12 @@ from mc.util.rsync_helper import rsync_execute
 from mc.util.sshpy_helper import ssh_execute_command, ssh_params_from_url, ssh_connect
 from mc.util.subprocess_helper import rx_subprocess
 
+logger = logging.getLogger(__name__)
+
 
 def get_ssh_client(dest, ssh_cfg: dict) -> SSHClient:
     ssh_params = ssh_params_from_url(dest, ssh_params=ssh_cfg, use_ssh_config=False)
-    print(f"SSH params: {ssh_params}")
+    logger.info(f"SSH params: {ssh_params}")
 
     ssh_hostname = ssh_params.get("hostname")
     ssh_port = ssh_params.get("port")
@@ -27,23 +30,23 @@ def get_ssh_client(dest, ssh_cfg: dict) -> SSHClient:
                              #password=ssh_password, key_filename=ssh_key_file, key_passphrase=ssh_key_pass)
         if not client:
             raise ConnectionError(f"SSH client failed to connect to {dest}")
-        print(f"SSH client connected to {dest}")
+        logger.info(f"SSH client connected to {dest}")
         return client
     except Exception as e:
         # print stack trace
         import traceback
         traceback.print_exc()
 
-        print(f"SSH client connection error: {e}")
+        logger.info(f"SSH client connection error: {e}")
         raise
 
 def run_local_hook_script(local_compose_dir: Path, script_name: str) -> tuple[bytes, bytes, int]:
     stdout, stderr, rc = "", "", 0 # default success
     setup_script = local_compose_dir / script_name
     if setup_script.exists() and setup_script.is_file():
-        print(f"Found setup.sh script at {setup_script}, executing on remote host...")
+        logger.info(f"Found setup.sh script at {setup_script}, executing on remote host...")
         cmd_str = f"chmod +x setup.sh && ./setup.sh"
-        print(f"Hook command: {cmd_str}")
+        logger.info(f"Hook command: {cmd_str}")
         try:
             stdout, stderr, rc = rx_subprocess(cmd_str, cwd=str(local_compose_dir), shell=True)
         except subprocess.CalledProcessError as e:
@@ -54,9 +57,9 @@ def run_local_hook_script(local_compose_dir: Path, script_name: str) -> tuple[by
         if rc != 0:
             raise RuntimeError(f"{script_name} failed with exit code {rc}")
 
-        print(f"Local Hook script {script_name} exited with code {rc}")
-        print(f"Local Hook script {script_name} STDOUT: {stdout}")
-        print(f"Local Hook script {script_name} STDERR: {stderr}")
+        logger.info(f"Local Hook script {script_name} exited with code {rc}")
+        logger.info(f"Local Hook script {script_name} STDOUT: {stdout}")
+        logger.info(f"Local Hook script {script_name} STDERR: {stderr}")
     return stdout, stderr, rc
 
 
@@ -64,21 +67,21 @@ def run_remote_hook_script(client: SSHClient, remote_compose_dir: str, script_na
     stdout, stderr, rc = "", "", 0 # default success
     try:
         cmd_str = f"cd {remote_compose_dir} && chmod +x {script_name} && bash ./{script_name}"
-        print(f"Remote Hook command: {cmd_str}")
+        logger.info(f"Remote Hook command: {cmd_str}")
         stdout, stderr, rc = ssh_execute_command(client, cmd_str)
-        print(f"{script_name} exited with code {rc}")
+        logger.info(f"{script_name} exited with code {rc}")
         #if rc != 0:
         #    raise RuntimeError(f"Remote hook script {script_name} failed with exit code {rc}")
     except Exception as e:
-        print(f"SSH remote execution error: {e}")
+        logger.info(f"SSH remote execution error: {e}")
         stdout = ""
         stderr = str(e)
         rc = -1
         raise
     finally:
-        print(f"Remote Hook script {script_name} exited with code {rc}")
-        print(f"Remote Hook script {script_name} STDOUT: {stdout}")
-        print(f"Remote Hook script {script_name} STDERR: {stderr}")
+        logger.info(f"Remote Hook script {script_name} exited with code {rc}")
+        logger.info(f"Remote Hook script {script_name} STDOUT: {stdout}")
+        logger.info(f"Remote Hook script {script_name} STDERR: {stderr}")
     return stdout, stderr, rc
 
 
@@ -103,7 +106,7 @@ class DockerComposeStackRunner(abc.ABC):
         Start the stack
         https://docs.docker.com/reference/cli/docker/compose/up/
         """
-        print(f"Starting project {self.project_name}")
+        logger.info(f"Starting project {self.project_name}")
         kwargs['detach'] = True if 'detach' not in kwargs else kwargs['detach']
         kwargs['build'] = False if 'build' not in kwargs else kwargs['build']
         kwargs['force_recreate'] = False if 'force_recreate' not in kwargs else kwargs['force_recreate']
@@ -119,7 +122,7 @@ class DockerComposeStackRunner(abc.ABC):
         Remove the stack
         https://docs.docker.com/reference/cli/docker/compose/down/
         """
-        print(f"COMPOSE DOWN {self.project_name}")
+        logger.info(f"COMPOSE DOWN {self.project_name}")
         kwargs['timeout'] = DEFAULT_TIMEOUT_SECONDS if 'timeout' not in kwargs else kwargs['timeout']
         return self._compose("down", **kwargs)
 
@@ -128,7 +131,7 @@ class DockerComposeStackRunner(abc.ABC):
         Stop the stack
         https://docs.docker.com/reference/cli/docker/compose/stop/
         """
-        print(f"COMPOSE STOP {self.project_name}")
+        logger.info(f"COMPOSE STOP {self.project_name}")
         kwargs['timeout'] = DEFAULT_TIMEOUT_SECONDS if 'timeout' not in kwargs else kwargs['timeout']
         return self._compose("stop", **kwargs)
 
@@ -137,7 +140,7 @@ class DockerComposeStackRunner(abc.ABC):
         Restart the stack.
         https://docs.docker.com/reference/cli/docker/compose/restart/
         """
-        print(f"COMPOSE RESTART {self.project_name}")
+        logger.info(f"COMPOSE RESTART {self.project_name}")
         kwargs['timeout'] = DEFAULT_TIMEOUT_SECONDS if 'timeout' not in kwargs else kwargs['timeout']
         return self._compose("restart", **kwargs)
 
@@ -149,7 +152,7 @@ class DockerComposeStackRunner(abc.ABC):
         This cleans up any resources associated with the stack.
         Removes the project directory.
         """
-        print(f"COMPOSE DELETE {self.project_name}")
+        logger.info(f"COMPOSE DELETE {self.project_name}")
         #return b"COMPOSE DESTROY: No docker-specific destroy actions executed."
         raise NotImplementedError("Delete method must be implemented by subclasses")
 
@@ -207,8 +210,8 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
                 _composecmd.append("--file")
                 _composecmd.append(cf)
             pcmd = _composecmd + [cmd] + kwargs_to_cmdargs(kwargs)
-            print(f"RAW CMD: {pcmd}")
-            print(f"CMD: {' '.join(pcmd)}")
+            logger.info(f"RAW CMD: {pcmd}")
+            logger.info(f"CMD: {' '.join(pcmd)}")
 
             penv = os.environ.copy()
             penv['DOCKER_HOST'] = self.docker_host
@@ -219,15 +222,15 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
             penv['PWD'] = working_dir
 
             p1 = subprocess.run(pcmd, cwd=working_dir, env=penv, capture_output=True, check=True)
-            print("STDOUT", p1.stdout)
-            print("STDERR", p1.stderr)
+            logger.info("STDOUT", p1.stdout)
+            logger.info("STDERR", p1.stderr)
 
             return p1.stdout, p1.stderr, p1.returncode
         except subprocess.CalledProcessError as e:
-            print("COMPOSE COMMAND ERROR", e.stderr)
+            logger.exception("COMPOSE COMMAND ERROR", exc_info=True)
             raise RuntimeError(f"Compose command failed with exit code {e.returncode}: {e.stderr.decode('utf-8')}")
         except Exception as e:
-            print("COMPOSE RUN ERROR", str(e))
+            logger.info("COMPOSE RUN ERROR", exc_info=True)
             raise e
 
 
@@ -288,7 +291,7 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
                 _composecmd.append("--file")
                 _composecmd.append(remote_working_dir + "/" +  cf)
             pcmd = _composecmd + [cmd] + kwargs_to_cmdargs(kwargs)
-            print(f"[rcompose] RAW CMD: {pcmd}")
+            logger.info(f"[rcompose] RAW CMD: {pcmd}")
 
             # add override compose files from remote dir
 
@@ -308,17 +311,17 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
             try:
                 #cmd_str = f"cd {remote_working_dir} && " + " ".join(pcmd)
                 cmd_str = " ".join(pcmd)
-                print(f"[rcompose] [{self.docker_host}] Executing command: {cmd_str}")
+                logger.info(f"[rcompose] [{self.docker_host}] Executing command: {cmd_str}")
                 stdout, stderr, rc = ssh_execute_command(self.ssh_client, cmd_str, environment=renv)
             except Exception as e:
-                print(f"[rcompose] SSH command error: {e}")
+                logger.exception(f"[rcompose] SSH command error: {e}", exc_info=True)
                 raise
             finally:
-                print(f"[rcompose] Command exited with code {rc}")
-                print(f"[rcompose] STDOUT: {stdout}")
-                print(f"[rcompose] STDERR: {stderr}")
+                logger.info(f"[rcompose] Command exited with code {rc}")
+                logger.info(f"[rcompose] STDOUT: {stdout}")
+                logger.info(f"[rcompose] STDERR: {stderr}")
             return stdout, stderr, rc
         except Exception as e:
-            print(e)
+            logger.exception(f"[rcompose] Error running compose command on remote host: {e}", exc_info=True)
             raise e
 

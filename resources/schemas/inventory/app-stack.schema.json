@@ -56,6 +56,10 @@
               "description": "Password for repository authentication."
             }
           }
+        },
+        "ssh_key_id": {
+          "type": "string",
+          "description": "ID of the SSH key to use for repository authentication, if applicable."
         }
       },
       "required": [

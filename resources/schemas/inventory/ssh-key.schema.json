@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "version": "1.0.0",
+  "title": "SSH Key",
+  "description": "SSH Key inventory item",
+  "properties": {
+    "label": {
+      "type": "string",
+      "title": "Key Label",
+      "description": "A label to identify the SSH key"
+    }
+  },
+  "required": [
+    "label"
+  ]
+}

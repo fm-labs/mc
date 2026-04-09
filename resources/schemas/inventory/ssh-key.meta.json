@@ -1,0 +1,40 @@
+{
+  "actions": [
+    {
+      "id": "set_content",
+      "name": "Set Key Content",
+      "type": "form",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "title": "Value",
+            "description": "The content of the variable"
+          },
+          "passphrase": {
+            "type": "string",
+            "title": "Passphrase",
+            "description": "The passphrase for the SSH key, if applicable"
+          }
+        },
+        "required": [
+          "content"
+        ]
+      },
+      "uiSchema": {
+        "content": {
+          "ui:widget": "textarea"
+        },
+        "passphrase": {
+          "ui:widget": "password"
+        }
+      }
+    },
+    {
+      "id": "clear_content",
+      "name": "Clear Key Content",
+      "type": "action"
+    }
+  ]
+}

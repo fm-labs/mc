@@ -7,11 +7,11 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "force": {
+          "wipe_working_dir": {
             "type": "boolean",
             "default": false,
-            "description": "Force synchronization even if there are no detected changes.",
-            "title": "Force"
+            "description": "Wipe the working directory before syncing.",
+            "title": "Wipe Working Directory"
           }
         }
       }

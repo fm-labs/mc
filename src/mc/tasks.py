@@ -15,7 +15,7 @@ def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=
     msg = ""
     if not os.path.exists(checkout_dir) or not os.path.isdir(checkout_dir):
         # Clone the repository
-        logger.info(f"Git repo {repo_url} does not exist at {checkout_dir}. Cloning...")
+        logger.info(f"Git repo {repo_url} does not exist at {checkout_dir}. Cloning using key {private_key_file}...")
         try:
             # git.Repo.clone_from(repo_url, stack.project_dir)
             stdoutb, stderrb, rc = git_clone(repo_url,

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 import logging
+import shutil
 
 import dotenv
 import yaml
@@ -256,6 +257,7 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
     """
     logger.info(f"Syncing app stack '{item.get('id')}' with action_params: {action_params}")
     background = action_params.get("background", False)
+    wipe_working_dir = action_params.get("wipe_working_dir", False)
 
     app = AppStackItem.from_item_dict(item)
     if app.repository:
@@ -264,8 +266,9 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
         if not repo_url:
             raise ValueError(f"App stack '{app.id}' has repository defined but no URL for sync")
 
+        # todo add support for ssh key auth by looking up the key file path from the inventory based on a reference in the repository config
         sschema, surl = repo_url.split("://", 1)
-        if sschema in ["http", "https"]:
+        if sschema in ["http", "https", "ssh"]:
             # source_ssh_key_file = None
             # source_ssh_key_name = props.get("source_ssh_key_name")
             # if source_ssh_key_name is not None and source_ssh_key_name != "":
@@ -279,10 +282,19 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             checkout_path.parent.mkdir(parents=True, exist_ok=True)
 
             is_private = app.repository.get("private", False)
-            if is_private and "@" not in repo_url:
+            private_key_file = None
+            if is_private and sschema.startswith("http") and "@" not in repo_url:
                 repo_auth_username = app.repository.get("auth", {}).get("username", "")
                 repo_auth_password = app.repository.get("auth", {}).get("password", "")
                 repo_url = repo_url.replace("://", f"://{repo_auth_username}:{repo_auth_password}@", 1)
+            elif is_private and sschema == "ssh":
+                repo_ssh_key_id = app.repository.get("ssh_key_id", "")
+                if repo_ssh_key_id:
+                    repo_ssh_key_file = f"{DATA_DIR}/etc/ssh_keys/{repo_ssh_key_id}.pem"
+                    if not os.path.exists(repo_ssh_key_file):
+                        raise FileNotFoundError(
+                            f"SSH key file '{repo_ssh_key_file}' for repo SSH key ID '{repo_ssh_key_id}' not found")
+                    private_key_file = repo_ssh_key_file
 
             # if background:
             #    task = clone_or_update_git_repo.delay(repo_url, str(checkout_path.resolve()))
@@ -290,17 +302,15 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             # else:
 
             logger.info(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
-            _repo_url = os.path.expandvars(repo_url)
-            # todo add support for ssh key auth by looking up the key file path from the inventory based on a reference in the repository config
-            logger.debug(f"Expanded repository URL: '{_repo_url}'")
+            repo_url = os.path.expandvars(repo_url)
+            logger.debug(f"Expanded repository URL: '{repo_url}'")
             # print(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
 
-            clone_result = clone_or_update_git_repo(_repo_url, str(checkout_path.resolve()))
+            clone_result = clone_or_update_git_repo(repo_url, str(checkout_path.resolve()), private_key_file=private_key_file)
             if clone_result.get("return_code") != 0:
                 raise ValueError(f"Error syncing repository: {clone_result.get('stderr')}")
 
             # after syncing the template repo, copy the stackfile and related files to the app dir
-            import shutil
             target_dir = app.app_dir_path
             template_dir = checkout_path / repo_path
             if not template_dir.exists() or not template_dir.is_dir():
@@ -308,10 +318,11 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
                     f"Template directory '{template_dir}' does not exist in repository for app stack '{app.id}'")
 
             # wipe the target dir if it exists
-            if target_dir.exists():
+            if target_dir.exists() and target_dir.is_dir() and wipe_working_dir:
                 shutil.rmtree(target_dir)
 
-            shutil.copytree(str(template_dir), str(target_dir))
+            # copy the template directory to the target app directory, overwriting existing files
+            shutil.copytree(str(template_dir), str(target_dir), dirs_exist_ok=True)
 
             # handle_app_stack_action_configure(item, {})
             return {"status": "synced", "app_dir": str(target_dir), "repo_url": repo_url, "repo_path": repo_path}

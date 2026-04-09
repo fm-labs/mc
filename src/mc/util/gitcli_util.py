@@ -1,8 +1,10 @@
 import os
 import subprocess
+import logging
 
 from mc.util.subprocess_util import kwargs_to_cmdargs
 
+logger = logging.getLogger(__name__)
 
 # https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables
 # https://stackoverflow.com/questions/4565700/how-to-specify-the-private-ssh-key-to-use-when-executing-shell-command-on-git
@@ -38,6 +40,7 @@ def git_clone(repo: str, dest: str, **kwargs) -> tuple[bytes, bytes, int]:
     # strip git:// prefix if present
     if repo_url.startswith("git://"):
         repo_url = repo_url[len("git://"):]
+
 
     return git(["clone", repo_url, dest], **kwargs)
 
@@ -140,24 +143,24 @@ def git(cmd: list, working_dir=None, private_key_file=None, timeout=None, **kwar
         #                 k, v = line.split('=', 1)
         #                 penv[k] = v.strip()
 
-        print(f"GIT RAW command: {pcmd}")
-        print(f"GIT command: {' '.join(pcmd)}")
-        print(f"GIT working dir: {working_dir}")
-        print(f"GIT SSH command: {ssh_command}")
-        print(f"GIT Environment: {penv}")
+        logger.info(f"GIT RAW command: {pcmd}")
+        logger.info(f"GIT command: {' '.join(pcmd)}")
+        logger.info(f"GIT working dir: {working_dir}")
+        logger.info(f"GIT SSH command: {ssh_command}")
+        logger.info(f"GIT Environment: {penv}")
 
         proc = subprocess.run(pcmd,
                               cwd=working_dir,
                               env=penv,
                               capture_output=True,
                               timeout=timeout)
-        print("GIT STDOUT", proc.stdout)
-        print("GIT STDERR", proc.stderr)
+        logger.info("GIT STDOUT", proc.stdout)
+        logger.error("GIT STDERR", proc.stderr)
 
         if proc.returncode != 0:
             raise Exception(f"Command exited with non-zero return code: {proc.stderr}")
 
         return proc.stdout, proc.stderr, proc.returncode
     except Exception as e:
-        print(e)
+        logger.exception(f"Error running git command: {e}", exc_info=True)
         raise e
