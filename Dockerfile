@@ -53,6 +53,7 @@ RUN apk update && apk add --no-cache \
     ca-certificates \
     docker-cli \
     docker-compose \
+    aws-cli \
     && rm -rf /var/cache/apk/*
 
 
