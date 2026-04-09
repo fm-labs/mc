@@ -87,6 +87,7 @@ COPY --from=ui-builder /builder/dist/ /var/www/html/
 
 # Nginx configuration
 COPY ./container/nginx/site.default.conf /etc/nginx/http.d/default.conf
+COPY ./container/nginx/site.ssl.conf /etc/nginx/http.d/ssl.conf
 
 # Supervisor
 COPY ./container/supervisord.conf /etc/supervisord.conf
