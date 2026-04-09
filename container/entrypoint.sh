@@ -104,7 +104,7 @@ case $CMD in
 
   api)
     echo "Starting API server: Waiting for other services ..."
-    sleep 5 # wait for other services to be ready
+    sleep 1 # wait for other services to be ready
     echo "Starting API server: Starting on 0.0.0.0:5000 ..."
     exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
     #exec /usr/bin/mc-srv

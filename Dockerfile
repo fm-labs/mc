@@ -43,6 +43,7 @@ RUN addgroup --gid 33333 -S app && \
 RUN apk update && apk add --no-cache \
     file \
     bash \
+    openssl \
     supervisor \
     git \
     curl \
