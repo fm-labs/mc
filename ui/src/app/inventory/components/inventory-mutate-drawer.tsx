@@ -103,7 +103,7 @@ export function InventoryMutateDrawer({
                 onOpenChange(v);
             }}
         >
-            <SheetContent className="flex flex-col overflow-y-scroll">
+            <SheetContent className="flex flex-col overflow-y-scroll w-[40vw] min-w-[40vw]">
                 <SheetHeader className="text-start">
                     <SheetTitle>{isUpdate ? "Update":"Create"} {itemType} Inventory</SheetTitle>
                     <SheetDescription>

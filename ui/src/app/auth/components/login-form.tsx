@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { LoginData } from "@/context/auth-context.tsx";
 import { useApi } from "@/context/api-context.tsx";
-import { GithubIcon } from "lucide-react";
 
 interface LoginFormProps {
     className?: string;
@@ -34,36 +33,18 @@ export function LoginForm({
         if (onChange) {
             onChange({ ...formData, [id]: value });
         }
-        console.log("handleInputChange", { ...formData, [id]: value });
+        //console.log("handleInputChange", { ...formData, [id]: value });
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
-        console.log("handleSubmit", formData);
+        //console.log("handleSubmit", formData);
         if (onSubmit) {
             onSubmit(formData);
         }
     };
-
-    const generateRandomOauthState = (): string => {
-        const array = new Uint32Array(32);
-        window.crypto.getRandomValues(array);
-        return Array.from(array, dec => ('0' + dec.toString(16)).substr(-2)).join('');
-    }
-
-    const requestGithubLogin = async () => {
-        const response = await api.get("/api/auth/login/github");
-        console.log("Github OAuth URL response from API:", response);
-        const { location } = response;
-        console.log("Redirecting to Github OAuth URL from API:", location);
-        if (!location) {
-            console.error("No location URL received from API for Github OAuth");
-            return;
-        }
-        window.location.href = location;
-    }
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
