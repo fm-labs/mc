@@ -121,21 +121,21 @@ case $CMD in
     exec redis-server /etc/redis/redis.conf --protected-mode no --dir /redis
     ;;
 
-  scan)
-    echo "Running various inventory scans..."
-    sleep 60 # wait for other services to be ready
-    uv run /app/src/hostsping.py
-    uv run /app/src/hostsfacts.py all
-    uv run /app/src/hoststunnel.py
-
-    # continuously run the scans every 5 minutes
-    while true; do
-    #  uv run /app/src/hostsping.py
-    #  uv run /app/src/hostsfacts.py all
-    #  uv run /app/src/hoststunnel.py
-      sleep 300
-    done
-    ;;
+#  scan)
+#    echo "Running various inventory scans..."
+#    sleep 60 # wait for other services to be ready
+#    uv run /app/src/hostsping.py
+#    uv run /app/src/hostsfacts.py all
+#    uv run /app/src/hoststunnel.py
+#
+#    # continuously run the scans every 5 minutes
+#    while true; do
+#    #  uv run /app/src/hostsping.py
+#    #  uv run /app/src/hostsfacts.py all
+#    #  uv run /app/src/hoststunnel.py
+#      sleep 300
+#    done
+#    ;;
 
   celery-worker)
     echo "Starting celery worker..."
