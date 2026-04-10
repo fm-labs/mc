@@ -23,10 +23,10 @@ const InventoryActionForm = ({def, item}: {def: InventoryActionDef, item: Invent
     const [taskId, setTaskId] = React.useState<string | null>(null);
 
     const handleFormSubmit = async ({formData}: any) => {
-        console.log("Action Form submitted:", formData);
-        const timeout = def?.timeout || 30000;
+        //console.log("Action Form submitted:", formData);
+        const timeout = def?.timeout || 120000;
         try {
-            const p = api.post(`/api/inventory/${itemType}/${item.id}/action/${def.id}`, formData, { timeout: 60000 })
+            const p = api.post(`/api/inventory/${itemType}/${item.id}/action/${def.id}`, formData, { timeout: timeout })
                 .then((res: any) => {
                     setResponse(res);
                     return res;
