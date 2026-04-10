@@ -153,7 +153,9 @@ const DockerHostContainers = () => {
                         {group}
                     </h3>
                     <ul>
-                        {_containers.map((container: any) => (
+                        {_containers.sort((a: any, b: any) => {
+                            return (a?.Name ?? "").localeCompare(b?.Name ?? "");
+                        }).map((container: any) => (
                             <li key={container.Id}
                                 className={`cursor-pointer border-l-4 hover:border-l-amber-400`}>
                                 <DockerContainerProvider container={container}>
