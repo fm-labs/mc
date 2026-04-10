@@ -16,24 +16,24 @@ load_dotenv(f"{DATA_DIR}/.env")
 load_dotenv(f"{DATA_DIR}/.env.local")
 
 def read_config():
-    configs_path = os.getenv("MC_CONFIG", f"{DATA_DIR}/mc.json")
-    if os.path.exists(configs_path):
-        print(f"Loading config from {configs_path}")
+    config_path = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/mc.json")
+    if os.path.exists(config_path):
+        print(f"Loading config from {config_path}")
         try:
-            with open(configs_path, "r") as f:
-                configs = json.load(f)
-                return configs
+            with open(config_path, "r") as f:
+                config = json.load(f)
+                return config
         except Exception as e:
             print(f"Error reading mc.json: {e}")
     return None
 
-# def write_config(config: dict):
-#     configs_path = os.getenv("MC_CONFIG", f"{DATA_DIR}/mc.json")
-#     try:
-#         with open(configs_path, "w") as f:
-#             json.dump(config, f, indent=4)
-#     except Exception as e:
-#         print(f"Error writing mc.json: {e}")
+def write_config(config: dict):
+    configs_path = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/mc.json")
+    try:
+        with open(configs_path, "w") as f:
+            json.dump(config, f, indent=4)
+    except Exception as e:
+        print(f"Error writing mc.json: {e}")
 
 # def write_dotenv(config: dict):
 #     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
