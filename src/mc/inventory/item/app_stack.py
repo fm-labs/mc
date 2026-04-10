@@ -322,7 +322,14 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
                 shutil.rmtree(target_dir)
 
             # copy the template directory to the target app directory, overwriting existing files
-            shutil.copytree(str(template_dir), str(target_dir), dirs_exist_ok=True)
+            IGNORED_DIRS = [".git", ".github", ".gitlab", ".vscode", ".idea"]
+            def copy_ignore_names(src, names):
+                ignore_list = []
+                for name in names:
+                    if name in IGNORED_DIRS:
+                        ignore_list.append(name)
+                return ignore_list
+            shutil.copytree(str(template_dir), str(target_dir), dirs_exist_ok=True, ignore=copy_ignore_names)
 
             # handle_app_stack_action_configure(item, {})
             return {"status": "synced", "app_dir": str(target_dir), "repo_url": repo_url, "repo_path": repo_path}
