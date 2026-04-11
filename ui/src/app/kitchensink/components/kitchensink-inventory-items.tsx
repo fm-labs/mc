@@ -116,7 +116,7 @@ const KitchensinkInventoryItems = () => {
             </div>
             {items && items.length > 0 ? (
                 <ul className={"_sm:columns-1 _md:columns-1 _lg:columns-1 _xl:columns-3 gap-2"}>
-                    {items.map((item) => (
+                    {items.sort((a, b) => a.id.localeCompare(b.id)).map((item) => (
                         <Item key={item.id}
                               item={item}
                               onClick={() => toggleActiveItem(item.id)}

@@ -9,15 +9,10 @@ import {Link} from "react-router";
 const AppStacksGrid = () => {
     const {items} = useInventory()
 
-    const handleItemClick = (item: any) => {
-        // Implement the logic to handle item click, e.g., open a modal or navigate
-        console.log("Item clicked:", item);
-    }
-
     return (
         <div>
             <ul className="faded-bottom no-scrollbar grid gap-4 overflow-auto pt-4 pb-16 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1">
-                {items && items.length > 0 && items.map((item: InventoryItem<any>) => (
+                {items && items.length > 0 && items.sort((a, b) => { return a.id.localeCompare(b.id)}).map((item: InventoryItem<any>) => (
                     <li
                         key={item.id}
                         className="rounded-lg border p-4 hover:shadow-md"
@@ -28,18 +23,18 @@ const AppStacksGrid = () => {
                                     <h2 className="mb-1 font-semibold flex space-x-2">
                                         <BlocksIcon/> <Link to={`/stacks/details/${item.id}`}>{item.id}</Link>
                                     </h2>
-                                    <div className={"text-sm"}>
+                                    <div className={"text-sm text-muted-foreground"}>
                                         {item?.properties?.repository?.url}
                                     </div>
-                                    <div className={"text-muted-foreground text-sm mb-1"}>
-                                        {item?.properties?.type} - {item?.properties?.stackfile}
+                                    <div className={"text-muted-foreground text-sm mt-1"}>
+                                        <Badge variant={"default"}>{item?.properties?.type}</Badge>
                                     </div>
                                 </div>
                                 <div className={"text-right"}>
-                                    <div className="flex gap-1 line-clamp-2 text-gray-500 text-sm mb-1">
-                                    <div className={"text-sm"}>{item?.properties?.domain_name}</div>
+                                    <div className="flex gap-1 line-clamp-2 text-muted-foreground text-sm mb-1">
+                                        <div className={"text-sm"}>{item?.properties?.domain_name}</div>
                                         <Badge variant={"outline"}>{item?.properties?.deployment_target}</Badge>
-                                        <Badge variant={"default"}>NOT DEPLOYED</Badge>
+                                        {/*<Badge variant={"default"}>NOT DEPLOYED</Badge>*/}
                                     </div>
                                 </div>
                             </div>
