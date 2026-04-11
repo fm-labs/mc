@@ -32,7 +32,7 @@ def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=
             logger.info(msg)
         except Exception as e:
             logger.exception(f"Error cloning repository from {repo_url} to {checkout_dir}: {e}", exc_info=True)
-            raise ValueError(f"Error cloning repository: {e}")
+            raise ValueError(f"Error cloning repository")
 
     else:
         # check if .git exists

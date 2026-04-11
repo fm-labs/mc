@@ -83,6 +83,18 @@ def set_env_var(name: str, value: str):
     os.environ[name] = value
     set_dotenv_var(name, value)
 
+def replace_env_vars_in_string(s: str) -> str:
+    """
+    Replace ${VAR_NAME} in the string with the value of the environment variable VAR_NAME.
+    Find all occurrences of ${VAR_NAME} and call get_env_var(VAR_NAME) to get the value, then replace it in the string.
+    """
+    import re
+    pattern = re.compile(r"\$\{(\w+)\}")
+    def replacer(match):
+        var_name = match.group(1)
+        return get_env_var(var_name, "")
+    return pattern.sub(replacer, s)
+
 
 DEV_MODE = get_env_var("DEV_MODE", "false").lower() == "true"
 

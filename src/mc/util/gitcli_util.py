@@ -128,7 +128,7 @@ def git(cmd: list, working_dir=None, private_key_file=None, timeout=None, **kwar
     cmd_args = kwargs_to_cmdargs(kwargs)
     try:
         pcmd = ["git"] + git_cmd_args + cmd + cmd_args
-        penv = os.environ.copy()
+        penv = os.environ.copy() # todo make this more selective and not pass all env vars to the subprocess
         #penv['PATH'] = os.getenv('PATH')
         #penv['PWD'] = working_dir
         penv['GIT_TERMINAL_PROMPT'] = '0' # disable prompting for credentials (git 2.3+)
@@ -154,8 +154,8 @@ def git(cmd: list, working_dir=None, private_key_file=None, timeout=None, **kwar
                               env=penv,
                               capture_output=True,
                               timeout=timeout)
-        logger.info("GIT STDOUT", proc.stdout)
-        logger.error("GIT STDERR", proc.stderr)
+        logger.info(f"GIT STDOUT {proc.stdout}")
+        logger.error(f"GIT STDERR {proc.stderr}")
 
         if proc.returncode != 0:
             raise Exception(f"Command exited with non-zero return code: {proc.stderr}")

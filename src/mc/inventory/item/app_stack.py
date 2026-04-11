@@ -10,7 +10,7 @@ import dotenv
 import yaml
 
 from mc import logs
-from mc.config import DATA_DIR
+from mc.config import DATA_DIR, replace_env_vars_in_string
 from mc.inventory.storage import get_inventory_storage_instance
 from mc.tasks import clone_or_update_git_repo, task_deploy_compose_project, task_destroy_compose_project
 
@@ -302,7 +302,8 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             # else:
 
             logger.info(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
-            repo_url = os.path.expandvars(repo_url)
+            #repo_url = os.path.expandvars(repo_url)
+            repo_url = replace_env_vars_in_string(repo_url)
             logger.debug(f"Expanded repository URL: '{repo_url}'")
             # print(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
 
