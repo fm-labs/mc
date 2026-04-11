@@ -1,0 +1,28 @@
+{
+  "type": "object",
+  "title": "Variable",
+  "description": "Environment variables",
+  "version": "1.0.0",
+  "$icon": "settings",
+  "properties": {
+    "scope": {
+      "type": "string",
+      "title": "Scope",
+      "description": "The scope of the variable (e.g. global, app:app-name)",
+      "default": "global"
+    },
+    "label": {
+      "type": "string",
+      "title": "Label"
+    },
+    "value": {
+      "type": "string",
+      "title": "Value",
+      "description": "The value of the variable. This will be stored in plaintext in the inventory, so do not use this for sensitive information. For secrets, use the Secret type instead."
+    }
+  },
+  "required": [
+    "scope",
+    "label"
+  ]
+}

@@ -6,7 +6,7 @@ def handle_container_registry_login(item: dict, action_params: dict) -> dict:
     username = item.get("username")
 
     password = action_params.get("password")
-    store_password = action_params.get("store", False)
+    store_password = action_params.get("store", False) # todo implement store password in config or .env
     return container_registry_login(registry_url, username, password)
 
 

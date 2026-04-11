@@ -11,16 +11,16 @@ API_NAME = "account"
 API_VERSION = "2.0.0"
 API_PREFIX = "/api"
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
+CONFIG_PATH = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/settings.json")
 
 load_dotenv(f"{DATA_DIR}/.env")
 load_dotenv(f"{DATA_DIR}/.env.local")
 
 def read_config():
-    config_path = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/mc.json")
-    if os.path.exists(config_path):
-        print(f"Loading config from {config_path}")
+    if os.path.exists(CONFIG_PATH):
+        print(f"Loading config from {CONFIG_PATH}")
         try:
-            with open(config_path, "r") as f:
+            with open(CONFIG_PATH, "r") as f:
                 config = json.load(f)
                 return config
         except Exception as e:
@@ -28,47 +28,13 @@ def read_config():
     return None
 
 def write_config(config: dict):
-    configs_path = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/mc.json")
     try:
-        with open(configs_path, "w") as f:
+        with open(CONFIG_PATH, "w") as f:
             json.dump(config, f, indent=4)
     except Exception as e:
         print(f"Error writing mc.json: {e}")
 
-# def write_dotenv(config: dict):
-#     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
-#     try:
-#         with open(env_path, "w") as f:
-#             for key, value in config.items():
-#                 f.write(f"{key}={value}\n")
-#     except Exception as e:
-#         print(f"Error writing .env file: {e}")
-
-def set_dotenv_var(key: str, value: str):
-    env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
-    lines = []
-    if os.path.exists(env_path):
-        with open(env_path, "r") as f:
-            lines = f.readlines()
-    with open(env_path, "w") as f:
-        found = False
-        for line in lines:
-            if line.startswith(f"{key}="):
-                f.write(f"{key}={value}\n")
-                found = True
-            else:
-                f.write(line)
-        if not found:
-            f.write(f"{key}={value}\n")
-
-
 CONFIG = read_config() or {}
-
-# def set_config_var(name: str, value: str, persist=False):
-#     CONFIG[name] = value
-#     if persist:
-#         write_config(CONFIG)
-
 
 def get_env_var(name: str, default=None):
     if "environment" in CONFIG and name in CONFIG["environment"]:
@@ -78,22 +44,6 @@ def get_env_var(name: str, default=None):
     if value is None:
         print(f"Warning: Environment variable {name} is not set and no default value provided.")
     return value
-
-def set_env_var(name: str, value: str):
-    os.environ[name] = value
-    set_dotenv_var(name, value)
-
-def replace_env_vars_in_string(s: str) -> str:
-    """
-    Replace ${VAR_NAME} in the string with the value of the environment variable VAR_NAME.
-    Find all occurrences of ${VAR_NAME} and call get_env_var(VAR_NAME) to get the value, then replace it in the string.
-    """
-    import re
-    pattern = re.compile(r"\$\{(\w+)\}")
-    def replacer(match):
-        var_name = match.group(1)
-        return get_env_var(var_name, "")
-    return pattern.sub(replacer, s)
 
 
 DEV_MODE = get_env_var("DEV_MODE", "false").lower() == "true"
@@ -134,3 +84,34 @@ VAULT_PASS_FILE = get_env_var("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vaul
 # GITHUB_CALLBACK_URL = get_env_var("GITHUB_CALLBACK_URL")
 
 
+
+def set_dotenv_var(key: str, value: str):
+    env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path, "r") as f:
+            lines = f.readlines()
+    with open(env_path, "w") as f:
+        found = False
+        for line in lines:
+            if line.startswith(f"{key}="):
+                f.write(f"{key}={value}\n")
+                found = True
+            else:
+                f.write(line)
+        if not found:
+            f.write(f"{key}={value}\n")
+
+def set_env_var(name: str, value: str):
+    os.environ[name] = value
+    set_dotenv_var(name, value)
+
+
+# def write_dotenv(config: dict):
+#     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
+#     try:
+#         with open(env_path, "w") as f:
+#             for key, value in config.items():
+#                 f.write(f"{key}={value}\n")
+#     except Exception as e:
+#         print(f"Error writing .env file: {e}")

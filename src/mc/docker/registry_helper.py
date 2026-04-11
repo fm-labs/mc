@@ -76,7 +76,7 @@ def container_registry_login(registry_url: str, username: str = None, password: 
         if not username and not password:
             raise ValueError(f"Warning: No credentials found for registry: {registry_url}")
 
-        env = os.environ.copy()
+        env = os.environ.copy() # todo make this more selective and not pass all env vars to the subprocess
         dockercli_login(username, password, registry_url, env=env)
 
         return {

@@ -16,7 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-import mc.include # do not remove
 from mc import config
 from mc.mcp.app import mcp as mcp_app
 from mc.mcp.fastmcp_helper import init_mcp_http_app

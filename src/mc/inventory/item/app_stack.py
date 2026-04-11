@@ -10,7 +10,8 @@ import dotenv
 import yaml
 
 from mc import logs
-from mc.config import DATA_DIR, replace_env_vars_in_string
+from mc.config import DATA_DIR
+from mc.vars import replace_env_vars_in_string, replace_placeholders_in_string
 from mc.inventory.storage import get_inventory_storage_instance
 from mc.tasks import clone_or_update_git_repo, task_deploy_compose_project, task_destroy_compose_project
 
@@ -304,6 +305,7 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             logger.info(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
             #repo_url = os.path.expandvars(repo_url)
             repo_url = replace_env_vars_in_string(repo_url)
+            repo_url = replace_placeholders_in_string(repo_url)
             logger.debug(f"Expanded repository URL: '{repo_url}'")
             # print(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
 
@@ -364,10 +366,6 @@ def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
 
         # filter out None and empty string values
         env_vars = {k: v for k, v in env_vars.items() if v is not None and v != ""}
-        # update item properties
-        # if "properties" not in item:
-        #    item["properties"] = {}
-        # item["properties"]["environment"] = env_vars
         item["environment"] = env_vars
 
         storage = get_inventory_storage_instance()
