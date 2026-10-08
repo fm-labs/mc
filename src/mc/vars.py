@@ -1,7 +1,6 @@
 import re
 
 from mc.config import get_env_var
-from mc.inventory.storage import get_inventory_storage_instance
 from mc.vault2 import vault_get_value
 
 
@@ -64,10 +63,10 @@ def get_inventory_var(name: str, default=None) -> str | None:
     """
     Get a variable from the inventory db.
     """
-    storage = get_inventory_storage_instance()
-    item = storage.get_item("variable", id=name)
-    if item is not None:
-        return item.get("value", default)
+    #storage = get_inventory_storage_instance()
+    #item = storage.read("variable", id=name)
+    #if item is not None:
+    #    return item.get("value", default)
 
     print(f"Warning: unknown inventory variable '{name}', returning default value.")
     return default

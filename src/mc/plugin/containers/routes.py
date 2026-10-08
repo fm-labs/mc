@@ -6,16 +6,15 @@ import anyio
 from docker.models.containers import Container
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.encoders import jsonable_encoder
-from fastapi.params import Query, Path, Body
+from fastapi.params import Query, Path
 from pydantic import BaseModel
 from starlette.concurrency import iterate_in_threadpool
 from starlette.requests import Request, ClientDisconnect
 from starlette.responses import StreamingResponse
 
 from mc.cache import cached_fn, clear_cache
-from mc.inventory.storage import get_inventory_storage_instance
 from mc.plugin.containers.deps import dep_container_connection, dep_container_connections_manager
-from mc.plugin.containers.manager import ContainerClientsManager, NodeContainerClient
+from mc.plugin.containers.manager import ContainerClientsManager
 
 router = APIRouter()
 
@@ -41,35 +40,36 @@ def get_container_hosts(manager:ContainerClientsManager=Depends(dep_container_co
         "url": "unix:///var/run/docker.sock",
         "autoconnect": True,
     }})
-    try:
-        storage = get_inventory_storage_instance()
-        items = storage.list_items("mc_node")
-        for item in items:
-            url = item.get("url")
-            name = item.get("id")
-            autoconnect = item.get("autoconnect")
-            host = {
-                "id": name,
-                "name": name,
-                "connected": False,
-                "properties": {
-                    "engine": "docker",
-                    "url": url,
-                    "autoconnect": autoconnect,
-                }
-            }
-            # ensure connection is registered in CCM (if autoconnect is true)
-            if autoconnect:
-                try:
-                    manager._clients.update({name: NodeContainerClient(name, url)})
-                    host["connected"] = True
-                except Exception as e:
-                    print(f"Failed to connect to container host '{name}' at '{url}':", e)
-                    host["connected"] = False
 
-            hosts.append(host)
-    except Exception as e:
-        print("Failed to load container hosts from inventory:", e)
+    # try:
+    #     storage = get_inventory_storage_instance()
+    #     items = storage.items("mc_node")
+    #     for item in items:
+    #         url = item.get("url")
+    #         name = item.get("id")
+    #         autoconnect = item.get("autoconnect")
+    #         host = {
+    #             "id": name,
+    #             "name": name,
+    #             "connected": False,
+    #             "properties": {
+    #                 "engine": "docker",
+    #                 "url": url,
+    #                 "autoconnect": autoconnect,
+    #             }
+    #         }
+    #         # ensure connection is registered in CCM (if autoconnect is true)
+    #         if autoconnect:
+    #             try:
+    #                 manager._clients.update({name: NodeContainerClient(name, url)})
+    #                 host["connected"] = True
+    #             except Exception as e:
+    #                 print(f"Failed to connect to container host '{name}' at '{url}':", e)
+    #                 host["connected"] = False
+    #
+    #         hosts.append(host)
+    # except Exception as e:
+    #     print("Failed to load container hosts from inventory:", e)
 
     # for name in manager.names():
     #     if name == "localdocker":

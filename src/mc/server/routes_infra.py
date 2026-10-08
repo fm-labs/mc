@@ -1,30 +1,33 @@
 from typing import Annotated, Any, AsyncGenerator
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
+from objbase import Storage
 from paramiko.client import SSHClient
-from mc.util.sshpy_helper import ssh_connect
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from mc.inventory.storage import get_inventory_storage_instance
 from mc.util.ssh_async import ssh_exec_command_stream
+from mc.util.sshpy_helper import ssh_connect
 
 router = APIRouter()
 
+def dep_storage(request: Request) -> Storage:
+    storage = request.app.state.storage
+    return storage
+
 @router.get("/infrastructure/host/{host_id}/services")
-def get_infrastructure_host_services(host_id: str) -> list:
+def get_infrastructure_host_services(host_id: str, db: Storage = Depends(dep_storage)) -> list:
     """
     Get related inventory items for a given inventory host
     """
-    db = get_inventory_storage_instance()
-    host = db.get_item("host", host_id)
+    host = db.read("host", host_id)
     if not host:
         raise HTTPException(status_code=404, detail="Host not found")
     host_name = host.get("name")
     if not host_name:
         raise HTTPException(status_code=400, detail="Host has no name")
 
-    all_compose_apps = db.list_items("compose_app")
+    all_compose_apps = db.items("compose_app")
     print(f"Found {len(all_compose_apps)} compose apps in inventory", all_compose_apps)
     related_items = []
     for app in all_compose_apps:
@@ -42,9 +45,8 @@ def get_infrastructure_host_services(host_id: str) -> list:
 
 
 @router.get("/infrastructure/host/{host_id}/system")
-def get_infrastructure_host_system_info(host_id: str) -> dict:
-    db = get_inventory_storage_instance()
-    host = db.get_item("host", host_id)
+def get_infrastructure_host_system_info(host_id: str, db: Storage = Depends(dep_storage)) -> dict:
+    host = db.read("host", host_id)
     if not host:
         raise HTTPException(status_code=404, detail="Host not found")
     host_name = host.get("name")
@@ -80,10 +82,10 @@ def stream_ssh_host_logs(request: Request,
                                  until: Annotated[int, Query()] = None,
                                  tail: Annotated[int, Query()] = 1000,
                                  follow: Annotated[bool, Query()] = False,
+                                 db: Storage = Depends(dep_storage)
                                  ) -> StreamingResponse:
 
-    db = get_inventory_storage_instance()
-    host = db.get_item("host", host_id)
+    host = db.read("host", host_id)
     if not host:
         raise HTTPException(status_code=404, detail="Host not found")
     host_name = host.get("name")

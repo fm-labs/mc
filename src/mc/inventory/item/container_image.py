@@ -1,4 +1,4 @@
-from mc.inventory.storage import get_inventory_storage_instance
+from inventorydb.storage import get_inventory_storage_instance
 from mc.util.dockercli_helper import dockercli_image_pull
 
 

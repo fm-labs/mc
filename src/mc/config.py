@@ -108,7 +108,7 @@ def set_env_var(name: str, value: str):
 
 
 # def write_dotenv(config: dict):
-#     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
+#     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.development")
 #     try:
 #         with open(env_path, "w") as f:
 #             for key, value in config.items():

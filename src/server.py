@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from inventorydb.storage import build_objbase_storage
 from mc import config
 from mc.mcp.app import mcp as mcp_app
 from mc.mcp.fastmcp_helper import init_mcp_http_app
@@ -33,6 +34,8 @@ if mcp_enabled:
     mcp_transport = os.getenv("MCP_TRANSPORT", "streamable-http")
     mcp_http_app = init_mcp_http_app(mcp_app, transport=mcp_transport)
 
+storage_base_dir = f"{config.DATA_DIR}/inventory"
+os.makedirs(storage_base_dir, exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(main_app: FastAPI):
@@ -43,6 +46,11 @@ async def lifespan(main_app: FastAPI):
         #main_app.state.redis = get_aioredis_client()
         main_app.state.ccm = bootstrap_container_connection_manager()
         #main_app.state.inventory_storage = get_inventory_storage_instance()
+        #main_app.state.storage = LocalDirectoryStorage(base_dir=storage_base_dir)
+        main_app.state.storage = build_objbase_storage()
+
+        #client = redis.asyncio.Redis(host="localhost", port=6379)
+        #app.state.storage = AsyncRedisStorage(redis_client=client)
 
         if mcp_enabled:
             # also enter the mounted app's lifespan:

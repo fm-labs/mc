@@ -3,7 +3,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
 from mc.users import authenticate_user
-from mc.inventory.routes import router as inventory_router
+from inventorydb.routes import router as objbase_router
 from mc.plugin.containers.routes import router as containers_router
 from mc.server.routes_rpc import router as rpc_router
 from mc.server.auth import get_current_user
@@ -15,7 +15,8 @@ PLUGINS_ENABLED = ["containers"]
 #INVENTORY_ITEMS_ENABLED = ["app_stack", "container_registry", "mc_node"]
 
 app_router = APIRouter()
-app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
+#app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
+app_router.include_router(objbase_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
 app_router.include_router(containers_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
 

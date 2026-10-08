@@ -2,7 +2,7 @@ import logging
 import click
 
 from mc.inventory.item.app_stack import AppStackItem, handle_app_stack_action_deploy, handle_app_stack_action_sync
-from mc.inventory.storage import get_inventory_storage_instance
+from inventorydb.storage import get_inventory_storage_instance
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ def apps():
 def inspect_app(name: str):
     """Deploy an application stack."""
     storage = get_inventory_storage_instance()
-    stack = storage.get_item("app_stack", name)
+    stack = storage.read("app_stack", name)
     if not stack:
         click.echo(f"Stack '{name}' not found.")
         return
@@ -33,7 +33,7 @@ def inspect_app(name: str):
 def update_app(name: str, dry_run: bool):
     """Deploy an application stack."""
     storage = get_inventory_storage_instance()
-    stack = storage.get_item("app_stack", name)
+    stack = storage.read("app_stack", name)
     if not stack:
         click.echo(f"Stack '{name}' not found.")
         return
@@ -49,7 +49,7 @@ def update_app(name: str, dry_run: bool):
 def deploy_app(name: str, dry_run: bool):
     """Deploy an application stack."""
     storage = get_inventory_storage_instance()
-    stack = storage.get_item("app_stack", name)
+    stack = storage.read("app_stack", name)
     if not stack:
         click.echo(f"Stack '{name}' not found.")
         return

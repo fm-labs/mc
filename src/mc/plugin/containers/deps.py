@@ -3,7 +3,6 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException
 from fastapi.params import Query
-from podman import PodmanClient
 from starlette.requests import Request
 
 from mc.plugin.containers.manager import ContainerClientsManager, ContainerClient

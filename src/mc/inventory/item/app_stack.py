@@ -1,18 +1,17 @@
 import json
+import logging
 import os.path
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
-import logging
-import shutil
 
 import dotenv
 import yaml
 
+from inventorydb.storage import get_inventory_storage_instance
 from mc import logs
 from mc.config import DATA_DIR
-from mc.vars import replace_env_vars_in_string, replace_placeholders_in_string
-from mc.inventory.storage import get_inventory_storage_instance
 from mc.tasks import clone_or_update_git_repo, task_deploy_compose_project, task_destroy_compose_project
 
 logger = logging.getLogger(__name__)
@@ -141,16 +140,16 @@ def _build_repo_cache_path(repository_url: str) -> Path:
     return repo_dir
 
 
-def _lookup_container_host_url(host_name: str) -> str:
-    storage = get_inventory_storage_instance()
-    host_item = storage.get_item_by_name("container_host", host_name)
-    if host_item is None:
-        raise ValueError(f"Container host '{host_name}' not found in inventory")
-    host_props = host_item
-    host_url = host_props.get("url")
-    if host_url is None or host_url == "":
-        raise ValueError(f"Container host '{host_name}' does not have a host_url defined")
-    return host_url
+# def _lookup_container_host_url(host_name: str) -> str:
+#     storage = get_inventory_storage_instance()
+#     host_item = storage.get_item_by_name("container_host", host_name)
+#     if host_item is None:
+#         raise ValueError(f"Container host '{host_name}' not found in inventory")
+#     host_props = host_item
+#     host_url = host_props.get("url")
+#     if host_url is None or host_url == "":
+#         raise ValueError(f"Container host '{host_name}' does not have a host_url defined")
+#     return host_url
 
 
 def _build_app_hash(owner_id: str, item_name: str, version: str) -> str:
@@ -304,8 +303,8 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
 
             logger.info(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
             #repo_url = os.path.expandvars(repo_url)
-            repo_url = replace_env_vars_in_string(repo_url)
-            repo_url = replace_placeholders_in_string(repo_url)
+            #todo repo_url = replace_env_vars_in_string(repo_url)
+            #todo repo_url = replace_placeholders_in_string(repo_url)
             logger.debug(f"Expanded repository URL: '{repo_url}'")
             # print(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
 
@@ -369,7 +368,7 @@ def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
         item["environment"] = env_vars
 
         storage = get_inventory_storage_instance()
-        storage.save_item("app_stack", item)
+        storage.write("app_stack", item)
 
     return handle_app_stack_action_prepare(item, action_params)
 
