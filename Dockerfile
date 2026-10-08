@@ -2,7 +2,7 @@
 FROM docker.io/library/node:25-alpine AS ui-builder
 RUN npm install -g pnpm
 WORKDIR /builder
-COPY ui/package.json ui/pnpm-lock.yaml ./
+COPY ui/package.json ui/pnpm-lock.yaml ui/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY ui/ .
 RUN pnpm run build

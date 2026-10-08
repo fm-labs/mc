@@ -828,6 +828,7 @@ dependencies = [
     { name = "fastmcp" },
     { name = "flower" },
     { name = "gitpython" },
+    { name = "objbase" },
     { name = "paramiko" },
     { name = "podman" },
     { name = "pydantic" },
@@ -854,6 +855,7 @@ requires-dist = [
     { name = "fastmcp", specifier = ">=2.12.4" },
     { name = "flower", specifier = ">=2.0.1" },
     { name = "gitpython", specifier = ">=3.1.45" },
+    { name = "objbase", specifier = ">=0.5.2" },
     { name = "paramiko", specifier = ">=4.0.0" },
     { name = "podman", specifier = ">=5.6.0" },
     { name = "pydantic", specifier = ">=2.11.3" },
@@ -912,6 +914,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/ea/5d/38b681d3fce7a266dd9ab73c66959406d565b3e85f21d5e66e1181d93721/more_itertools-10.8.0.tar.gz", hash = "sha256:f638ddf8a1a0d134181275fb5d58b086ead7c6a72429ad725c67503f13ba30bd", size = 137431, upload-time = "2025-09-02T15:23:11.018Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/8e/469e5a4a2f5855992e425f3cb33804cc07bf18d48f2db061aec61ce50270/more_itertools-10.8.0-py3-none-any.whl", hash = "sha256:52d4362373dcf7c52546bc4af9a86ee7c4579df9a8dc268be0a2f949d376cc9b", size = 69667, upload-time = "2025-09-02T15:23:09.635Z" },
+]
+
+[[package]]
+name = "objbase"
+version = "0.5.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/83/f2/accc73d8e7bb54e1e1ca97193eda7387736a63b6fb1d752091fe9af70b28/objbase-0.5.2.tar.gz", hash = "sha256:fd17126e67b643108ecbf02899ec67ba832a6e50c6e2a5685076d1e7dd682738", size = 100912, upload-time = "2026-10-08T17:37:11.061Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/d4/02690100e321463421597f0a91d3604aed53e4d74657e09e6c5048511f70/objbase-0.5.2-py3-none-any.whl", hash = "sha256:8a0ac1a1b5765c7abd98fa24ae78845f51cd974e0284f277ed9a4c12764b6543", size = 31209, upload-time = "2026-10-08T17:37:09.65Z" },
 ]
 
 [[package]]

@@ -65,7 +65,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: "mc:node01"
+    image: "mc:dev"
     ports:
       - "3081:3080"
     networks:
@@ -82,7 +82,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: "mc:node02"
+    image: "mc:dev"
     ports:
       - "3082:3080"
     networks:

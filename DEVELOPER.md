@@ -6,7 +6,7 @@
 
 ```bash
 # checkout the code
-git clone https://github.com/fm-labs/missioncontrol.git
+git clone https://github.com/fm-labs/mc.git
 ```
 
 
@@ -16,7 +16,7 @@ Run the following command to start the server:
 
 ```bash
 # from the project root directory
-cd missioncontrol
+cd mc
 uv run uvicorn --app-dir ./src --port 3080 server:app
 
 # for development with auto-reload and debug logging
@@ -45,4 +45,4 @@ pnpm install
 pnpm run dev
 ```
 
-The UI will be available at `http://localhost:1420`.
+The UI in devmode will be available at `http://localhost:3081`.
