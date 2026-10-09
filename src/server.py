@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
+from inventorydb.registry import get_inventory_registry
 from inventorydb.storage import get_inventory_storage_instance
 from mc import config
 from mc.mcp.app import mcp as mcp_app
@@ -44,6 +45,8 @@ async def lifespan(main_app: FastAPI):
         main_app.state.ccm = bootstrap_container_connection_manager()
         # share the instance with item handlers that use get_inventory_storage_instance()
         main_app.state.storage = get_inventory_storage_instance()
+        # load the inventory item types now, so configuration problems are logged at startup
+        get_inventory_registry()
 
         # client = redis.asyncio.Redis(host="localhost", port=6379)
         # app.state.storage = AsyncRedisStorage(redis_client=client)

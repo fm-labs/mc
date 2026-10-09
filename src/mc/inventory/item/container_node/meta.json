@@ -11,8 +11,8 @@
       }
     },
     {
-      "id": "node_info",
-      "name": "Fetch Node Info from API",
+      "id": "api_probe",
+      "name": "Probe API Health",
       "type": "form",
       "inputSchema": {
         "type": "object",

@@ -1,11 +1,5 @@
-# Manage inventory metadata such as JSON schemas for different item types in databases.
-import json
-import os
+# Inventory metadata models. Item types are loaded by inventorydb.registry.
 from dataclasses import dataclass
-from typing import Any
-
-from mc import config
-from mc.config import RESOURCES_DIR
 
 
 @dataclass
@@ -15,84 +9,6 @@ class InventoryShortInfo:
     description: str | None = None
     version: str | None = None
     icon: str | None = None
-
-
-def enumerate_inventory_item_types_from_schema_dir() -> list[str]:
-    """
-    Enumerate all inventory item types by scanning the schema directory.
-
-    Returns:
-        list[str]: A list of inventory item types.
-    """
-    schema_dir = os.path.join(config.RESOURCES_DIR, "schemas", "inventory")
-    if not os.path.exists(schema_dir):
-        return []
-
-    item_types = []
-    for filename in os.listdir(schema_dir):
-        if not filename.startswith("_") and filename.endswith(".schema.json"):
-            item_type = filename[: -len(".schema.json")]
-            item_types.append(item_type)
-    return item_types
-
-
-def enumerate_inventories_from_schema_dir() -> list[InventoryShortInfo]:
-    """
-    Enumerate all inventory item metadata by scanning the schema directory.
-
-    Returns:
-        list[InventoryShortInfo]: A list of inventory item metadata.
-    """
-    schema_dir = os.path.join(config.RESOURCES_DIR, "schemas", "inventory")
-    if not os.path.exists(schema_dir):
-        return []
-
-    metadata_list = []
-    for filename in os.listdir(schema_dir):
-        if not filename.startswith("_") and filename.endswith(".schema.json"):
-            item_type = filename[: -len(".schema.json")]
-            schema_path = os.path.join(schema_dir, filename)
-            try:
-                with open(schema_path, encoding="utf-8") as f:
-                    schema = json.load(f)
-                    title = schema.get("title", item_type)
-                    description = schema.get("description")
-                    version = schema.get("version")
-                    icon = schema.get("$icon")
-                    metadata = InventoryShortInfo(
-                        item_type=item_type, title=title, description=description, version=version, icon=icon
-                    )
-                    metadata_list.append(metadata)
-            except (OSError, json.JSONDecodeError):
-                continue
-    return metadata_list
-
-
-def _schema_name(item_type: str) -> str:
-    """Schema files use the hyphenated item type name (e.g. 'app_stack' -> 'app-stack')."""
-    return item_type.lower().replace("_", "-")
-
-
-def _read_json_object(path: str) -> dict[str, Any]:
-    """Read a JSON file containing an object. Returns {} if it is missing or invalid."""
-    try:
-        with open(path) as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {}
-    return data if isinstance(data, dict) else {}
-
-
-def lookup_inventory_schema(item_type: str) -> dict[str, Any]:
-    return _read_json_object(
-        os.path.join(RESOURCES_DIR, "schemas", "inventory", f"{_schema_name(item_type)}.schema.json")
-    )
-
-
-def lookup_inventory_metadata(item_type: str) -> dict[str, Any]:
-    return _read_json_object(
-        os.path.join(RESOURCES_DIR, "schemas", "inventory", f"{_schema_name(item_type)}.meta.json")
-    )
 
 
 # def list_inventory_item_types() -> list[str]:

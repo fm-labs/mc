@@ -34,7 +34,7 @@
     {
       "id": "clear_content",
       "name": "Clear Key Content",
-      "type": "action"
+      "type": "form"
     }
   ]
 }

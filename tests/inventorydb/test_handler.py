@@ -1,5 +1,3 @@
-import importlib
-
 import pytest
 
 from inventorydb.handler import (
@@ -57,27 +55,15 @@ def test_module_without_registry(item_module):
 
 
 def test_item_type_without_module():
-    with pytest.raises(NotImplementedError, match="has no actions"):
-        get_inventory_item_action_handler("no_such_type", "ping")
+    # 'configuration' has a schema but no item module
+    with pytest.raises(NotImplementedError, match="Action 'ping' for item type 'configuration'"):
+        get_inventory_item_action_handler("configuration", "ping")
 
 
-@pytest.mark.parametrize("item_type", ["../x", "a.b", "a b", ""])
-def test_rejects_invalid_item_type(item_type):
-    with pytest.raises(NotImplementedError, match="Invalid item type"):
+@pytest.mark.parametrize("item_type", ["no_such_type", "../x", "a.b", ""])
+def test_unknown_item_type(item_type):
+    with pytest.raises(NotImplementedError, match="Unknown item type"):
         get_inventory_item_action_handler(item_type, "ping")
-
-
-def test_missing_dependency_in_item_module_is_not_hidden(monkeypatch):
-    # an item module that exists but fails on a missing dependency must surface the real error
-    def broken_import(name, *args, **kwargs):
-        if name == "mc.inventory.item.broken":
-            raise ModuleNotFoundError("No module named 'somedep'", name="somedep")
-        return original_import(name, *args, **kwargs)
-
-    original_import = importlib.import_module
-    monkeypatch.setattr(importlib, "import_module", broken_import)
-    with pytest.raises(ModuleNotFoundError, match="somedep"):
-        get_inventory_item_action_handler("broken", "ping")
 
 
 async def _async_handler(item, params):

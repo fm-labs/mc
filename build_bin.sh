@@ -15,6 +15,8 @@ uv run pyinstaller --clean --onefile --distpath $BUILD_DIST_DIR --workpath ./bui
 uv run pyinstaller --clean --onefile --distpath $BUILD_DIST_DIR --workpath ./build --specpath ./build \
   --name mc-srv \
   --copy-metadata fastmcp \
+  --collect-submodules mc.inventory.item \
+  --collect-data mc.inventory.item \
   ./src/server.py
 
 uv run pyinstaller --clean --onefile --distpath $BUILD_DIST_DIR --workpath ./build --specpath ./build \

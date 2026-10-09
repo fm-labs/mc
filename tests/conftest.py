@@ -4,6 +4,7 @@ import shutil
 import sys
 import tempfile
 import types
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -45,13 +46,18 @@ class FakeItemModule(types.ModuleType):
 
 
 @pytest.fixture
-def item_module(monkeypatch) -> FakeItemModule:
+def item_module(monkeypatch) -> Iterator[FakeItemModule]:
     """
     Register a fake item module for the 'variable' item type (which has a schema but no module),
     so tests can control the actions and views it exposes.
     """
+    from inventorydb.registry import reset_inventory_registry
+
     module = FakeItemModule("mc.inventory.item.variable")
     module.actions = {}
     module.views = {}
     monkeypatch.setitem(sys.modules, "mc.inventory.item.variable", module)
-    return module
+    # the registry imports item modules when it loads, so reload it with the fake module
+    reset_inventory_registry()
+    yield module
+    reset_inventory_registry()
