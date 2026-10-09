@@ -17,6 +17,10 @@ uv run pyinstaller --clean --onefile --distpath $BUILD_DIST_DIR --workpath ./bui
   --copy-metadata fastmcp \
   --collect-submodules mc.inventory.item \
   --collect-data mc.inventory.item \
+  --collect-submodules mc.plugin.apps.inventory \
+  --collect-data mc.plugin.apps.inventory \
+  --collect-submodules mc.plugin.containers.inventory \
+  --collect-data mc.plugin.containers.inventory \
   ./src/server.py
 
 uv run pyinstaller --clean --onefile --distpath $BUILD_DIST_DIR --workpath ./build --specpath ./build \

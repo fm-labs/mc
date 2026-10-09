@@ -9,10 +9,11 @@ Code: `src/inventorydb/` · Item types: `src/mc/inventory/item/`
 
 ## Item types
 
-Each item type is a Python package in `src/mc/inventory/item/`, named after the type with underscores:
+Each item type is a Python package named after the type with underscores. Core types live in
+`src/mc/inventory/item/`, and plugin types in their plugin's `inventory/` package (see [Registry](#registry)):
 
 ```
-src/mc/inventory/item/app_stack/
+src/mc/plugin/apps/inventory/app_stack/
     __init__.py     # required; may define the action and view handlers
     schema.json     # required
     meta.json       # optional
@@ -32,11 +33,74 @@ with the code in the wheel, the Docker image and the PyInstaller binary.
 ### Registry
 
 Item types are loaded once by the registry (`inventorydb/registry.py`), at server startup or on first use.
-All lookups are then served from memory, so **changes to schema, meta or module files need a server
+All lookups are then served from memory, so **changes to item types or `inventory.toml` need a server
 restart**.
 
-The registry is built from sources. Currently there is one, `PackageSource("mc.inventory.item")`, which
-loads the packages described above. If several sources define the same type, the first one wins.
+The registry loads types from three sources, in order of precedence:
+
+| # | Source | Location |
+|---|---|---|
+| 1 | Built-in types | packages in `mc.inventory.item` (see above) |
+| 2 | Plugin types | `mc.plugin.<plugin>.inventory` packages, and installed packages registered under the `mc.inventory_types` entry point group |
+| 3 | User types | folders in `$CONFIG_DIR/inventory/` |
+
+All sources use the same layout: one folder per type with `schema.json`, an optional `meta.json` and an
+optional `__init__.py` with the handlers. If several sources define the same type, the first one wins and the
+others are skipped with a warning. A skipped or disabled type's code never runs.
+
+#### Plugin types
+
+A plugin adds item types with an `inventory` subpackage that contains one package per type. For example, the
+apps plugin provides `app-stack` and `app-template` in `mc/plugin/apps/inventory/`, and the containers plugin
+provides `container-node` and `container-registry` in `mc/plugin/containers/inventory/`. For the
+PyInstaller binary, add the plugin's item package to the `--collect-submodules` / `--collect-data` flags in
+`build_bin.sh`. An installed Python package does the same through an
+entry point whose value is its item package:
+
+```toml
+# pyproject.toml of the plugin
+[project.entry-points."mc.inventory_types"]
+my_plugin = "my_plugin.inventory"
+```
+
+#### User types
+
+User types live outside the code in `$CONFIG_DIR/inventory/<type>/`. Folder names must be lowercase letters,
+digits and `-`. Folders starting with `.` or `_` are ignored.
+
+```
+$CONFIG_DIR/inventory/backup-target/
+    schema.json
+    meta.json       # optional
+    __init__.py     # optional, only loaded with INVENTORY_USER_CODE=true
+    checks.py       # optional, imported with "from .checks import ..."
+```
+
+Schema-only user types always work. Python code is loaded only if `INVENTORY_USER_CODE=true` is set (default
+`false`), because it runs inside the API process with its full permissions. Even then, code is skipped if the
+folder, the type folder or any `.py` file in it is writable by other users. User modules are loaded as
+`mc_user_inventory.<type>` without changing `sys.path`. They can import `mc.*` and any package installed in the
+environment. In the PyInstaller binary, that means only the bundled packages.
+
+User types can't replace built-in or plugin types. To customise those, use `inventory.toml`.
+
+#### Overrides: `inventory.toml`
+
+`$CONFIG_DIR/inventory.toml` is optional and can disable or adjust any item type:
+
+```toml
+[types.app-template]
+enabled = false         # don't load this type (from any source)
+
+[types.app-stack]
+title = "Stacks"        # replaces the schema title
+icon = "layers"         # replaces the schema $icon
+order = 1               # position in the type list (and the sidebar)
+```
+
+Types with an `order` come first. The others follow, sorted by name.
+
+#### Warnings
 
 When the registry loads, it logs a warning (`Inventory: ...`) for each of these:
 
@@ -45,7 +109,9 @@ When the registry loads, it logs a warning (`Inventory: ...`) for each of these:
   import error.
 - a `form`/`view` action in `meta.json` with no handler in the module's `actions`/`views`, and the reverse
 - an unsupported action `type`, an action without `id`, or a `link` action without `href`
-- modules or packages in `mc.inventory.item` without a `schema.json`, which means they aren't item types
+- modules or folders in a source without a `schema.json`, which means they aren't item types
+- a type defined by several sources, or user code that was skipped (disabled, or writable by others)
+- invalid entries in `inventory.toml`, or sections that match no item type
 
 
 ## Storage
@@ -102,7 +168,7 @@ Prefer the `secret` item type (stored in the vault, not in the inventory) for se
 A type's module exposes two registries that map names to handlers:
 
 ```python
-# src/mc/inventory/item/container_node/__init__.py
+# src/mc/plugin/containers/inventory/container_node/__init__.py
 def handle_node_ping(item: dict, params: dict) -> dict:
     ...
     return {"status": "success"}

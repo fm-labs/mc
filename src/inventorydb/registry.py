@@ -2,33 +2,38 @@
 Registry of inventory item types.
 
 An item type is made of a JSON schema, optional UI metadata (meta.json) and an item module that may
-expose `actions` and `views` handler dicts. The registry collects item types from one or more sources once,
-validates them, and serves all lookups from memory.
+expose `actions` and `views` handler dicts. The registry collects item types from its sources once,
+applies the overrides from inventory.toml, validates them, and serves all lookups from memory.
+
+Default sources, in order of precedence (if several define a type, the first one wins):
+
+1. built-in types: the packages in `mc.inventory.item`
+2. plugin types: `mc.plugin.<plugin>.inventory` packages and `mc.inventory_types` entry points
+3. user types: folders in `$CONFIG_DIR/inventory` (item modules only with INVENTORY_USER_CODE=true)
 """
 
-import importlib
-import importlib.resources
-import json
 import logging
-import pkgutil
+import os
 import threading
-from collections.abc import Callable, Iterable
-from dataclasses import dataclass, field
-from importlib.resources.abc import Traversable
-from types import ModuleType
-from typing import Any, Literal, Protocol
+from collections.abc import Iterable
 
-from inventorydb.metadata import InventoryShortInfo
+from inventorydb.itemtype import HandlerKind, InventoryItemType, ItemMethod, type_name
+from inventorydb.overrides import load_overrides
+from inventorydb.sources import ITEM_PACKAGE, ItemTypeSource, PackageSource, PluginSource, UserDirSource
+from mc import config
+
+__all__ = [
+    "HandlerKind",
+    "InventoryItemType",
+    "InventoryRegistry",
+    "ItemMethod",
+    "get_inventory_registry",
+    "reset_inventory_registry",
+    "type_name",
+    "validate_item_type",
+]
 
 logger = logging.getLogger(__name__)
-
-# Item handlers take (item, params) and return a result dict; they may be sync or async
-ItemMethod = Callable[[dict[str, Any], dict[str, Any]], Any]
-HandlerKind = Literal["actions", "views"]
-
-ITEM_PACKAGE = "mc.inventory.item"
-SCHEMA_FILE = "schema.json"
-META_FILE = "meta.json"
 
 # action types in meta.json, and the handler dict of the item module they call (None: handled by the UI)
 ACTION_TYPE_HANDLERS: dict[str, HandlerKind | None] = {
@@ -37,142 +42,6 @@ ACTION_TYPE_HANDLERS: dict[str, HandlerKind | None] = {
     "link": None,
     "separator": None,
 }
-
-
-def type_name(item_type: str) -> str:
-    """Canonical item type name, lowercase and hyphenated ('App_Stack' -> 'app-stack')."""
-    return item_type.strip().lower().replace("_", "-")
-
-
-@dataclass
-class InventoryItemType:
-    name: str
-    schema: dict[str, Any]
-    meta: dict[str, Any] = field(default_factory=dict)
-    module: ModuleType | None = None
-    # set if the item module exists but failed to import
-    module_error: str | None = None
-    # where the item type was loaded from, for log messages
-    source: str = ""
-
-    def handlers(self, kind: HandlerKind) -> dict[str, ItemMethod]:
-        """The `actions` or `views` dict of the item module ({} if there is none)."""
-        handlers = getattr(self.module, kind, None) if self.module else None
-        return handlers if isinstance(handlers, dict) else {}
-
-    def get_handler(self, kind: HandlerKind, name: str) -> ItemMethod:
-        """
-        :raises RuntimeError: If the item module failed to load.
-        :raises NotImplementedError: If there is no such handler.
-        """
-        if self.module_error:
-            raise RuntimeError(f"Item module of '{self.name}' failed to load: {self.module_error}")
-        method = self.handlers(kind).get(name)
-        if method is None:
-            label = "Action" if kind == "actions" else "View"
-            raise NotImplementedError(f"{label} '{name}' for item type '{self.name}' is not implemented.")
-        return method
-
-    def info(self) -> InventoryShortInfo:
-        return InventoryShortInfo(
-            item_type=self.name,
-            title=self.schema.get("title", self.name),
-            description=self.schema.get("description"),
-            version=self.schema.get("version"),
-            icon=self.schema.get("$icon"),
-        )
-
-
-class ItemTypeSource(Protocol):
-    """A place item types are loaded from."""
-
-    def load(self) -> tuple[list[InventoryItemType], list[str]]:
-        """Return the item types and warnings about the source."""
-        ...
-
-
-def _load_json_object(path: Traversable) -> dict[str, Any] | None:
-    """Read a JSON file containing an object. Returns None (and logs) if it can't be read or isn't an object."""
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as e:
-        logger.error("Can't read %s: %s", path, e)
-        return None
-    if not isinstance(data, dict):
-        logger.error("Can't read %s: not a JSON object", path)
-        return None
-    return data
-
-
-def _import_item_module(module_name: str) -> tuple[ModuleType | None, str | None]:
-    """Import an item module. Returns (module, None), or (None, error) if the import fails."""
-    try:
-        return importlib.import_module(module_name), None
-    except Exception as e:
-        logger.exception("Failed to import item module %s", module_name)
-        return None, f"{type(e).__name__}: {e}"
-
-
-class PackageSource:
-    """
-    Item types defined as the subpackages of a Python package, one per type:
-
-        <package>/<type_with_underscores>/
-            __init__.py     # may define the handlers: actions = {...}, views = {...}
-            schema.json     # required
-            meta.json       # optional
-
-    The schema and meta files are read as package resources, so they ship with the code.
-    """
-
-    def __init__(self, package: str = ITEM_PACKAGE) -> None:
-        self.package = package
-
-    def load(self) -> tuple[list[InventoryItemType], list[str]]:
-        try:
-            package = importlib.import_module(self.package)
-        except ImportError as e:
-            return [], [f"Can't import item package {self.package}: {e}"]
-
-        root = importlib.resources.files(package)
-        item_types: list[InventoryItemType] = []
-        warnings: list[str] = []
-        for info in sorted(pkgutil.iter_modules(getattr(package, "__path__", [])), key=lambda i: i.name):
-            if info.name.startswith("_"):
-                continue
-            module_name = f"{self.package}.{info.name}"
-            schema_file = root.joinpath(info.name, SCHEMA_FILE)
-            if not info.ispkg or not schema_file.is_file():
-                warnings.append(f"{module_name} is not an item type (no {info.name}/{SCHEMA_FILE})")
-                continue
-
-            name = type_name(info.name)
-            schema = _load_json_object(schema_file)
-            if schema is None:
-                warnings.append(f"{name}: skipped, invalid {SCHEMA_FILE} in {module_name}")
-                continue
-
-            meta: dict[str, Any] = {}
-            meta_file = root.joinpath(info.name, META_FILE)
-            if meta_file.is_file():
-                loaded_meta = _load_json_object(meta_file)
-                if loaded_meta is None:
-                    warnings.append(f"{name}: ignored invalid {META_FILE} in {module_name}")
-                else:
-                    meta = loaded_meta
-
-            module, module_error = _import_item_module(module_name)
-            item_types.append(
-                InventoryItemType(
-                    name=name,
-                    schema=schema,
-                    meta=meta,
-                    module=module,
-                    module_error=module_error,
-                    source=module_name,
-                )
-            )
-        return item_types, warnings
 
 
 def validate_item_type(item_type: InventoryItemType) -> list[str]:
@@ -220,29 +89,44 @@ def validate_item_type(item_type: InventoryItemType) -> list[str]:
 class InventoryRegistry:
     """Item types from all sources. If several sources define a type, the first one wins."""
 
-    def __init__(self, sources: Iterable[ItemTypeSource]) -> None:
+    def __init__(self, sources: Iterable[ItemTypeSource], overrides_file: str | None = None) -> None:
         self._sources = list(sources)
+        self._overrides_file = overrides_file
         self._types: dict[str, InventoryItemType] = {}
         self.warnings: list[str] = []
         self.load()
 
     def load(self) -> None:
         """(Re)load all item types from the sources and log validation warnings."""
+        overrides, warnings = load_overrides(self._overrides_file) if self._overrides_file else ({}, [])
+        disabled = {name for name, override in overrides.items() if not override.enabled}
+
         item_types: dict[str, InventoryItemType] = {}
-        warnings: list[str] = []
+        seen: set[str] = set()
         for source in self._sources:
-            loaded, source_warnings = source.load()
+            candidates, source_warnings = source.load()
             warnings.extend(source_warnings)
-            for item_type in loaded:
+            for item_type in candidates:
                 if item_type.name in item_types:
                     warnings.append(
                         f"{item_type.name}: skipped definition from {item_type.source}, "
                         f"already defined by {item_types[item_type.name].source}"
                     )
                     continue
+                seen.add(item_type.name)
+                if item_type.name in disabled:
+                    logger.info("Inventory: %s from %s is disabled", item_type.name, item_type.source)
+                    continue
                 item_types[item_type.name] = item_type
 
-        for item_type in item_types.values():
+        warnings.extend(
+            f"{self._overrides_file}: [types.{name}] matches no item type" for name in sorted(set(overrides) - seen)
+        )
+        for name, item_type in item_types.items():
+            # only accepted types run their module code
+            item_type.load_module()
+            if name in overrides:
+                overrides[name].apply(item_type)
             warnings.extend(validate_item_type(item_type))
 
         self._types = item_types
@@ -259,8 +143,8 @@ class InventoryRegistry:
         return self.get(item_type) is not None
 
     def types(self) -> list[InventoryItemType]:
-        """All item types, sorted by name."""
-        return sorted(self._types.values(), key=lambda t: t.name)
+        """All item types: those with an order first (by order), then the others by name."""
+        return sorted(self._types.values(), key=lambda t: (t.order is None, t.order or 0, t.name))
 
     def get_handler(self, item_type: str, kind: HandlerKind, name: str) -> ItemMethod:
         """
@@ -274,7 +158,15 @@ class InventoryRegistry:
 
 
 def default_sources() -> list[ItemTypeSource]:
-    return [PackageSource(ITEM_PACKAGE)]
+    return [
+        PackageSource(ITEM_PACKAGE),
+        PluginSource(),
+        UserDirSource(os.path.join(config.CONFIG_DIR, "inventory"), allow_code=config.INVENTORY_USER_CODE),
+    ]
+
+
+def default_overrides_file() -> str:
+    return os.path.join(config.CONFIG_DIR, "inventory.toml")
 
 
 _registry: InventoryRegistry | None = None
@@ -287,7 +179,7 @@ def get_inventory_registry() -> InventoryRegistry:
     if _registry is None:
         with _registry_lock:
             if _registry is None:
-                _registry = InventoryRegistry(default_sources())
+                _registry = InventoryRegistry(default_sources(), default_overrides_file())
     return _registry
 
 

@@ -55,6 +55,8 @@ DEV_MODE = get_env_var("DEV_MODE", "false").lower() == "true"
 # Additional paths
 CONFIG_DIR = get_env_var("CONFIG_DIR", f"{DATA_DIR}/etc")
 RESOURCES_DIR = get_env_var("RESOURCES_DIR", f"{DATA_DIR}/resources")
+# Inventory: load the Python modules of user item types in $CONFIG_DIR/inventory (schema-only types always load)
+INVENTORY_USER_CODE = get_env_var("INVENTORY_USER_CODE", "false").lower() == "true"
 # SSH_CONFIG = get_env_var("SSH_CONFIG", f"{DATA_DIR}/etc/ssh_config")
 # HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/opt/mc") # deprecated
 # HOST_CONFIG_DIR = get_env_var("HOST_CONFIG_DIR", "/opt/mc/etc") # deprecated

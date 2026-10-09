@@ -11,11 +11,12 @@ from inventorydb.metadata import InventoryShortInfo
 from inventorydb.registry import (
     InventoryItemType,
     InventoryRegistry,
-    PackageSource,
     get_inventory_registry,
     reset_inventory_registry,
     validate_item_type,
 )
+from inventorydb.sources import PackageSource, PluginSource, UserDirSource
+from mc import config
 
 PACKAGE = "mc_test_items"
 
@@ -114,8 +115,8 @@ class TestPackageSource:
         reg = load()
         assert [t.name for t in reg.types()] == ["thing"]
         assert reg.warnings == [
-            f"{PACKAGE}.helper is not an item type (no helper/schema.json)",
-            f"{PACKAGE}.nested is not an item type (no nested/schema.json)",
+            f"{PACKAGE}.helper is not an item type (not a package)",
+            f"{PACKAGE}.nested is not an item type (no schema.json)",
         ]
 
     @pytest.mark.parametrize("content", ["{not json", "[]"])
@@ -256,18 +257,25 @@ class TestSharedRegistry:
         finally:
             reset_inventory_registry()
 
-    def test_default_source_is_item_package(self):
-        [source] = registry_module.default_sources()
-        assert isinstance(source, PackageSource)
-        assert source.package == "mc.inventory.item"
+    def test_default_sources(self):
+        builtin, plugins, user = registry_module.default_sources()
+        assert isinstance(builtin, PackageSource)
+        assert builtin.package == "mc.inventory.item"
+        assert isinstance(plugins, PluginSource)
+        assert isinstance(user, UserDirSource)
+        assert user.path == f"{config.CONFIG_DIR}/inventory"
+        assert user.allow_code is False
+
+    def test_default_overrides_file(self):
+        assert registry_module.default_overrides_file() == f"{config.CONFIG_DIR}/inventory.toml"
 
 
 class TestBuiltinTypes:
-    """The item types that ship with mc."""
+    """The item types that ship with mc: built-in types and the types of the built-in plugins."""
 
     @pytest.fixture
     def reg(self) -> InventoryRegistry:
-        return load("mc.inventory.item")
+        return InventoryRegistry([PackageSource(), PluginSource()])
 
     def test_types(self, reg):
         assert [t.name for t in reg.types()] == [
@@ -283,6 +291,19 @@ class TestBuiltinTypes:
 
     def test_load_without_warnings(self, reg):
         assert reg.warnings == []
+
+    @pytest.mark.parametrize(
+        "name, plugin",
+        [
+            ("app-stack", "apps"),
+            ("app-template", "apps"),
+            ("container-node", "containers"),
+            ("container-registry", "containers"),
+        ],
+    )
+    def test_plugin_types(self, reg, name, plugin):
+        package = name.replace("-", "_")
+        assert get_type(reg, name).source == f"mc.plugin.{plugin}.inventory.{package}"
 
     def test_handlers(self, reg):
         from mc.inventory.item import ssh_key
