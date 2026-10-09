@@ -14,7 +14,7 @@ def get_mongo_client(ping: bool = False) -> MongoClient:
             # The ismaster command is cheap and does not require auth.
             client.admin.command("ismaster")
         except Exception as e:
-            raise ConnectionError(f"Could not connect to MongoDB: {e}")
+            raise ConnectionError(f"Could not connect to MongoDB: {e}") from e
     return client
 
 

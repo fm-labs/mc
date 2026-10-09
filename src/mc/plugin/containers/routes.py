@@ -178,7 +178,7 @@ def post_docker_container_action(alias: str, container_id: str, action: str, cli
         return {"action": action, "status": "ok", "message": f"Action {action} was successful"}
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/containers/{alias}/containers/{container_id}/exec")
@@ -200,7 +200,7 @@ def post_docker_container_exec(
         rc = exec_instance.exit_code
         return {"container_id": container_id, "command": command, "exit_code": rc, "output": output}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/containers/{alias}/containers/{container_id}/logs")
@@ -351,7 +351,7 @@ def pull_docker_image(alias: str, body: PullImageRequest, client: ContainerClien
         pulled_image = client.images.pull(body.image)
         return jsonable_encoder(pulled_image.attrs)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/containers/{alias}/volumes")

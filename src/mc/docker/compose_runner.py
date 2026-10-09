@@ -242,7 +242,9 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
             return p1.stdout, p1.stderr, p1.returncode
         except subprocess.CalledProcessError as e:
             logger.exception("COMPOSE COMMAND ERROR", exc_info=True)
-            raise RuntimeError(f"Compose command failed with exit code {e.returncode}: {e.stderr.decode('utf-8')}")
+            raise RuntimeError(
+                f"Compose command failed with exit code {e.returncode}: {e.stderr.decode('utf-8')}"
+            ) from e
         except Exception as e:
             logger.info("COMPOSE RUN ERROR", exc_info=True)
             raise e

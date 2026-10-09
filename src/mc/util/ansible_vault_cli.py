@@ -32,7 +32,7 @@ def ansible_vault_cli_encrypt(decrypted_file: str, password_file: str, output_fi
         return result.stdout
     except subprocess.CalledProcessError as exc:
         print("Encryption failed", exc.stderr)
-        raise RuntimeError(f"ansible-vault encrypt failed with exit code {exc.returncode}")
+        raise RuntimeError(f"ansible-vault encrypt failed with exit code {exc.returncode}") from exc
 
 
 def ansible_vault_cli_decrypt(encrypted_file: str, password_file: str, output_file: str) -> str:
@@ -42,4 +42,4 @@ def ansible_vault_cli_decrypt(encrypted_file: str, password_file: str, output_fi
         print("Decrypted vault file successfully.")
         return result.stdout
     except subprocess.CalledProcessError as exc:
-        raise RuntimeError(f"ansible-vault decrypt failed with exit code {exc.returncode}")
+        raise RuntimeError(f"ansible-vault decrypt failed with exit code {exc.returncode}") from exc

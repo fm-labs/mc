@@ -63,7 +63,7 @@ def get_infrastructure_host_system_info(host_id: str, db: StorageDep) -> dict:
         client = ssh_connect(host_name)
         print(f"Connected to {host_name}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     stdin, stdout, stderr = client.exec_command(
         "systemctl list-units --type=service --all --no-pager --no-legend --plain --output=json"
@@ -121,7 +121,7 @@ def stream_ssh_host_logs(
         client = ssh_connect(host_name)
         print(f"Connected to {host_name}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     # return SSE response
     return StreamingResponse(

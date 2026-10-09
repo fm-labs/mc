@@ -13,8 +13,8 @@ def read_toml(path: str) -> dict:
     except ModuleNotFoundError:
         try:
             import toml  # type: ignore
-        except ModuleNotFoundError:
-            raise RuntimeError("Error: Need 'tomllib' (Python 3.11+) or 'toml' package to read TOML.")
+        except ModuleNotFoundError as e:
+            raise RuntimeError("Error: Need 'tomllib' (Python 3.11+) or 'toml' package to read TOML.") from e
         data = toml.loads(content.decode("utf-8"))
     if not isinstance(data, dict):
         data = {}
@@ -35,7 +35,7 @@ def write_toml(path: str, data: dict) -> None:
     except ModuleNotFoundError:
         try:
             import toml  # type: ignore
-        except ModuleNotFoundError:
-            raise RuntimeError("Error: Need 'tomli-w' or 'toml' package to write TOML.")
+        except ModuleNotFoundError as e:
+            raise RuntimeError("Error: Need 'tomli-w' or 'toml' package to write TOML.") from e
         with open(path, "w") as f:
             f.write(toml.dumps(data))

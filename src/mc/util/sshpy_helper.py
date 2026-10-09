@@ -146,7 +146,7 @@ def ssh_connect(
             timeout=timeout,
         )
         return client
-    except PasswordRequiredException:
+    except PasswordRequiredException as exc:
         if not key_passphrase:
             print("Private key is password-protected, but no key_passphrase provided. Trying agent keys...")
 
@@ -154,7 +154,7 @@ def ssh_connect(
             ssh_agent = paramiko.Agent()
             agent_keys = ssh_agent.get_keys()
             if len(agent_keys) == 0:
-                raise Exception("No keys in SSH agent and key is encrypted.")
+                raise Exception("No keys in SSH agent and key is encrypted.") from exc
 
             for i, agent_key in enumerate(agent_keys):
                 try:
@@ -168,11 +168,11 @@ def ssh_connect(
                 except Exception as e:
                     print(f"❌ Error using agent key: {e}")
                     continue
-            raise Exception("All keys in SSH agent failed to authenticate.")
+            raise Exception("All keys in SSH agent failed to authenticate.") from exc
 
         raise Exception(
             "Private key is password-protected, but no key_passphrase provided, and no agent keys available."
-        )
+        ) from exc
     except Exception as e:
         print(f"Failed to connect to {hostname}:{port} - {e}")
         raise

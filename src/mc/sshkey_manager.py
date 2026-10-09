@@ -57,7 +57,7 @@ def add_ssh_key(
         pkey, fingerprint, key_class = ssh_key_load_with_fingerprint(key_file, password=key_passphrase)
         print(f"Loaded SSH key with fingerprint: {fingerprint}, hash: {ssh_key_hash}, type: {key_class.__name__}")
     except Exception as e:
-        raise ValueError(f"Error loading SSH key: {e}")
+        raise ValueError(f"Error loading SSH key: {e}") from e
 
     # cname = f"ssh-key-{ssh_key_hash[:16]}"
     cname = f"sshkey-{name}"

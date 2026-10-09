@@ -35,7 +35,7 @@ def handle_container_image_pull(item: dict, action_params: dict) -> dict:
     try:
         dockercli_image_pull(image_url_tagged, env=env)
     except Exception as e:
-        raise RuntimeError(f"Error pulling image: {e}")
+        raise RuntimeError(f"Error pulling image: {e}") from e
 
     return {
         "status": "pulled",

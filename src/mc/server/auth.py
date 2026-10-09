@@ -23,13 +23,13 @@ def get_current_user(token: str = Security(oauth2_scheme)):
         # if payload.get("sub") is None:
         #    raise HTTPException(status_code=401, detail="Token has no subject", headers=err_headers)
 
-    except ExpiredSignatureError:
+    except ExpiredSignatureError as e:
         print("Token expired")
-        raise HTTPException(status_code=401, detail="Token has expired", headers=err_headers)
-    except JWTClaimsError:
+        raise HTTPException(status_code=401, detail="Token has expired", headers=err_headers) from e
+    except JWTClaimsError as e:
         print("Token has invalid claims")
-        raise HTTPException(status_code=401, detail="Invalid token: invalid claims", headers=err_headers)
-    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token: invalid claims", headers=err_headers) from e
+    except JWTError as e:
         print("Token is invalid")
-        raise HTTPException(status_code=401, detail="Invalid token", headers=err_headers)
+        raise HTTPException(status_code=401, detail="Invalid token", headers=err_headers) from e
     return {"username": payload.get("sub")}
