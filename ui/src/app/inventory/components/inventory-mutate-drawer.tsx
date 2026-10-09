@@ -81,16 +81,21 @@ export function InventoryMutateDrawer({
         //     return {"type": "object", "properties": {}};
         // }
         const _properties: any = {
-            id: { type: "string", "description": "Unique ID" },
             ...inputSchema?.properties,
+            // the id is required on create and can't be changed afterwards
+            id: { type: "string", description: "Unique ID", readOnly: isUpdate },
         };
+        const _required: string[] = inputSchema?.required || [];
         const _schema: RJSFSchema = {
             type: "object",
             properties: _properties,
-            required: inputSchema?.required || [],
+            required: _required.includes("id") ? _required : ["id", ..._required],
         };
         return _schema;
-    }, [inputSchema]);
+    }, [inputSchema, isUpdate]);
+
+    // render the id field first
+    const uiSchema = { "ui:order": ["id", "*"] };
 
     if (!itemType || !inputSchema) {
         return null;
@@ -108,16 +113,16 @@ export function InventoryMutateDrawer({
                     <SheetTitle>{isUpdate ? "Update":"Create"} {itemType} Inventory</SheetTitle>
                     <SheetDescription>
                         {isUpdate
-                            ? "Update the repo by providing necessary info."
-                            :"Add a new repo by providing necessary info."}
-                        Click save when you&apos;re done.
+                            ? `Update the ${itemType} item.`
+                            :`Add a new ${itemType} item.`}
+                        {" "}Click save when you&apos;re done.
                     </SheetDescription>
                 </SheetHeader>
                 <div className={"px-4"}>
                     <Form
                         id="inventory-form"
                         schema={schema}
-                        uiSchema={{}}
+                        uiSchema={uiSchema}
                         formData={currentRow?.properties || {}}
                         onSubmit={handleFormSubmit}
                         onChange={handleFormChange}

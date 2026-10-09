@@ -46,9 +46,10 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
     const [items, setItems] = React.useState<InventoryItem<T>[]>(data || []);
     const [currentItem, setCurrentItem] = React.useState<InventoryItem<T> | null>(item || null);
     const [inputSchema, setInputSchema] = React.useState<object | null>(null);
-    const [columns, setColumns] = React.useState<any[]>([]);
     //const [actions, setActions] = React.useState<InventoryActionDef[]>([]);
     const [metadata, setMetadata] = React.useState<InventoryMetaData | null>(null);
+    // true once the metadata request finished (the metadata file is optional)
+    const [metadataLoaded, setMetadataLoaded] = React.useState<boolean>(false);
 
     const [dialog, setDialog] = React.useState<ReactNode>()
 
@@ -81,7 +82,9 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
     }, [itemType]);
 
     React.useEffect(() => {
-        // fetch the schema from the backend
+        // fetch the metadata from the backend
+        setMetadata(null);
+        setMetadataLoaded(false);
         api.get(`/api/inventory/${itemType}/_meta`).then((meta: any) => {
             console.log("Fetched meta data for", itemType, meta);
             if (!meta) {
@@ -91,6 +94,8 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
             setMetadata(meta);
         }).catch((error: any) => {
             console.error("Error fetching meta data for", itemType, error);
+        }).finally(() => {
+            setMetadataLoaded(true);
         });
     }, [itemType]);
 
@@ -146,58 +151,68 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
         });
     }, [metadata?.actions]);
 
-    React.useEffect(() => {
-        if (inputSchema && typeof inputSchema==="object" && "properties" in inputSchema) {
-            const props = (inputSchema as any).properties;
-            const itemCols: ColumnDef<InventoryItem<T>>[] = [
-                // {
-                //     accessorKey: 'id',
-                //     header: 'UUID',
-                // },
-                {
-                    accessorKey: "id",
-                    header: "id",
-                    cell: ({ row }) => {
-                        return <span className={"font-bold"} onClick={() => {
-                            console.log("Clicked on item:", row.original);
-                            setCurrentItem(row.original);
-                            setOpen("update");
-                        }}>
-                            {row.original.id}
-                        </span>;
-                    },
-                },
-            ];
-            const propsCols: ColumnDef<InventoryItem<T>>[] = Object.keys(props).map((key, idx) => {
-                const isRequired = (inputSchema as any)?.required
-                    && Array.isArray((inputSchema as any).required)
-                    && (inputSchema as any).required.includes(key);
-
-                const hiddenByDefault = !isRequired && idx >= 10;
-
-                return {
-                    accessorKey: key,
-                    accessorFn: (row: any) => row.properties ? row.properties[key]:undefined,
-                    header: key,
-                    enableColumnFilter: true,
-                    enableHiding: true,
-                    meta: { schema: props[key], isProperty: true, keyName: key, hiddenByDefault: hiddenByDefault }
-                };
-            });
-
-            const actionsCol: ColumnDef<InventoryItem<T>> = {
-                id: "actions",
-                accessorKey: "_actions_",
-                header: "Actions",
-                cell: ({ row }) => <DataTableRowActions row={row} actions={actions} />,
-                enableColumnFilter: false,
-                enableSorting: false,
-                enableHiding: false,
-            };
-
-            setColumns([...itemCols, ...propsCols, actionsCol]);
+    const columns: ColumnDef<InventoryItem<T>>[] = React.useMemo(() => {
+        // wait for the metadata, so the table doesn't switch from schema columns to configured columns
+        if (!metadataLoaded) {
+            return [];
         }
-    }, [inputSchema, actions]);
+        const schemaProps: Record<string, any> = (inputSchema as any)?.properties || {};
+        const schemaRequired: string[] = Array.isArray((inputSchema as any)?.required)
+            ? (inputSchema as any).required : [];
+
+        const idCol = (title: string): ColumnDef<InventoryItem<T>> => ({
+            accessorKey: "id",
+            header: title,
+            cell: ({ row }) => {
+                return <span className={"font-bold cursor-pointer"} onClick={() => {
+                    console.log("Clicked on item:", row.original);
+                    setCurrentItem(row.original);
+                    setOpen("update");
+                }}>
+                    {row.original.id}
+                </span>;
+            },
+        });
+
+        const propertyCol = (key: string, title: string, hiddenByDefault: boolean): ColumnDef<InventoryItem<T>> => ({
+            id: key,
+            accessorFn: (row: any) => row.properties ? row.properties[key]:undefined,
+            header: title,
+            enableColumnFilter: true,
+            enableHiding: true,
+            meta: { schema: schemaProps[key], isProperty: true, keyName: key, hiddenByDefault: hiddenByDefault }
+        });
+
+        let dataCols: ColumnDef<InventoryItem<T>>[];
+        const configuredCols = (metadata?.index?.columns || []).filter((col) => col && col.name);
+        if (configuredCols.length > 0) {
+            // columns from the metadata file: index.columns
+            dataCols = configuredCols.map((col) => col.name==="id"
+                ? idCol(col.title || col.name)
+                : propertyCol(col.name, col.title || col.name, false));
+        } else if (inputSchema) {
+            // fallback: id + one column per schema property
+            dataCols = [
+                idCol("id"),
+                ...Object.keys(schemaProps).map((key, idx) =>
+                    propertyCol(key, key, !schemaRequired.includes(key) && idx >= 10)),
+            ];
+        } else {
+            return [];
+        }
+
+        const actionsCol: ColumnDef<InventoryItem<T>> = {
+            id: "actions",
+            accessorKey: "_actions_",
+            header: "Actions",
+            cell: ({ row }) => <DataTableRowActions row={row} actions={actions} />,
+            enableColumnFilter: false,
+            enableSorting: false,
+            enableHiding: false,
+        };
+
+        return [...dataCols, actionsCol];
+    }, [metadataLoaded, metadata?.index?.columns, inputSchema, actions]);
 
     const contextValue = {
         itemType,

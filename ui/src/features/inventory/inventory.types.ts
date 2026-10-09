@@ -1,5 +1,3 @@
-import { ColumnDef } from "@tanstack/react-table";
-
 export type InventoryMetadata = {
     item_type: string;
     title: string;
@@ -15,11 +13,21 @@ export type InventoryItem<T> = {
 }
 
 export type InventoryMetaData = {
+    index?: InventoryIndexDef
     actions?: InventoryActionDef[]
     inputSchema?: object | null
     uiSchema?: object | null
-    columns?: ColumnDef<any>[]
     [key: string]: any
+}
+
+// table config of the inventory index page
+export type InventoryIndexDef = {
+    columns?: InventoryColumnDef[]
+}
+
+export type InventoryColumnDef = {
+    name: string   // "id" or a property name
+    title?: string // header label, defaults to the name
 }
 
 export type InventoryActionDef = {
