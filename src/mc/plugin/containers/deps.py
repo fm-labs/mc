@@ -14,9 +14,12 @@ def dep_ccm(request: Request) -> ContainerClientsManager:
     return request.app.state.ccm
 
 
+CCMDep = Annotated[ContainerClientsManager, Depends(dep_ccm)]
+
+
 def dep_container_connection(
     alias: str,
-    manager: ContainerClientsManager = Depends(dep_ccm),
+    manager: CCMDep,
 ) -> ContainerClient:
     c = manager.get(alias)
     if not c:
@@ -39,9 +42,12 @@ def dep_container_connection(
     return c
 
 
+ContainerClientDep = Annotated[ContainerClient, Depends(dep_container_connection)]
+
+
 async def dep_container_connections_manager(
+    manager: CCMDep,
     refresh: Annotated[bool, Query()] = False,
-    manager: ContainerClientsManager = Depends(dep_ccm),
 ) -> ContainerClientsManager:
     # check if refresh is needed, due to ssh key changes or similar
     check_file = "/tmp/ssh-load-keys-success"
@@ -60,3 +66,6 @@ async def dep_container_connections_manager(
     #    print("Refreshing container connections")
     #    bootstrap_container_connection_manager()
     return manager
+
+
+ContainerManagerDep = Annotated[ContainerClientsManager, Depends(dep_container_connections_manager)]

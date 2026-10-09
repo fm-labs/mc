@@ -1,3 +1,5 @@
+from typing import Annotated, Any
+
 from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security import OAuth2PasswordRequestForm
 
@@ -40,7 +42,7 @@ def health():
 
 
 @app_router.post("/api/auth/login", tags=["auth"])
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
+def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
@@ -56,5 +58,5 @@ def logout():
 
 
 @app_router.get("/api/auth/user", tags=["auth"], dependencies=[Security(get_current_user)])
-def me(current_user: dict = Depends(get_current_user)):
+def me(current_user: Annotated[dict[str, Any], Depends(get_current_user)]):
     return current_user

@@ -18,8 +18,11 @@ def dep_storage(request: Request) -> Storage:
     return storage
 
 
+StorageDep = Annotated[Storage, Depends(dep_storage)]
+
+
 @router.get("/infrastructure/host/{host_id}/services")
-def get_infrastructure_host_services(host_id: str, db: Storage = Depends(dep_storage)) -> list:
+def get_infrastructure_host_services(host_id: str, db: StorageDep) -> list:
     """
     Get related inventory items for a given inventory host
     """
@@ -47,7 +50,7 @@ def get_infrastructure_host_services(host_id: str, db: Storage = Depends(dep_sto
 
 
 @router.get("/infrastructure/host/{host_id}/system")
-def get_infrastructure_host_system_info(host_id: str, db: Storage = Depends(dep_storage)) -> dict:
+def get_infrastructure_host_system_info(host_id: str, db: StorageDep) -> dict:
     host = db.read("host", host_id)
     if not host:
         raise HTTPException(status_code=404, detail="Host not found")
@@ -82,12 +85,12 @@ def get_infrastructure_host_system_info(host_id: str, db: Storage = Depends(dep_
 def stream_ssh_host_logs(
     request: Request,
     host_id: str,
+    db: StorageDep,
     log_type: Annotated[str, Query()] = "syslog",  # auth, systemd, syslog, kernel
     since: Annotated[int, Query()] = None,
     until: Annotated[int, Query()] = None,
     tail: Annotated[int, Query()] = 1000,
     follow: Annotated[bool, Query()] = False,
-    db: Storage = Depends(dep_storage),
 ) -> StreamingResponse:
 
     host = db.read("host", host_id)

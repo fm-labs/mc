@@ -173,4 +173,4 @@ def cmd_show(vaultfile: str, name: str | None):
 # ----------------------------- Entrypoint -------------------------------- #
 
 if __name__ == "__main__":
-    cli()
+    credentials()

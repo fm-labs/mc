@@ -4,7 +4,7 @@ from typing import Annotated, Any, Literal
 
 import anyio
 from docker.models.containers import Container
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Path, Query
 from pydantic import BaseModel
@@ -13,8 +13,7 @@ from starlette.requests import ClientDisconnect, Request
 from starlette.responses import StreamingResponse
 
 from mc.cache import cached_fn, clear_cache
-from mc.plugin.containers.deps import dep_container_connection, dep_container_connections_manager
-from mc.plugin.containers.manager import ContainerClientsManager
+from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
 
 router = APIRouter()
 
@@ -26,7 +25,7 @@ class CommandExecRequest(BaseModel):
 
 
 @router.get("/containers/hosts")
-def get_container_hosts(manager: ContainerClientsManager = Depends(dep_container_connections_manager)) -> list[dict]:
+def get_container_hosts(manager: ContainerManagerDep) -> list[dict]:
     # storage = get_inventory_storage_instance()
     # items = storage.list_items("container_host")
     # _items = []
@@ -99,13 +98,13 @@ def get_container_hosts(manager: ContainerClientsManager = Depends(dep_container
 
 
 @router.get("/containers/{alias}/version")
-def get_docker_version(client=Depends(dep_container_connection)) -> dict:
+def get_docker_version(client: ContainerClientDep) -> dict:
     version_info = client.version()
     return jsonable_encoder(version_info)
 
 
 @router.get("/containers/{alias}/info")
-def get_docker_info(alias: str, client=Depends(dep_container_connection)) -> dict:
+def get_docker_info(alias: str, client: ContainerClientDep) -> dict:
     def fetch_info():
         _info = client.info()
         return jsonable_encoder(_info)
@@ -114,7 +113,7 @@ def get_docker_info(alias: str, client=Depends(dep_container_connection)) -> dic
 
 
 @router.get("/containers/{alias}/df")
-def get_docker_info(alias: str, client=Depends(dep_container_connection)) -> dict:
+def get_docker_df(alias: str, client: ContainerClientDep) -> dict:
     def fetch_df():
         summary = client.df()
         return jsonable_encoder(summary)
@@ -123,7 +122,7 @@ def get_docker_info(alias: str, client=Depends(dep_container_connection)) -> dic
 
 
 @router.get("/containers/{alias}/containers")
-def list_docker_containers(alias: str, client=Depends(dep_container_connection)) -> list[dict]:
+def list_docker_containers(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_containers():
         collection = client.containers.list(all=True, filters={"status": ["running", "exited", "created", "paused"]})
         print("Containers", collection)
@@ -136,7 +135,7 @@ def list_docker_containers(alias: str, client=Depends(dep_container_connection))
 
 
 @router.get("/containers/{alias}/containers/{container_id}")
-def get_docker_container(alias: str, container_id: str, client=Depends(dep_container_connection)) -> dict:
+def get_docker_container(alias: str, container_id: str, client: ContainerClientDep) -> dict:
     def fetch_container():
         _container: Container = client.containers.get(container_id)
         return jsonable_encoder(_container.attrs)
@@ -145,9 +144,7 @@ def get_docker_container(alias: str, container_id: str, client=Depends(dep_conta
 
 
 @router.post("/containers/{alias}/containers/{container_id}/actions/{action}")
-def post_docker_container_action(
-    alias: str, container_id: str, action: str, client=Depends(dep_container_connection)
-) -> dict:
+def post_docker_container_action(alias: str, container_id: str, action: str, client: ContainerClientDep) -> dict:
     container: Container = client.containers.get(container_id)
     try:
         if action == "start":
@@ -189,7 +186,7 @@ def post_docker_container_exec(
     alias: str,
     container_id: Annotated[str, Path()],
     exec_req: CommandExecRequest,
-    client=Depends(dep_container_connection),
+    client: ContainerClientDep,
 ) -> dict:
     container: Container = client.containers.get(container_id)
     command = exec_req.command
@@ -210,10 +207,10 @@ def post_docker_container_exec(
 def get_docker_container_logs(
     alias: str,
     container_id: str,
+    client: ContainerClientDep,
     since: Annotated[int, Query()] = None,
     until: Annotated[int, Query()] = None,
     tail: Annotated[int, Query()] = 1000,
-    client=Depends(dep_container_connection),
 ) -> dict:
     container: Container = client.containers.get(container_id)
 
@@ -233,12 +230,12 @@ def stream_docker_container_logs(
     request: Request,
     alias: str,
     container_id: str,
+    client: ContainerClientDep,
     since: Annotated[int, Query()] = None,
     until: Annotated[int, Query()] = None,
     tail: Annotated[int, Query()] = 1000,
     follow: Annotated[bool, Query()] = True,
     format: Annotated[Literal["sse", "json"], Query()] = "json",
-    client=Depends(dep_container_connection),
 ) -> StreamingResponse:
     print("Streaming logs for container", container_id)
     container: Container = client.containers.get(container_id)
@@ -322,7 +319,7 @@ def stream_docker_container_logs(
 
 
 @router.get("/containers/{alias}/images")
-def list_docker_images(alias: str, client=Depends(dep_container_connection)) -> list[dict]:
+def list_docker_images(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_images():
         collection = client.images.list()
         print("Images", collection)
@@ -335,7 +332,7 @@ def list_docker_images(alias: str, client=Depends(dep_container_connection)) -> 
 
 
 @router.get("/containers/{alias}/images/{image_id}")
-def get_docker_image(alias: str, image_id: str, client=Depends(dep_container_connection)) -> dict:
+def get_docker_image(alias: str, image_id: str, client: ContainerClientDep) -> dict:
     def fetch_image_details():
         image = client.images.get(image_id)
         return jsonable_encoder(image.attrs)
@@ -348,7 +345,7 @@ class PullImageRequest(BaseModel):
 
 
 @router.post("/containers/{alias}/images/pull")
-def pull_docker_image(alias: str, body: PullImageRequest, client=Depends(dep_container_connection)) -> dict:
+def pull_docker_image(alias: str, body: PullImageRequest, client: ContainerClientDep) -> dict:
     try:
         # todo - this can take a long time, make it async and stream progress
         pulled_image = client.images.pull(body.image)
@@ -358,7 +355,7 @@ def pull_docker_image(alias: str, body: PullImageRequest, client=Depends(dep_con
 
 
 @router.get("/containers/{alias}/volumes")
-def list_docker_volumes(alias: str, client=Depends(dep_container_connection)) -> list[dict]:
+def list_docker_volumes(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_volumes():
         collection = client.volumes.list()
         print("Volumes", collection)
@@ -371,7 +368,7 @@ def list_docker_volumes(alias: str, client=Depends(dep_container_connection)) ->
 
 
 @router.get("/containers/{alias}/volumes/{volume_id}")
-def get_docker_volume(alias: str, volume_id: str, client=Depends(dep_container_connection)) -> dict:
+def get_docker_volume(alias: str, volume_id: str, client: ContainerClientDep) -> dict:
     def fetch_volume_details():
         volume = client.volumes.get(volume_id)
         return jsonable_encoder(volume.attrs)
@@ -380,7 +377,7 @@ def get_docker_volume(alias: str, volume_id: str, client=Depends(dep_container_c
 
 
 @router.get("/containers/{alias}/networks")
-def list_docker_networks(alias: str, client=Depends(dep_container_connection)) -> list[dict]:
+def list_docker_networks(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_networks():
         collection = client.networks.list()
         print("Networks", collection)
@@ -393,9 +390,7 @@ def list_docker_networks(alias: str, client=Depends(dep_container_connection)) -
 
 
 @router.get("/containers/{alias}/events/stream")
-async def stream_docker_events(
-    request: Request, alias: str, client=Depends(dep_container_connection)
-) -> StreamingResponse:
+async def stream_docker_events(request: Request, alias: str, client: ContainerClientDep) -> StreamingResponse:
     event_stream = client.events(decode=True)
 
     async def event_generator():
@@ -435,7 +430,7 @@ async def stream_docker_events(
 
 # @router.post("/containers/{alias}/compose/{project_name}/actions/{action}")
 # def post_docker_compose_action(alias: str, project_name: str, action: str,
-#                                  client=Depends(dep_container_connection)) -> dict:
+#                                  client: ContainerClientDep) -> dict:
 #     try:
 #         raise HTTPException(status_code=501, detail="Not implemented yet")
 #     except Exception as e:

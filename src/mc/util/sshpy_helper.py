@@ -1,4 +1,5 @@
 import os
+from collections.abc import Callable
 
 import paramiko
 from paramiko import AuthenticationException, ECDSAKey, Ed25519Key, PasswordRequiredException, RSAKey
@@ -90,7 +91,7 @@ def ssh_connect(
     password: str = None,
     key_filename: str = None,
     key_passphrase: str = None,
-    key_passphrase_callback: callable | None = None,
+    key_passphrase_callback: Callable[[str], str | None] | None = None,
     use_agent_keys=True,
     timeout=30,
 ) -> paramiko.SSHClient:
@@ -169,7 +170,9 @@ def ssh_connect(
                     continue
             raise Exception("All keys in SSH agent failed to authenticate.")
 
-        raise ("Private key is password-protected, but no key_passphrase provided, and no agent keys available.")
+        raise Exception(
+            "Private key is password-protected, but no key_passphrase provided, and no agent keys available."
+        )
     except Exception as e:
         print(f"Failed to connect to {hostname}:{port} - {e}")
         raise
