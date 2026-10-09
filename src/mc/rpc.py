@@ -1,8 +1,8 @@
 # RPC handlers
 import inspect
-from typing import Callable, Any, Literal
+from collections.abc import Callable
+from typing import Any, Literal
 
-from mc.config import get_env_var, set_env_var
 from mc.util.random_util import generate_random_secret
 
 
@@ -30,32 +30,32 @@ def rpc_echo(message: str = None, **kwargs) -> dict:
 #         return {"status": "success", "message": f"Environment variable '{key}' has been set."}
 #     except Exception as e:
 #         return {"error": str(e)}
-
-
-def rpc_set_env(key: str, value: str, **kwargs) -> dict:
-    """
-    Set an environment variable in the local config file.
-    """
-    try:
-        set_env_var(key, value)
-        return {"status": "success", "message": f"Environment variable '{key}' has been set."}
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def rpc_get_env(key: str, **kwargs) -> dict:
-    """
-    Get an environment variable from the local config file.
-    """
-    value = get_env_var(key)
-    if value is None:
-        return {"error": f"Environment variable '{key}' is not set."}
-    if "password" in key.lower() or "secret" in key.lower() or "token" in key.lower():
-        if len(value) > 12:
-            value = value[:3] + "*****" + value[-3:]
-        else:
-            value = "*****" + value[-1:]
-    return {"status": "success", "key": key, "value": value}
+#
+#
+# def rpc_set_env(key: str, value: str, **kwargs) -> dict:
+#     """
+#     Set an environment variable in the local config file.
+#     """
+#     try:
+#         set_env_var(key, value)
+#         return {"status": "success", "message": f"Environment variable '{key}' has been set."}
+#     except Exception as e:
+#         return {"error": str(e)}
+#
+#
+# def rpc_get_env(key: str, **kwargs) -> dict:
+#     """
+#     Get an environment variable from the local config file.
+#     """
+#     value = get_env_var(key)
+#     if value is None:
+#         return {"error": f"Environment variable '{key}' is not set."}
+#     if "password" in key.lower() or "secret" in key.lower() or "token" in key.lower():
+#         if len(value) > 12:
+#             value = value[:3] + "*****" + value[-3:]
+#         else:
+#             value = "*****" + value[-1:]
+#     return {"status": "success", "key": key, "value": value}
 
 
 def rpc_user_change_password(username: str, old_password, new_password: str, repeat_password, **kwargs) -> dict:
@@ -63,6 +63,7 @@ def rpc_user_change_password(username: str, old_password, new_password: str, rep
     Change a user's password. This is a wrapper around the users.change_password function.
     """
     from mc.users import change_password
+
     try:
         if new_password != repeat_password:
             raise ValueError("New passwords do not match")
@@ -79,11 +80,15 @@ def rpc_user_reset_password(username: str, **kwargs) -> dict:
     The new password will be printed to the console, so only server administrators should have access to see this.
     """
     from mc.users import set_password
+
     try:
         new_password = generate_random_secret(32)
         set_password(username, new_password)
         print(f"Password for user '{username}' has been reset: {new_password}.")
-        return {"status": "success", "message": f"Password for user '{username}' has been reset to a new random password."}
+        return {
+            "status": "success",
+            "message": f"Password for user '{username}' has been reset to a new random password.",
+        }
     except Exception as e:
         return {"error": str(e)}
 
@@ -93,6 +98,7 @@ def rpc_docker_info(**kwargs) -> dict:
     Retrieve Docker system information using the Docker SDK for Python.
     """
     import docker
+
     client = docker.from_env()
     info = client.info()
     return {"status": "success", "data": info}
@@ -103,6 +109,7 @@ def rpc_self_update(**kwargs) -> dict:
     Pull the latest image from the registry and restart the server.
     """
     import docker
+
     client = docker.from_env()
     image_name = "docker.io/fmlabs/mc:latest"
     try:
@@ -112,10 +119,15 @@ def rpc_self_update(**kwargs) -> dict:
     except Exception as e:
         print(f"Error pulling image: {e}")
         return {"error": str(e)}
-    return {"status": "success", "message": f"Image '{image_name}' pulled successfully. Please restart the server to apply the update."}
+    return {
+        "status": "success",
+        "message": f"Image '{image_name}' pulled successfully. Please restart the server to apply the update.",
+    }
 
 
-def rpc_container_action(container_id: str, action: Literal["start", "stop", "restart", "pause", "unpause"], **kwargs) -> dict:
+def rpc_container_action(
+    container_id: str, action: Literal["start", "stop", "restart", "pause", "unpause"], **kwargs
+) -> dict:
     """
     Perform an action (start, stop, restart) on a Docker container.
 
@@ -123,6 +135,7 @@ def rpc_container_action(container_id: str, action: Literal["start", "stop", "re
     :param action: The action to perform ('start', 'stop', 'restart').
     """
     import docker
+
     client = docker.from_env()
     try:
         container = client.containers.get(container_id)
@@ -148,6 +161,7 @@ def rpc_docker_swarm_info(**kwargs) -> dict:
     Retrieve Docker Swarm information using the Docker SDK for Python.
     """
     import docker
+
     client = docker.from_env()
     try:
         swarm_info = client.swarm.attrs
@@ -161,6 +175,7 @@ def rpc_docker_swarm_join_token(token_type: Literal["Worker", "Manager"], **kwar
     Retrieve the Docker Swarm join token for worker nodes.
     """
     import docker
+
     client = docker.from_env()
     try:
         swarm_info = client.swarm.attrs
@@ -172,7 +187,7 @@ def rpc_docker_swarm_join_token(token_type: Literal["Worker", "Manager"], **kwar
         return {"error": str(e)}
 
 
-def rpc_docker_swarm_init(advertise_addr: str|None = None, listen_addr: str = "0.0.0.0:2377", **kwargs) -> dict:
+def rpc_docker_swarm_init(advertise_addr: str | None = None, listen_addr: str = "0.0.0.0:2377", **kwargs) -> dict:
     """
     Initialize a Docker Swarm on this node.
 
@@ -180,6 +195,7 @@ def rpc_docker_swarm_init(advertise_addr: str|None = None, listen_addr: str = "0
     :param listen_addr: The address to listen on for swarm management traffic (e.g., "10.30.1:2377").
     """
     import docker
+
     client = docker.from_env()
     try:
         client.swarm.init(advertise_addr=advertise_addr, listen_addr=listen_addr)
@@ -195,6 +211,7 @@ def rpc_docker_swarm_leave(force: bool = False, **kwargs) -> dict:
     :param force: If True, force the node to leave the swarm even if it is a manager.
     """
     import docker
+
     client = docker.from_env()
     try:
         client.swarm.leave(force=force)
@@ -211,8 +228,8 @@ RPC_HANDLERS = {
     "test.echo": rpc_echo,
     "system.update": rpc_self_update,
     # config handlers
-    "config.set_env": rpc_set_env,
-    "config.get_env": rpc_get_env,
+    # "config.set_env": rpc_set_env,
+    # "config.get_env": rpc_get_env,
     # docker handlers
     "docker.info": rpc_docker_info,
     "docker.container.action": rpc_container_action,
@@ -225,6 +242,7 @@ RPC_HANDLERS = {
     "user.change_password": rpc_user_change_password,
     "user.reset_password": rpc_user_reset_password,
 }
+
 
 def dispatch_rpc_method(method: str, params: dict) -> dict:
     handler = RPC_HANDLERS.get(method)
@@ -246,6 +264,7 @@ _TYPE_MAP: dict[type, str] = {
     list: "array",
     dict: "object",
 }
+
 
 def _params_from_signature(fn: Callable[..., Any]) -> dict:
     """Derive a minimal JSON-Schema ``parameters`` dict from a function signature."""
@@ -285,9 +304,11 @@ def rpc_schemas() -> list[dict]:
     """Generate JSON-Schema method definitions for all registered RPC handlers."""
     schemas: list[dict] = []
     for method_name, handler in RPC_HANDLERS.items():
-        schemas.append({
-            "method": method_name,
-            "description": handler.__doc__ or "",
-            "inputSchema": _params_from_signature(handler)
-        })
+        schemas.append(
+            {
+                "method": method_name,
+                "description": handler.__doc__ or "",
+                "inputSchema": _params_from_signature(handler),
+            }
+        )
     return schemas

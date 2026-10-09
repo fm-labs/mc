@@ -6,10 +6,8 @@ def list_projects_from_containers(containers):
     :return: list of project names
     """
     return list(
-        set([c.attrs
-            .get('Config', {})
-            .get('Labels', {})
-            .get('com.docker.compose.project') for c in containers]))
+        set([c.attrs.get("Config", {}).get("Labels", {}).get("com.docker.compose.project") for c in containers])
+    )
 
 
 def filter_containers_by_project(containers, project_name):
@@ -20,10 +18,11 @@ def filter_containers_by_project(containers, project_name):
     :param project_name: str
     :return: list of containers
     """
-    return [c for c in containers if c.attrs
-    .get('Config', {})
-    .get('Labels', {})
-    .get('com.docker.compose.project') == project_name]
+    return [
+        c
+        for c in containers
+        if c.attrs.get("Config", {}).get("Labels", {}).get("com.docker.compose.project") == project_name
+    ]
 
 
 def filter_containers_by_status_text(containers, status):
@@ -34,4 +33,4 @@ def filter_containers_by_status_text(containers, status):
     :param status: str
     :return: list of containers
     """
-    return [c for c in containers if c.attrs.get('State', {}).get('Status') == status]
+    return [c for c in containers if c.attrs.get("State", {}).get("Status") == status]

@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 
+
 def check_files(vault_file: str, password_file: str) -> None:
     if not vault_file:
         raise RuntimeError("Vault file not specified.")
@@ -16,25 +17,18 @@ def check_files(vault_file: str, password_file: str) -> None:
         raise RuntimeError("Password file not specified.")
     if not os.path.isfile(password_file):
         raise RuntimeError(f"Password file not found: {password_file}")
-        
+
 
 def ensure_ansible_vault_available():
     if shutil.which("ansible-vault") is None:
         raise RuntimeError("Error: 'ansible-vault' is not in PATH. Please install Ansible or add it to PATH.")
-        
+
 
 def ansible_vault_cli_encrypt(decrypted_file: str, password_file: str, output_file: str) -> str:
-    cmd = [
-        "ansible-vault",
-        "encrypt",
-        decrypted_file,
-        "--vault-password-file",
-        password_file,
-        "--output", output_file
-    ]
+    cmd = ["ansible-vault", "encrypt", decrypted_file, "--vault-password-file", password_file, "--output", output_file]
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        print(f"Encrypted vault file successfully.")
+        print("Encrypted vault file successfully.")
         return result.stdout
     except subprocess.CalledProcessError as exc:
         print("Encryption failed", exc.stderr)
@@ -42,17 +36,10 @@ def ansible_vault_cli_encrypt(decrypted_file: str, password_file: str, output_fi
 
 
 def ansible_vault_cli_decrypt(encrypted_file: str, password_file: str, output_file: str) -> str:
-    cmd = [
-        "ansible-vault",
-        "decrypt",
-        encrypted_file,
-        "--vault-password-file",
-        password_file,
-        "--output", output_file
-    ]
+    cmd = ["ansible-vault", "decrypt", encrypted_file, "--vault-password-file", password_file, "--output", output_file]
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
-        print(f"Decrypted vault file successfully.")
+        print("Decrypted vault file successfully.")
         return result.stdout
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(f"ansible-vault decrypt failed with exit code {exc.returncode}")

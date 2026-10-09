@@ -1,9 +1,12 @@
-import yaml
 import json
 import os
 
+import yaml
+
+
 class LiteralDumper(yaml.SafeDumper):
     pass
+
 
 def str_representer(dumper, value: str):
     # Use literal block for multiline, plain for single-line
@@ -12,6 +15,7 @@ def str_representer(dumper, value: str):
         value = value.rstrip("\n")
         return dumper.represent_scalar("tag:yaml.org,2002:str", value, style="|")
     return dumper.represent_scalar("tag:yaml.org,2002:str", value)
+
 
 LiteralDumper.add_representer(str, str_representer)
 
@@ -26,7 +30,7 @@ def yaml_to_json(yaml_path: str, json_path: str) -> None:
         print(f"YAML file does not exist: {yaml_path}")
         return
 
-    with open(yaml_path, "r", encoding="utf-8") as yf:
+    with open(yaml_path, encoding="utf-8") as yf:
         try:
             data = yaml.safe_load(yf) or {}
         except Exception as e:

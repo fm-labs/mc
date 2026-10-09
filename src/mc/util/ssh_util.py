@@ -3,13 +3,13 @@ from __future__ import annotations
 import hashlib
 import io
 import os
-from typing import Tuple, Any
+from typing import Any
 
 import paramiko
-from paramiko import RSAKey, ECDSAKey, Ed25519Key, PasswordRequiredException, SSHException
+from paramiko import ECDSAKey, Ed25519Key, PasswordRequiredException, RSAKey, SSHException
 
 
-def ssh_key_load_with_fingerprint(key_path: str, password=None) -> Tuple[paramiko.PKey, str, Any]:
+def ssh_key_load_with_fingerprint(key_path: str, password=None) -> tuple[paramiko.PKey, str, Any]:
     """
     Load SSH private key from file and compute its fingerprint.
     If the key is encrypted, a password is required.
@@ -21,7 +21,7 @@ def ssh_key_load_with_fingerprint(key_path: str, password=None) -> Tuple[paramik
     for key_class in [RSAKey, ECDSAKey, Ed25519Key]:
         try:
             key = key_class.from_private_key_file(key_path, password=password)
-            fingerprint = ':'.join(f'{b:02x}' for b in key.get_fingerprint())
+            fingerprint = ":".join(f"{b:02x}" for b in key.get_fingerprint())
             return key, fingerprint, key_class
         except PasswordRequiredException:
             print("Error: SSH key is encrypted but no passphrase was provided.")
@@ -84,11 +84,7 @@ def ssh_pkey_from_bytes(key_bytes: bytes, password: str = None) -> paramiko.PKey
     raise ValueError("Unsupported or invalid key type.")
 
 
-def sftp_copy_file(
-    ssh_client: paramiko.SSHClient,
-    local_path: str,
-    remote_path: str
-) -> None:
+def sftp_copy_file(ssh_client: paramiko.SSHClient, local_path: str, remote_path: str) -> None:
     """
     Copy a file to a remote host using SCP over an established SSH connection.
 
@@ -100,11 +96,7 @@ def sftp_copy_file(
         sftp.put(local_path, remote_path)
 
 
-def sftp_mkdir(
-    ssh_client: paramiko.SSHClient,
-    remote_path: str,
-    mode: int = 0o755
-) -> None:
+def sftp_mkdir(ssh_client: paramiko.SSHClient, remote_path: str, mode: int = 0o755) -> None:
     """
     Create a directory on the remote host via an established SSH connection.
 
@@ -115,7 +107,7 @@ def sftp_mkdir(
     with ssh_client.open_sftp() as sftp:
         try:
             sftp.mkdir(remote_path, mode=mode)
-        except IOError as e:
+        except OSError as e:
             if e.errno == 17:  # File exists
                 pass
             else:
@@ -125,7 +117,7 @@ def sftp_mkdir(
 def ssh_mkdir_recursive(
     ssh_client: paramiko.SSHClient,
     remote_path: str,
-    mode: int | None = None # 0o755
+    mode: int | None = None,  # 0o755
 ) -> None:
     """
     Ensure a directory exists on the remote host using SSH command execution.
@@ -140,5 +132,5 @@ def ssh_mkdir_recursive(
     stdin, stdout, stderr = ssh_client.exec_command(command)
     exit_status = stdout.channel.recv_exit_status()
     if exit_status != 0:
-        error_msg = stderr.read().decode('utf-8')
+        error_msg = stderr.read().decode("utf-8")
         raise RuntimeError(f"Failed to ensure directory '{remote_path}': {error_msg}")

@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter
 from fastapi.params import Body
 
-from mc.plugin.tools.toolindex import get_tool_index, get_tool_def
 from mc.plugin.tools.tasks import task_tool_exec
+from mc.plugin.tools.toolindex import get_tool_def, get_tool_index
 
 router = APIRouter()
 
@@ -40,5 +40,3 @@ async def submit_tool_command(tool_name: str, command_name: str, args: Annotated
 
     result = task_tool_exec(tool_name, command_name, **args)
     return result
-
-

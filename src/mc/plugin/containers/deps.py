@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException
 from fastapi.params import Query
 from starlette.requests import Request
 
-from mc.plugin.containers.manager import ContainerClientsManager, ContainerClient
+from mc.plugin.containers.manager import ContainerClient, ContainerClientsManager
 
 
 def dep_ccm(request: Request) -> ContainerClientsManager:
@@ -15,12 +15,12 @@ def dep_ccm(request: Request) -> ContainerClientsManager:
 
 
 def dep_container_connection(
-        alias: str,
-        manager: ContainerClientsManager = Depends(dep_ccm),
+    alias: str,
+    manager: ContainerClientsManager = Depends(dep_ccm),
 ) -> ContainerClient:
     c = manager.get(alias)
     if not c:
-       raise HTTPException(404, f"No container client registered named '{alias}'")
+        raise HTTPException(404, f"No container client registered named '{alias}'")
     # inventory = get_inventory_storage_instance()
     # item = inventory.get_item_by_name("container_host", alias)
     # if not item:
@@ -35,13 +35,13 @@ def dep_container_connection(
     #     client = DockerClient(base_url=url, timeout=15)
     # else:
     #     client = PodmanClient(base_url=url, timeout=15)
-    #return client
+    # return client
     return c
 
 
 async def dep_container_connections_manager(
-        refresh: Annotated[bool, Query()] = False,
-        manager: ContainerClientsManager = Depends(dep_ccm),
+    refresh: Annotated[bool, Query()] = False,
+    manager: ContainerClientsManager = Depends(dep_ccm),
 ) -> ContainerClientsManager:
     # check if refresh is needed, due to ssh key changes or similar
     check_file = "/tmp/ssh-load-keys-success"
@@ -56,7 +56,7 @@ async def dep_container_connections_manager(
         # todo handle this case properly
         os.remove(check_file)
 
-    #if refresh:
+    # if refresh:
     #    print("Refreshing container connections")
     #    bootstrap_container_connection_manager()
     return manager

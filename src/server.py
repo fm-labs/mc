@@ -10,13 +10,12 @@ import os
 from contextlib import AsyncExitStack, asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI
-from fastapi import HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
-from inventorydb.storage import build_objbase_storage
+from inventorydb.storage import get_inventory_storage_instance
 from mc import config
 from mc.mcp.app import mcp as mcp_app
 from mc.mcp.fastmcp_helper import init_mcp_http_app
@@ -34,8 +33,6 @@ if mcp_enabled:
     mcp_transport = os.getenv("MCP_TRANSPORT", "streamable-http")
     mcp_http_app = init_mcp_http_app(mcp_app, transport=mcp_transport)
 
-storage_base_dir = f"{config.DATA_DIR}/inventory"
-os.makedirs(storage_base_dir, exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(main_app: FastAPI):
@@ -43,27 +40,25 @@ async def lifespan(main_app: FastAPI):
     setup_admin_auth()
 
     async with AsyncExitStack() as stack:
-        #main_app.state.redis = get_aioredis_client()
+        # main_app.state.redis = get_aioredis_client()
         main_app.state.ccm = bootstrap_container_connection_manager()
-        #main_app.state.inventory_storage = get_inventory_storage_instance()
-        #main_app.state.storage = LocalDirectoryStorage(base_dir=storage_base_dir)
-        main_app.state.storage = build_objbase_storage()
+        # share the instance with item handlers that use get_inventory_storage_instance()
+        main_app.state.storage = get_inventory_storage_instance()
 
-        #client = redis.asyncio.Redis(host="localhost", port=6379)
-        #app.state.storage = AsyncRedisStorage(redis_client=client)
+        # client = redis.asyncio.Redis(host="localhost", port=6379)
+        # app.state.storage = AsyncRedisStorage(redis_client=client)
 
         if mcp_enabled:
             # also enter the mounted app's lifespan:
             # this guarantees startup/shutdown even if the sub-app runs standalone elsewhere.
-            await stack.enter_async_context(
-                mcp_http_app.router.lifespan_context(mcp_http_app)
-            )
+            await stack.enter_async_context(mcp_http_app.router.lifespan_context(mcp_http_app))
 
         try:
             yield
         finally:
             main_app.state.ccm.close_all()
-            #await main_app.state.redis.aclose()
+            # await main_app.state.redis.aclose()
+
 
 app = FastAPI(
     title=config.API_NAME,
@@ -71,12 +66,12 @@ app = FastAPI(
     openapi_url=f"{config.API_PREFIX}/openapi.json" if config.DEV_MODE else None,
     docs_url="/docs" if config.DEV_MODE else None,
     redoc_url="/redoc" if config.DEV_MODE else None,
-    #generate_unique_id_function=custom_generate_unique_id,
+    # generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
 
-#if mcp_enabled:
-#app.mount("/mcp", mcp_http_app)
+# if mcp_enabled:
+# app.mount("/mcp", mcp_http_app)
 
 # Middleware configuration
 app.add_middleware(
@@ -87,15 +82,12 @@ app.add_middleware(
     allow_credentials=True,
 )
 
+
 # Global exception handlers that emit Problem JSON responses
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_: Request, exc: HTTPException):
-    problem = Problem(error=exc.detail or exc.status_code,
-                      status=exc.status_code,
-                      detail=str(exc.detail))
-    return JSONResponse(status_code=exc.status_code,
-                        content=problem.model_dump(),
-                        media_type="application/json")
+    problem = Problem(error=exc.detail or exc.status_code, status=exc.status_code, detail=str(exc.detail))
+    return JSONResponse(status_code=exc.status_code, content=problem.model_dump(), media_type="application/json")
 
 
 # class NotFoundError(Exception):
@@ -120,16 +112,19 @@ async def http_exception_handler(_: Request, exc: HTTPException):
 #                         media_type="application/problem+json")
 
 # Reusable OpenAPI error responses (show up on every route that includes them)
-problem_response_ref = {"model": Problem, "description": "Problem Details (RFC 7807)",
-                        "content": {"application/json": {"schema": Problem.model_json_schema()}}}
+problem_response_ref = {
+    "model": Problem,
+    "description": "Problem Details (RFC 7807)",
+    "content": {"application/json": {"schema": Problem.model_json_schema()}},
+}
 
 default_error_responses = {
     400: problem_response_ref,
-    #401: problem_response_ref,
-    #403: problem_response_ref,
-    #404: problem_response_ref,
-    #409: problem_response_ref,
-    #422: problem_response_ref,
+    # 401: problem_response_ref,
+    # 403: problem_response_ref,
+    # 404: problem_response_ref,
+    # 409: problem_response_ref,
+    # 422: problem_response_ref,
     500: problem_response_ref,
 }
 

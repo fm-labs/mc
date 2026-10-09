@@ -35,17 +35,9 @@ def execute_json_rpc(request: dict) -> dict:
     except Exception as e:
         if request_id is None:
             return {}
-        return {
-            "jsonrpc": "2.0",
-            "error": {"code": -32601, "message": str(e)},
-            "id": request_id
-        }
+        return {"jsonrpc": "2.0", "error": {"code": -32601, "message": str(e)}, "id": request_id}
 
     if request_id is not None:
-        return {
-            "jsonrpc": "2.0",
-            "result": result,
-            "id": request_id
-        }
+        return {"jsonrpc": "2.0", "result": result, "id": request_id}
     # Notification, no response needed
     return {}

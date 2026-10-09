@@ -5,7 +5,7 @@ import subprocess
 
 import paramiko
 import pexpect
-from paramiko import RSAKey, ECDSAKey, Ed25519Key
+from paramiko import ECDSAKey, Ed25519Key, RSAKey
 
 
 def ssh_agent_start():
@@ -121,7 +121,7 @@ def build_ssh_pkey_from_buffer(key_data: bytes, passphrase: str | None) -> param
         try:
             return key_class.from_private_key(key_stream, password=passphrase)
         except Exception:
-            key_stream.seek(0) # rewind
+            key_stream.seek(0)  # rewind
             continue
 
     raise ValueError("Unsupported key type or incorrect passphrase")
@@ -132,8 +132,7 @@ def pkey_to_openssh_publine(pkey, comment: str | None = None) -> str:
     Return the OpenSSH public key line for a Paramiko PKey (RSA, ECDSA, Ed25519, etc.).
     Example output: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... user@host"
     """
-    keytype = pkey.get_name()      # e.g. "ssh-ed25519", "ssh-rsa", "ecdsa-sha2-nistp256"
-    b64 = pkey.get_base64()        # base64 of the public blob
+    keytype = pkey.get_name()  # e.g. "ssh-ed25519", "ssh-rsa", "ecdsa-sha2-nistp256"
+    b64 = pkey.get_base64()  # base64 of the public blob
     suffix = f" {comment}" if comment else ""
     return f"{keytype} {b64}{suffix}"
-

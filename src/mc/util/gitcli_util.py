@@ -1,6 +1,6 @@
+import logging
 import os
 import subprocess
-import logging
 
 from mc.util.subprocess_util import kwargs_to_cmdargs
 
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 # $ git -c core.sshCommand="ssh -i private_key_file -o IdentitiesOnly=yes" clone host:repo.git
 # # or
 # $ set "GIT_SSH_COMMAND=ssh -i private_key_file -o IdentitiesOnly=yes"
+
 
 def git_clone(repo: str, dest: str, **kwargs) -> tuple[bytes, bytes, int]:
     """
@@ -39,8 +40,7 @@ def git_clone(repo: str, dest: str, **kwargs) -> tuple[bytes, bytes, int]:
 
     # strip git:// prefix if present
     if repo_url.startswith("git://"):
-        repo_url = repo_url[len("git://"):]
-
+        repo_url = repo_url[len("git://") :]
 
     return git(["clone", repo_url, dest], **kwargs)
 
@@ -114,7 +114,7 @@ def git(cmd: list, working_dir=None, private_key_file=None, timeout=None, **kwar
 
     # ssh command
     # todo make ssh options configurable
-    ssh_command = f"ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    ssh_command = "ssh -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
     if private_key_file:
         if not os.path.exists(private_key_file):
             raise ValueError(f"Private key file {private_key_file} does not exist")
@@ -128,11 +128,11 @@ def git(cmd: list, working_dir=None, private_key_file=None, timeout=None, **kwar
     cmd_args = kwargs_to_cmdargs(kwargs)
     try:
         pcmd = ["git"] + git_cmd_args + cmd + cmd_args
-        penv = os.environ.copy() # todo make this more selective and not pass all env vars to the subprocess
-        #penv['PATH'] = os.getenv('PATH')
-        #penv['PWD'] = working_dir
-        penv['GIT_TERMINAL_PROMPT'] = '0' # disable prompting for credentials (git 2.3+)
-        penv['GIT_SSH_COMMAND'] = ssh_command
+        penv = os.environ.copy()  # todo make this more selective and not pass all env vars to the subprocess
+        # penv['PATH'] = os.getenv('PATH')
+        # penv['PWD'] = working_dir
+        penv["GIT_TERMINAL_PROMPT"] = "0"  # disable prompting for credentials (git 2.3+)
+        penv["GIT_SSH_COMMAND"] = ssh_command
 
         # # Load .env file into 'penv'
         # env_file = '.env'
@@ -149,11 +149,7 @@ def git(cmd: list, working_dir=None, private_key_file=None, timeout=None, **kwar
         logger.info(f"GIT SSH command: {ssh_command}")
         logger.info(f"GIT Environment: {penv}")
 
-        proc = subprocess.run(pcmd,
-                              cwd=working_dir,
-                              env=penv,
-                              capture_output=True,
-                              timeout=timeout)
+        proc = subprocess.run(pcmd, cwd=working_dir, env=penv, capture_output=True, timeout=timeout)
         logger.info(f"GIT STDOUT {proc.stdout}")
         logger.error(f"GIT STDERR {proc.stderr}")
 

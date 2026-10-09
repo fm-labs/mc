@@ -1,12 +1,13 @@
+import logging
 import os
 import subprocess
 from tempfile import TemporaryFile
-import logging
 
 from mc.util.os_util import bin_cmd
 from mc.util.subprocess_helper import rx_subprocess
 
 logger = logging.getLogger(__name__)
+
 
 def dockercli(cmd: list[str], env=None) -> dict:
     """
@@ -19,7 +20,7 @@ def dockercli(cmd: list[str], env=None) -> dict:
     if env:
         _env.update(env)
 
-    dockerhost = _env.get("DOCKER_HOST",  "")
+    dockerhost = _env.get("DOCKER_HOST", "")
     logger.info(f"Executing Docker command with DOCKER_HOST={dockerhost}: {' '.join(cmd)}")
 
     # result = subprocess.run(
@@ -47,7 +48,7 @@ def dockercli(cmd: list[str], env=None) -> dict:
     #     "rc": result.returncode,
     # }
 
-    out,err,rc = rx_subprocess(cmd, cwd=None, env=_env)
+    out, err, rc = rx_subprocess(cmd, cwd=None, env=_env)
     if rc != 0:
         logger.error(f"Docker command {' '.join(cmd)} failed with code {rc}")
         raise RuntimeError(f"Docker command failed with return code {rc}: {' '.join(cmd)}")
@@ -119,7 +120,6 @@ def dockercli_image_push(image: str, env=None) -> dict:
     """
     cmd = bin_cmd("docker", ["image", "push", image])
     return dockercli(cmd, env=env)
-
 
 
 # def dockercli_login_ecr_with_awscli(ecr_url, region="us-east-1", profile=None, access_key=None, secret_key=None):

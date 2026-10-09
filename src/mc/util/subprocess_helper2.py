@@ -11,11 +11,7 @@ def subprocess_run(cmd_list: list, env: dict = None) -> dict:
     """
     try:
         print(f"Running command: {' '.join(cmd_list)}")
-        result = subprocess.run(cmd_list,
-                                capture_output=True,
-                                text=True,
-                                check=True,
-                                env=env)
+        result = subprocess.run(cmd_list, capture_output=True, text=True, check=True, env=env)
 
         print(f"Command finished with return code {result.returncode}")
         print(f"STDOUT:\n{result.stdout}")
@@ -40,20 +36,22 @@ def subprocess_stream(cmd_list: list, fail_on_error=True, callback=None) -> int:
     Expects a list-style command, e.g., ["docker", "pull", "ubuntu"].
     """
     try:
-        p = subprocess.Popen(cmd_list,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,  # Redirect stderr to stdout
-                             bufsize=1,
-                             universal_newlines=True)
+        p = subprocess.Popen(
+            cmd_list,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # Redirect stderr to stdout
+            bufsize=1,
+            universal_newlines=True,
+        )
 
         for line in p.stdout:
             sys.stdout.write(line)
-            sys.stdout.flush() # Ensure output is displayed immediately
+            sys.stdout.flush()  # Ensure output is displayed immediately
 
             if callback:
                 callback(line)
 
-        p.wait() # Wait for the subprocess to finish
+        p.wait()  # Wait for the subprocess to finish
         exit_code = p.returncode
 
         if exit_code != 0 and fail_on_error:
@@ -66,7 +64,6 @@ def subprocess_stream(cmd_list: list, fail_on_error=True, callback=None) -> int:
     except Exception as e:
         print(f"An error occurred: {e}", file=sys.stderr)
         return -1
-
 
 
 if __name__ == "__main__":

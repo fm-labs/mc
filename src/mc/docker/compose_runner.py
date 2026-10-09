@@ -1,16 +1,16 @@
 import abc
+import logging
 import os
 import subprocess
-import logging
 from pathlib import Path
 
 from docker.constants import DEFAULT_TIMEOUT_SECONDS
 from paramiko.client import SSHClient
 
-from mc.util.subprocess_util import kwargs_to_cmdargs
 from mc.util.rsync_helper import rsync_execute
-from mc.util.sshpy_helper import ssh_execute_command, ssh_params_from_url, ssh_connect
+from mc.util.sshpy_helper import ssh_connect, ssh_execute_command, ssh_params_from_url
 from mc.util.subprocess_helper import rx_subprocess
+from mc.util.subprocess_util import kwargs_to_cmdargs
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +22,16 @@ def get_ssh_client(dest, ssh_cfg: dict) -> SSHClient:
     ssh_hostname = ssh_params.get("hostname")
     ssh_port = ssh_params.get("port")
     ssh_user = ssh_params.get("username")
-    #ssh_password = ssh_params.get("password")
-    #ssh_key_file = ssh_params.get("key_filename")
-    #ssh_key_pass = ssh_params.get("key_passphrase")
+    # ssh_password = ssh_params.get("password")
+    # ssh_key_file = ssh_params.get("key_filename")
+    # ssh_key_pass = ssh_params.get("key_passphrase")
     try:
-        client = ssh_connect(hostname=ssh_hostname, port=ssh_port, username=ssh_user,)
-                             #password=ssh_password, key_filename=ssh_key_file, key_passphrase=ssh_key_pass)
+        client = ssh_connect(
+            hostname=ssh_hostname,
+            port=ssh_port,
+            username=ssh_user,
+        )
+        # password=ssh_password, key_filename=ssh_key_file, key_passphrase=ssh_key_pass)
         if not client:
             raise ConnectionError(f"SSH client failed to connect to {dest}")
         logger.info(f"SSH client connected to {dest}")
@@ -35,17 +39,19 @@ def get_ssh_client(dest, ssh_cfg: dict) -> SSHClient:
     except Exception as e:
         # print stack trace
         import traceback
+
         traceback.print_exc()
 
         logger.info(f"SSH client connection error: {e}")
         raise
 
+
 def run_local_hook_script(local_compose_dir: Path, script_name: str) -> tuple[bytes, bytes, int]:
-    stdout, stderr, rc = "", "", 0 # default success
+    stdout, stderr, rc = "", "", 0  # default success
     setup_script = local_compose_dir / script_name
     if setup_script.exists() and setup_script.is_file():
         logger.info(f"Found setup.sh script at {setup_script}, executing on remote host...")
-        cmd_str = f"chmod +x setup.sh && ./setup.sh"
+        cmd_str = "chmod +x setup.sh && ./setup.sh"
         logger.info(f"Hook command: {cmd_str}")
         try:
             stdout, stderr, rc = rx_subprocess(cmd_str, cwd=str(local_compose_dir), shell=True)
@@ -64,13 +70,13 @@ def run_local_hook_script(local_compose_dir: Path, script_name: str) -> tuple[by
 
 
 def run_remote_hook_script(client: SSHClient, remote_compose_dir: str, script_name: str) -> tuple[bytes, bytes, int]:
-    stdout, stderr, rc = "", "", 0 # default success
+    stdout, stderr, rc = "", "", 0  # default success
     try:
         cmd_str = f"cd {remote_compose_dir} && chmod +x {script_name} && bash ./{script_name}"
         logger.info(f"Remote Hook command: {cmd_str}")
         stdout, stderr, rc = ssh_execute_command(client, cmd_str)
         logger.info(f"{script_name} exited with code {rc}")
-        #if rc != 0:
+        # if rc != 0:
         #    raise RuntimeError(f"Remote hook script {script_name} failed with exit code {rc}")
     except Exception as e:
         logger.info(f"SSH remote execution error: {e}")
@@ -86,7 +92,6 @@ def run_remote_hook_script(client: SSHClient, remote_compose_dir: str, script_na
 
 
 class DockerComposeStackRunner(abc.ABC):
-
     def __init__(self, project_name):
         self.project_name = project_name
 
@@ -107,14 +112,18 @@ class DockerComposeStackRunner(abc.ABC):
         https://docs.docker.com/reference/cli/docker/compose/up/
         """
         logger.info(f"Starting project {self.project_name}")
-        kwargs['detach'] = True if 'detach' not in kwargs else kwargs['detach']
-        kwargs['build'] = False if 'build' not in kwargs else kwargs['build']
-        kwargs['force_recreate'] = False if 'force_recreate' not in kwargs else kwargs['force_recreate']
-        kwargs['remove_orphans'] = False if 'remove_orphans' not in kwargs else kwargs['remove_orphans']
-        kwargs['yes'] = True if 'yes' not in kwargs else kwargs['yes'] # Assume "yes" as answer to all prompts and run non-interactively
-        kwargs['quiet_pull'] = True if 'quiet_pull' not in kwargs else kwargs['quiet_pull'] # Pull without printing progress information
-        kwargs['no_color'] = True if 'no_color' not in kwargs else kwargs['no_color'] # Produce monochrome output
-        #kwargs['wait-timeout'] = '300' if 'wait-timeout' not in kwargs else kwargs['wait-timeout'] # wait up to 5 minutes for services to be healthy
+        kwargs["detach"] = True if "detach" not in kwargs else kwargs["detach"]
+        kwargs["build"] = False if "build" not in kwargs else kwargs["build"]
+        kwargs["force_recreate"] = False if "force_recreate" not in kwargs else kwargs["force_recreate"]
+        kwargs["remove_orphans"] = False if "remove_orphans" not in kwargs else kwargs["remove_orphans"]
+        kwargs["yes"] = (
+            True if "yes" not in kwargs else kwargs["yes"]
+        )  # Assume "yes" as answer to all prompts and run non-interactively
+        kwargs["quiet_pull"] = (
+            True if "quiet_pull" not in kwargs else kwargs["quiet_pull"]
+        )  # Pull without printing progress information
+        kwargs["no_color"] = True if "no_color" not in kwargs else kwargs["no_color"]  # Produce monochrome output
+        # kwargs['wait-timeout'] = '300' if 'wait-timeout' not in kwargs else kwargs['wait-timeout'] # wait up to 5 minutes for services to be healthy
         return self._compose("up", **kwargs)
 
     def down(self, **kwargs) -> tuple[bytes, bytes, int]:
@@ -123,7 +132,7 @@ class DockerComposeStackRunner(abc.ABC):
         https://docs.docker.com/reference/cli/docker/compose/down/
         """
         logger.info(f"COMPOSE DOWN {self.project_name}")
-        kwargs['timeout'] = DEFAULT_TIMEOUT_SECONDS if 'timeout' not in kwargs else kwargs['timeout']
+        kwargs["timeout"] = DEFAULT_TIMEOUT_SECONDS if "timeout" not in kwargs else kwargs["timeout"]
         return self._compose("down", **kwargs)
 
     def stop(self, **kwargs) -> tuple[bytes, bytes, int]:
@@ -132,7 +141,7 @@ class DockerComposeStackRunner(abc.ABC):
         https://docs.docker.com/reference/cli/docker/compose/stop/
         """
         logger.info(f"COMPOSE STOP {self.project_name}")
-        kwargs['timeout'] = DEFAULT_TIMEOUT_SECONDS if 'timeout' not in kwargs else kwargs['timeout']
+        kwargs["timeout"] = DEFAULT_TIMEOUT_SECONDS if "timeout" not in kwargs else kwargs["timeout"]
         return self._compose("stop", **kwargs)
 
     def restart(self, **kwargs) -> tuple[bytes, bytes, int]:
@@ -141,7 +150,7 @@ class DockerComposeStackRunner(abc.ABC):
         https://docs.docker.com/reference/cli/docker/compose/restart/
         """
         logger.info(f"COMPOSE RESTART {self.project_name}")
-        kwargs['timeout'] = DEFAULT_TIMEOUT_SECONDS if 'timeout' not in kwargs else kwargs['timeout']
+        kwargs["timeout"] = DEFAULT_TIMEOUT_SECONDS if "timeout" not in kwargs else kwargs["timeout"]
         return self._compose("restart", **kwargs)
 
     def delete(self, **kwargs) -> tuple[bytes, bytes, int]:
@@ -153,7 +162,7 @@ class DockerComposeStackRunner(abc.ABC):
         Removes the project directory.
         """
         logger.info(f"COMPOSE DELETE {self.project_name}")
-        #return b"COMPOSE DESTROY: No docker-specific destroy actions executed."
+        # return b"COMPOSE DESTROY: No docker-specific destroy actions executed."
         raise NotImplementedError("Delete method must be implemented by subclasses")
 
     def ps(self, **kwargs) -> tuple[bytes, bytes, int]:
@@ -173,15 +182,21 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
     This class is used to manage the lifecycle of a Docker Compose stack
     """
 
-    def __init__(self, project_name, local_dir,
-                 docker_host="unix:///var/run/docker.sock", stackfile:str|list='compose.yaml', **kwargs):
+    def __init__(
+        self,
+        project_name,
+        local_dir,
+        docker_host="unix:///var/run/docker.sock",
+        stackfile: str | list = "compose.yaml",
+        **kwargs,
+    ):
         super().__init__(project_name)
         self.project_name = project_name
         self.local_dir = local_dir
         if isinstance(stackfile, str):
             stackfile = [stackfile]
         if not stackfile:
-            stackfile = ['compose.yaml']
+            stackfile = ["compose.yaml"]
         self.stackfile = stackfile
         self.docker_host = docker_host
 
@@ -189,7 +204,6 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         # run setup.sh if exists
         run_local_hook_script(Path(self.local_dir), "setup.sh")
         return super().up(**kwargs)
-
 
     def _compose(self, cmd, **kwargs) -> tuple[bytes, bytes, int]:
         """
@@ -204,7 +218,7 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
             raise Exception(f"Invalid working directory: {working_dir}")
 
         try:
-            #"--project-name", self.project_name
+            # "--project-name", self.project_name
             _composecmd = ["docker", "compose", "--project-directory", working_dir]
             for cf in self.stackfile:
                 _composecmd.append("--file")
@@ -214,12 +228,12 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
             logger.info(f"CMD: {' '.join(pcmd)}")
 
             penv = os.environ.copy()
-            penv['DOCKER_HOST'] = self.docker_host
-            #penv['DOCKER_CONFIG'] = settings.DOCKER_CONFIG
-            penv['COMPOSE_PROJECT_DIRECTORY'] = working_dir
-            penv['COMPOSE_PROJECT_NAME'] = self.project_name
-            #penv['COMPOSE_FILE'] = compose_file[0]
-            penv['PWD'] = working_dir
+            penv["DOCKER_HOST"] = self.docker_host
+            # penv['DOCKER_CONFIG'] = settings.DOCKER_CONFIG
+            penv["COMPOSE_PROJECT_DIRECTORY"] = working_dir
+            penv["COMPOSE_PROJECT_NAME"] = self.project_name
+            # penv['COMPOSE_FILE'] = compose_file[0]
+            penv["PWD"] = working_dir
 
             p1 = subprocess.run(pcmd, cwd=working_dir, env=penv, capture_output=True, check=True)
             logger.info("STDOUT", p1.stdout)
@@ -234,19 +248,26 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
             raise e
 
 
-
 class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
     """
     Docker Compose stack runner for remote Docker hosts.
     """
-    def __init__(self, project_name: str, local_dir: str, docker_host: str, stackfile:str|list=None,
-                 ssh_config: dict = None, **kwargs):
+
+    def __init__(
+        self,
+        project_name: str,
+        local_dir: str,
+        docker_host: str,
+        stackfile: str | list = None,
+        ssh_config: dict = None,
+        **kwargs,
+    ):
         super().__init__(project_name)
         self.local_dir = local_dir
         self.remote_dir = f"~/.compose/{self.project_name}"
         self.docker_host = docker_host
         if not stackfile:
-            stackfile = ['compose.yaml']
+            stackfile = ["compose.yaml"]
         if isinstance(stackfile, str):
             stackfile = [stackfile]
         self.stackfile = stackfile
@@ -284,12 +305,12 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
         :return: (stdout, stderr, returncode)
         """
         remote_working_dir = self.remote_dir
-        #compose_project_name = self.project_name
+        # compose_project_name = self.project_name
         try:
             _composecmd = ["docker", "compose", "--project-directory", remote_working_dir]
             for cf in self.stackfile:
                 _composecmd.append("--file")
-                _composecmd.append(remote_working_dir + "/" +  cf)
+                _composecmd.append(remote_working_dir + "/" + cf)
             pcmd = _composecmd + [cmd] + kwargs_to_cmdargs(kwargs)
             logger.info(f"[rcompose] RAW CMD: {pcmd}")
 
@@ -299,17 +320,17 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
             renv = dict()
             # renv['PATH'] = os.getenv('PATH')
             # todo renv['DOCKER_HOST'] = 'unix:///var/run/docker.sock' # the docker host on the REMOTE machine
-            #renv['DOCKER_HOST'] = 'unix:///var/run/docker.sock'
-            renv['COMPOSE_PROJECT_DIRECTORY'] = remote_working_dir
-            #renv['COMPOSE_PROJECT_NAME'] = compose_project_name
-            #renv['COMPOSE_FILE'] = compose_file_name
-            #renv['PWD'] = remote_working_dir
+            # renv['DOCKER_HOST'] = 'unix:///var/run/docker.sock'
+            renv["COMPOSE_PROJECT_DIRECTORY"] = remote_working_dir
+            # renv['COMPOSE_PROJECT_NAME'] = compose_project_name
+            # renv['COMPOSE_FILE'] = compose_file_name
+            # renv['PWD'] = remote_working_dir
 
             # prepend remote compose dir to compose files
-            #compose_files = [str(Path(remote_compose_dir) / cf) for cf in compose_files]
+            # compose_files = [str(Path(remote_compose_dir) / cf) for cf in compose_files]
             stdout, stderr, rc = b"", b"", -1
             try:
-                #cmd_str = f"cd {remote_working_dir} && " + " ".join(pcmd)
+                # cmd_str = f"cd {remote_working_dir} && " + " ".join(pcmd)
                 cmd_str = " ".join(pcmd)
                 logger.info(f"[rcompose] [{self.docker_host}] Executing command: {cmd_str}")
                 stdout, stderr, rc = ssh_execute_command(self.ssh_client, cmd_str, environment=renv)
@@ -324,4 +345,3 @@ class RemoteDockerComposeStackRunner(DockerComposeStackRunner):
         except Exception as e:
             logger.exception(f"[rcompose] Error running compose command on remote host: {e}", exc_info=True)
             raise e
-

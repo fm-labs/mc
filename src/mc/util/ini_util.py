@@ -13,7 +13,7 @@ def read_ini_file(file_path: str) -> configparser.ConfigParser:
     if not os.path.exists(file_path):
         return config  # Return empty config if file does not exist
 
-    with open(file_path, "r") as config_file:
+    with open(file_path) as config_file:
         config.read_file(config_file)
     return config
 

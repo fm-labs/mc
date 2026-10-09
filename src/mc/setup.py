@@ -1,11 +1,12 @@
-import secrets
 import logging
+import secrets
 
-from mc.users import USERS_FILE, create_user_file, add_user, get_user
+from mc.users import USERS_FILE, add_user, create_user_file, get_user
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_ADMIN_USERNAME = "operator"
+
 
 def setup_admin_auth():
     """
@@ -16,7 +17,7 @@ def setup_admin_auth():
         create_user_file(USERS_FILE)
         try:
             admin_user = get_user(DEFAULT_ADMIN_USERNAME)
-        except KeyError as e:
+        except KeyError:
             logger.warning("Admin user not found, creating one with random password")
             password = secrets.token_urlsafe(16)
             add_user(DEFAULT_ADMIN_USERNAME, password, USERS_FILE)

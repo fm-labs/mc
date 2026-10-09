@@ -9,14 +9,15 @@ from fastmcp import FastMCP
 
 from mc.config import get_env_var
 
-sys.path.append('.')
+sys.path.append(".")
 
-async def init_mcp() -> 'FastMCP':
+
+async def init_mcp() -> "FastMCP":
     try:
         from mc.mcp.app import mcp as mcp_app
 
-        #from mc.plugin.plugin_name.mcp import mcp as plugin_name_mcp_app
-        #mcp_app.mount(plugin_name_mcp_app, prefix="plugin_name")
+        # from mc.plugin.plugin_name.mcp import mcp as plugin_name_mcp_app
+        # mcp_app.mount(plugin_name_mcp_app, prefix="plugin_name")
 
         # config = {
         #     "mcpServers": {
@@ -39,6 +40,7 @@ async def init_mcp() -> 'FastMCP':
         print("MissionControl MCP not installed")
         raise
 
+
 async def main():
     transport = get_env_var("MCP_TRANSPORT", "stdio")
     host = get_env_var("MCP_HOST", "127.0.0.1")
@@ -52,12 +54,14 @@ async def main():
 
     kwargs = {}
     if transport != "stdio":
-        kwargs.update({
-            "host": host,
-            "port": port,
-            "path": path,
-            "log_level": log_level,
-        })
+        kwargs.update(
+            {
+                "host": host,
+                "port": port,
+                "path": path,
+                "log_level": log_level,
+            }
+        )
 
     _mcp = None
     try:

@@ -1,6 +1,5 @@
-from typing import List
-
 from pymongo import MongoClient
+
 from mc import config
 
 
@@ -13,7 +12,7 @@ def get_mongo_client(ping: bool = False) -> MongoClient:
     if ping:
         try:
             # The ismaster command is cheap and does not require auth.
-            client.admin.command('ismaster')
+            client.admin.command("ismaster")
         except Exception as e:
             raise ConnectionError(f"Could not connect to MongoDB: {e}")
     return client
@@ -24,7 +23,7 @@ def get_mongo_collection(db_name: str, collection_name: str):
     return _mongo[db_name][collection_name]
 
 
-def mongodb_results_to_json(results: List[dict], strip_id=True) -> List[dict]:
+def mongodb_results_to_json(results: list[dict], strip_id=True) -> list[dict]:
     json_results = []
     for doc in results:
         if strip_id and "_id" in doc:

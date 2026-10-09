@@ -5,8 +5,9 @@ from mc.util.awscli_helper import awscli_ecr_login
 from mc.util.dockercli_helper import dockercli_login
 
 
-def get_container_registry_credentials(registry_host: str, username: str = None, password: str = None) -> tuple[
-    str, str]:
+def get_container_registry_credentials(
+    registry_host: str, username: str = None, password: str = None
+) -> tuple[str, str]:
     """
     Lookup container registry credentials based on the registry URL.
     Supports Docker Hub, GitHub Container Registry, Azure Container Registry, and AWS ECR.
@@ -44,11 +45,12 @@ def get_container_registry_credentials(registry_host: str, username: str = None,
         access_key = username or get_env_var("AWS_ACCESS_KEY_ID", None)
         secret_key = password or get_env_var("AWS_SECRET_ACCESS_KEY", None)
         try:
-            ecr_url, ecr_username, ecr_password = awscli_ecr_login(ecr_url=registry_host,
-                                                                   # profile=profile,
-                                                                   access_key=access_key,
-                                                                   secret_key=secret_key
-                                                                   )
+            ecr_url, ecr_username, ecr_password = awscli_ecr_login(
+                ecr_url=registry_host,
+                # profile=profile,
+                access_key=access_key,
+                secret_key=secret_key,
+            )
             username = ecr_username
             password = ecr_password
         except Exception as e:
@@ -67,6 +69,7 @@ def get_container_registry_credentials(registry_host: str, username: str = None,
 #         "message": "Container registry configure action not implemented yet."
 #     }
 
+
 def container_registry_login(registry_url: str, username: str = None, password: str = None):
     try:
         if not registry_url:
@@ -76,14 +79,11 @@ def container_registry_login(registry_url: str, username: str = None, password: 
         if not username and not password:
             raise ValueError(f"Warning: No credentials found for registry: {registry_url}")
 
-        env = os.environ.copy() # todo make this more selective and not pass all env vars to the subprocess
+        env = os.environ.copy()  # todo make this more selective and not pass all env vars to the subprocess
         dockercli_login(username, password, registry_url, env=env)
 
-        return {
-            "status": "success",
-            "message": f"Logged in to container registry {registry_url} successfully."
-        }
-    except Exception as e:
+        return {"status": "success", "message": f"Logged in to container registry {registry_url} successfully."}
+    except Exception:
         # return {
         #     "status": "error",
         #     "message": f"Failed to login to container registry {registry_url}: {str(e)}"

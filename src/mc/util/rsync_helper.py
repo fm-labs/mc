@@ -1,11 +1,18 @@
 from pathlib import Path
 
-from mc.util.subprocess_helper import rx_subprocess
-from mc.util.rx_util import split_url
 from mc.util.os_util import bin_cmd
+from mc.util.rx_util import split_url
+from mc.util.subprocess_helper import rx_subprocess
 
 
-def rsync_execute(src: str, dest: str, mkdir=True, delete=False, exclude: list = None, ssh_config: dict = None, ):
+def rsync_execute(
+    src: str,
+    dest: str,
+    mkdir=True,
+    delete=False,
+    exclude: list = None,
+    ssh_config: dict = None,
+):
     # validate required fields
     [srcschema, src_hostpath] = split_url(src)
     if srcschema == "":
@@ -20,7 +27,7 @@ def rsync_execute(src: str, dest: str, mkdir=True, delete=False, exclude: list =
         raise FileNotFoundError(f"Source path '{srcpath}' does not exist.")
 
     _src: str = str(srcpath.absolute())
-    rsync_args = ["-r", "-t", "-z", "-v", "-c"] # recursive, times, compress, verbose, checksum
+    rsync_args = ["-r", "-t", "-z", "-v", "-c"]  # recursive, times, compress, verbose, checksum
     if delete:
         rsync_args += ["--delete"]
 
@@ -55,7 +62,7 @@ def rsync_execute(src: str, dest: str, mkdir=True, delete=False, exclude: list =
         # rsync >3.2 supports --mkpath option
         # but for compatibility we use --rsync-path "mkdir -p /path/to/dir && rsync"
         if mkdir:
-            #rsync_args += ["--mkpath"] # for rsync >= 3.2
+            # rsync_args += ["--mkpath"] # for rsync >= 3.2
             rsync_args += ["--rsync-path", f"mkdir -p {remote_path} && rsync"]
 
         # handle exclude/include files
@@ -67,8 +74,8 @@ def rsync_execute(src: str, dest: str, mkdir=True, delete=False, exclude: list =
             else:
                 print(f"Warning: exclude file '{exclude_path}' does not exist, ignoring.")
 
-        #include_file = ""
-        #if include_file:
+        # include_file = ""
+        # if include_file:
         #    include_path = Path(include_file).resolve()
         #    if include_path.exists():
         #        rsync_args += ["--include-from", include_file]

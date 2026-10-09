@@ -2,6 +2,7 @@ import os
 
 import redis
 
+
 def get_redis_cache_client():
     """
     Create and return a Redis client instance.
@@ -12,9 +13,9 @@ def get_redis_cache_client():
     :param password: Password for Redis server, if any.
     :return: Redis client instance.
     """
-    host = os.getenv('REDIS_HOST', 'localhost')
-    port = int(os.getenv('REDIS_PORT', '6379'))
-    password = os.getenv('REDIS_PASSWORD', None)
+    host = os.getenv("REDIS_HOST", "localhost")
+    port = int(os.getenv("REDIS_PORT", "6379"))
+    password = os.getenv("REDIS_PASSWORD", None)
     r = redis.Redis(host=host, port=port, password=password, decode_responses=True)
     return r
 

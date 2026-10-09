@@ -1,15 +1,17 @@
 import asyncio
 import json
-from typing import Optional, AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from starlette.requests import Request
 
 
-async def run_subprocess_stream_sse(command: list,
-                                    env: Optional[dict] = None,
-                                    terminate_timeout: int = 3,
-                                    kill_timeout: int = 1,
-                                    request: Optional[Request] | None = None) -> AsyncGenerator[str, None]:
+async def run_subprocess_stream_sse(
+    command: list,
+    env: dict | None = None,
+    terminate_timeout: int = 3,
+    kill_timeout: int = 1,
+    request: Request | None | None = None,
+) -> AsyncGenerator[str]:
     """
     Run a subprocess and yield its output line by line as SSE events.
 
@@ -32,7 +34,7 @@ async def run_subprocess_stream_sse(command: list,
         )
 
         # Send initial event
-        command_str = ' '.join(command)
+        command_str = " ".join(command)
         yield f"data: {json.dumps({'type': 'start', 'message': f'Started command: {command_str}'})}\n\n"
 
         # Stream the output
@@ -48,7 +50,7 @@ async def run_subprocess_stream_sse(command: list,
                 break
 
             # Send each line as an SSE event
-            _line = line.decode('utf-8', errors='replace').strip()
+            _line = line.decode("utf-8", errors="replace").strip()
             yield f"data: {json.dumps({'type': 'output', 'message': _line})}\n\n"
 
         # Wait for the process to complete
@@ -58,8 +60,8 @@ async def run_subprocess_stream_sse(command: list,
         yield f"data: {json.dumps({'type': 'complete', 'message': f'Process finished with exit code: {rc}'})}\n\n"
 
         # Optionally, send the exit code as a separate event
-        #yield f"data: {json.dumps({'type': 'exit', 'code': process.returncode})}\n\n"
-        #sleep(1)  # Keep the connection open for a while to ensure client receives all data
+        # yield f"data: {json.dumps({'type': 'exit', 'code': process.returncode})}\n\n"
+        # sleep(1)  # Keep the connection open for a while to ensure client receives all data
 
     except Exception as e:
         # Send error event
@@ -74,11 +76,11 @@ async def run_subprocess_stream_sse(command: list,
 
             try:
                 await asyncio.wait_for(process.wait(), timeout=terminate_timeout)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 process.kill()
                 try:
                     await asyncio.wait_for(process.wait(), timeout=kill_timeout)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     pass
             except Exception:
                 pass

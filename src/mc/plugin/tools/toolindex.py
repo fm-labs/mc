@@ -1,11 +1,12 @@
-import os
 import json
+import os
 from pathlib import Path
 
 from mc.config import RESOURCES_DIR
 
 TOOL_INDEX = []
 TOOL_DIR = Path(RESOURCES_DIR) / "toolbox"
+
 
 def load_tool_index():
     global TOOL_INDEX
@@ -14,12 +15,12 @@ def load_tool_index():
     TOOL_INDEX.clear()
     # enumerate all json files in the tools directory
     if os.path.exists(TOOL_DIR):
-        tool_names = [f[:-5] for f in os.listdir(TOOL_DIR) if f.endswith('.json')]
+        tool_names = [f[:-5] for f in os.listdir(TOOL_DIR) if f.endswith(".json")]
         for tool_name in tool_names:
-            if tool_name.startswith('.') or tool_name.startswith('_'):
+            if tool_name.startswith(".") or tool_name.startswith("_"):
                 continue
             tool_file = os.path.join(TOOL_DIR, f"{tool_name}.json")
-            with open(tool_file, 'r') as f:
+            with open(tool_file) as f:
                 tool_data = json.load(f)
                 TOOL_INDEX.append(tool_data)
 
@@ -35,7 +36,7 @@ def get_tool_index():
 def get_tool_def(tool_name) -> dict | None:
     tool_file = os.path.join(TOOL_DIR, f"{tool_name}.json")
     if os.path.exists(tool_file):
-        with open(tool_file, 'r') as f:
+        with open(tool_file) as f:
             tool_data = json.load(f)
             return tool_data
     return None

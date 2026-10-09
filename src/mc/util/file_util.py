@@ -34,7 +34,7 @@ def read_file(file_path: str) -> str:
     :return: Content of the file as a string.
     """
     try:
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             return f.read()
     except Exception as e:
         print(f"Error reading file {file_path}: {e}")

@@ -1,4 +1,3 @@
-
 def kwargs_to_cmdargs(kwargs) -> list:
     """
     Map kwargs to command line arguments.
@@ -17,5 +16,3 @@ def kwargs_to_cmdargs(kwargs) -> list:
             if type(v) is not bool:
                 args.append(str(v))
     return args
-
-

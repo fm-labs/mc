@@ -1,8 +1,8 @@
 import os
-import sys
 import subprocess
+import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional, List
 
 
 def echoerr(msg: str) -> None:
@@ -32,13 +32,13 @@ def process_is_alive(pid: int) -> bool:
 
 
 def setup_autossh_tunnel(
-        remote_host: str,
-        remote_user: str,
-        pid_file: str,
-        local_forward_specs: Optional[List[str]] = None,
-        remote_forward_specs: Optional[List[str]] = None,
-        load_ssh_key: Callable[[], bool] = None,
-        env: Optional[dict] = None
+    remote_host: str,
+    remote_user: str,
+    pid_file: str,
+    local_forward_specs: list[str] | None = None,
+    remote_forward_specs: list[str] | None = None,
+    load_ssh_key: Callable[[], bool] = None,
+    env: dict | None = None,
 ) -> int:
     """
     Start an autossh local port/socket forward and write its PID to a file,
@@ -67,7 +67,7 @@ def setup_autossh_tunnel(
 
     env = os.environ if env is None else env
     autossh_bin = env.get("AUTOSSH_BIN", "autossh")
-    #base_ssh_args = env.get("SSH_ARGS", "").strip()
+    # base_ssh_args = env.get("SSH_ARGS", "").strip()
     ssh_key = env.get("SSH_REMOTE_SSH_KEY", "").strip()
 
     # If a tunnel is already running, exit successfully.
@@ -88,7 +88,7 @@ def setup_autossh_tunnel(
 
     # Compose SSH arguments
     ssh_args_list = []
-    #if base_ssh_args:
+    # if base_ssh_args:
     #    # Split respecting quotes, like a shell would
     #    ssh_args_list.extend(shlex.split(base_ssh_args))
 
@@ -100,10 +100,10 @@ def setup_autossh_tunnel(
     # Build autossh command (equivalent to: autossh -M 0 -N -L local:remote [SSH_ARGS] user@host)
 
     forward_spec = []
-    for lspec in (local_forward_specs or []):
+    for lspec in local_forward_specs or []:
         forward_spec.append("-L")
         forward_spec.append(lspec)
-    for rspec in (remote_forward_specs or []):
+    for rspec in remote_forward_specs or []:
         forward_spec.append("-R")
         forward_spec.append(rspec)
 

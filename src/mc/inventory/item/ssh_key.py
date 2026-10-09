@@ -15,7 +15,7 @@ def handle_ssh_key_action_set_content(item: dict, action_params: dict) -> dict:
         dict: The updated SSH key item with the new content.
     """
     content = action_params.get("content", None)
-    passphrase = action_params.get("passphrase", None) # todo - implement passphrase handling for encrypted keys
+    passphrase = action_params.get("passphrase", None)  # todo - implement passphrase handling for encrypted keys
     if content is None:
         raise ValueError("Missing 'content' parameter for 'set_content' action")
 
@@ -30,6 +30,7 @@ def handle_ssh_key_action_set_content(item: dict, action_params: dict) -> dict:
         "status": "success",
         "message": f"SSH key content updated and saved to {target_file_path}",
     }
+
 
 def handle_ssh_key_action_clear_content(item: dict, action_params: dict) -> dict:
     """
@@ -46,8 +47,9 @@ def handle_ssh_key_action_clear_content(item: dict, action_params: dict) -> dict
 
     return {
         "status": "success",
-        "message": f"SSH key item and associated file deleted successfully.",
+        "message": "SSH key item and associated file deleted successfully.",
     }
+
 
 actions = {
     "set_content": handle_ssh_key_action_set_content,

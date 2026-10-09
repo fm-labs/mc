@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 from dotenv import load_dotenv
 
@@ -16,16 +16,18 @@ CONFIG_PATH = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/settings.json")
 load_dotenv(f"{DATA_DIR}/.env")
 load_dotenv(f"{DATA_DIR}/.env.local")
 
+
 def read_config():
     if os.path.exists(CONFIG_PATH):
         print(f"Loading config from {CONFIG_PATH}")
         try:
-            with open(CONFIG_PATH, "r") as f:
+            with open(CONFIG_PATH) as f:
                 config = json.load(f)
                 return config
         except Exception as e:
             print(f"Error reading mc.json: {e}")
     return None
+
 
 def write_config(config: dict):
     try:
@@ -34,7 +36,9 @@ def write_config(config: dict):
     except Exception as e:
         print(f"Error writing mc.json: {e}")
 
+
 CONFIG = read_config() or {}
+
 
 def get_env_var(name: str, default=None):
     if "environment" in CONFIG and name in CONFIG["environment"]:
@@ -51,9 +55,9 @@ DEV_MODE = get_env_var("DEV_MODE", "false").lower() == "true"
 # Additional paths
 CONFIG_DIR = get_env_var("CONFIG_DIR", f"{DATA_DIR}/etc")
 RESOURCES_DIR = get_env_var("RESOURCES_DIR", f"{DATA_DIR}/resources")
-#SSH_CONFIG = get_env_var("SSH_CONFIG", f"{DATA_DIR}/etc/ssh_config")
-#HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/opt/mc") # deprecated
-#HOST_CONFIG_DIR = get_env_var("HOST_CONFIG_DIR", "/opt/mc/etc") # deprecated
+# SSH_CONFIG = get_env_var("SSH_CONFIG", f"{DATA_DIR}/etc/ssh_config")
+# HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/opt/mc") # deprecated
+# HOST_CONFIG_DIR = get_env_var("HOST_CONFIG_DIR", "/opt/mc/etc") # deprecated
 
 # Admin credentials
 USERS_FILE = f"{CONFIG_DIR}/users.json"
@@ -84,12 +88,11 @@ VAULT_PASS_FILE = get_env_var("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vaul
 # GITHUB_CALLBACK_URL = get_env_var("GITHUB_CALLBACK_URL")
 
 
-
 def set_dotenv_var(key: str, value: str):
     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
     lines = []
     if os.path.exists(env_path):
-        with open(env_path, "r") as f:
+        with open(env_path) as f:
             lines = f.readlines()
     with open(env_path, "w") as f:
         found = False
@@ -101,6 +104,7 @@ def set_dotenv_var(key: str, value: str):
                 f.write(line)
         if not found:
             f.write(f"{key}={value}\n")
+
 
 def set_env_var(name: str, value: str):
     os.environ[name] = value

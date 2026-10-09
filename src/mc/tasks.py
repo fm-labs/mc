@@ -1,14 +1,15 @@
-import os
 import logging
+import os
 
 from mc import logs
 from mc.docker.compose_runner import LocalDockerComposeStackRunner, RemoteDockerComposeStackRunner
-from mc.util.gitcli_util import git_update, git_clone
+from mc.util.gitcli_util import git_clone, git_update
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logs.get_rotating_file_log_handler("tasks"))
 
-#@celery.task(bind=True)
+
+# @celery.task(bind=True)
 def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=None) -> dict:
 
     stdout, stderr, rc = "", "", -1
@@ -18,21 +19,19 @@ def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=
         logger.info(f"Git repo {repo_url} does not exist at {checkout_dir}. Cloning using key {private_key_file}...")
         try:
             # git.Repo.clone_from(repo_url, stack.project_dir)
-            stdoutb, stderrb, rc = git_clone(repo_url,
-                                             checkout_dir,
-                                             private_key_file=private_key_file)
-            stdout = stdoutb.decode('utf-8') if stdoutb else ''
-            stderr = stderrb.decode('utf-8') if stderrb else ''
+            stdoutb, stderrb, rc = git_clone(repo_url, checkout_dir, private_key_file=private_key_file)
+            stdout = stdoutb.decode("utf-8") if stdoutb else ""
+            stderr = stderrb.decode("utf-8") if stderrb else ""
 
             logger.info("Git clone stdout: %s", stdout)
             logger.error("Git clone stderr: %s", stderr)
-            #print(stdout)
-            #print(stderr)
+            # print(stdout)
+            # print(stderr)
             msg = f"🚀 Git repo {repo_url} cloned to: {checkout_dir}"
             logger.info(msg)
         except Exception as e:
             logger.exception(f"Error cloning repository from {repo_url} to {checkout_dir}: {e}", exc_info=True)
-            raise ValueError(f"Error cloning repository")
+            raise ValueError("Error cloning repository")
 
     else:
         # check if .git exists
@@ -51,10 +50,9 @@ def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=
         #     raise ValueError(f"Error updating repository: {e}")
         try:
             # git.Repo.clone_from(repo_url, stack.project_dir)
-            stdoutb, stderrb, rc = git_update(checkout_dir,
-                                              private_key_file=private_key_file)
-            stdout = stdoutb.decode('utf-8') if stdoutb else ''
-            stderr = stderrb.decode('utf-8') if stderrb else ''
+            stdoutb, stderrb, rc = git_update(checkout_dir, private_key_file=private_key_file)
+            stdout = stdoutb.decode("utf-8") if stdoutb else ""
+            stderr = stderrb.decode("utf-8") if stderrb else ""
             msg = f"🚀 Git repo {repo_url} updated in: {checkout_dir}"
             logger.info(msg)
         except Exception as e:
@@ -67,22 +65,19 @@ def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=
 def get_compose_runner(project_name: str, project_dir: str, stackfile: str | list, host_url: str):
     if host_url.startswith("unix://"):
         return LocalDockerComposeStackRunner(
-            project_name=project_name,
-            local_dir=project_dir,
-            stackfile=stackfile,
-            docker_host=host_url
+            project_name=project_name, local_dir=project_dir, stackfile=stackfile, docker_host=host_url
         )
     elif host_url.startswith("ssh://"):
         return RemoteDockerComposeStackRunner(
-            project_name=project_name,
-            local_dir=project_dir,
-            stackfile=stackfile,
-            docker_host=host_url
+            project_name=project_name, local_dir=project_dir, stackfile=stackfile, docker_host=host_url
         )
     return None
 
-#@celery.task(bind=True)
-def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs) -> dict:
+
+# @celery.task(bind=True)
+def task_deploy_compose_project(
+    project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs
+) -> dict:
     """
     Deploy a Docker Compose project to a specified host.
 
@@ -101,21 +96,27 @@ def task_deploy_compose_project(project_name: str, project_dir: str, stackfile: 
     compose_runner.sync()
 
     up_args = {
-        "detach": True, # always detach!
+        "detach": True,  # always detach!
         "build": kwargs.get("build", False),
         "remove_orphans": kwargs.get("remove_orphans", False),
         "force_recreate": kwargs.get("force_recreate", False),
-        #"quiet_pull": kwargs.get("quiet_pull", True),
-        #"yes": kwargs.get("yes", True),
+        # "quiet_pull": kwargs.get("quiet_pull", True),
+        # "yes": kwargs.get("yes", True),
     }
     stdout, stderr, rc = compose_runner.up(**up_args)
-    return {"status": "success",
-            "message": f"App {project_name} deployed to {host_url}",
-            "stdout": stdout.decode(), "stderr": stderr.decode(), "return_code": rc}
+    return {
+        "status": "success",
+        "message": f"App {project_name} deployed to {host_url}",
+        "stdout": stdout.decode(),
+        "stderr": stderr.decode(),
+        "return_code": rc,
+    }
 
 
-#@celery.task(bind=True)
-def task_stop_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs) -> dict:
+# @celery.task(bind=True)
+def task_stop_compose_project(
+    project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs
+) -> dict:
     compose_runner = get_compose_runner(project_name, project_dir, stackfile, host_url)
     if not compose_runner:
         raise ValueError(f"Unsupported host URL scheme: {host_url}")
@@ -124,13 +125,19 @@ def task_stop_compose_project(project_name: str, project_dir: str, stackfile: st
         "timeout": kwargs.get("timeout", 30),
     }
     stdout, stderr, rc = compose_runner.stop(**stop_args)
-    return {"status": "success",
-            "message": f"App {project_name} stopped on {host_url}",
-            "stdout": stdout.decode(), "stderr": stderr.decode(), "return_code": rc}
+    return {
+        "status": "success",
+        "message": f"App {project_name} stopped on {host_url}",
+        "stdout": stdout.decode(),
+        "stderr": stderr.decode(),
+        "return_code": rc,
+    }
 
 
-#@celery.task(bind=True)
-def task_destroy_compose_project(project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs) -> dict:
+# @celery.task(bind=True)
+def task_destroy_compose_project(
+    project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs
+) -> dict:
     compose_runner = get_compose_runner(project_name, project_dir, stackfile, host_url)
     if not compose_runner:
         raise ValueError(f"Unsupported host URL scheme: {host_url}")
@@ -139,6 +146,10 @@ def task_destroy_compose_project(project_name: str, project_dir: str, stackfile:
         "timeout": kwargs.get("timeout", 30),
     }
     stdout, stderr, rc = compose_runner.down(**down_args)
-    return {"status": "success",
-            "message": f"App {project_name} destroyed on {host_url}",
-            "stdout": stdout.decode(), "stderr": stderr.decode(), "return_code": rc}
+    return {
+        "status": "success",
+        "message": f"App {project_name} destroyed on {host_url}",
+        "stdout": stdout.decode(),
+        "stderr": stderr.decode(),
+        "return_code": rc,
+    }

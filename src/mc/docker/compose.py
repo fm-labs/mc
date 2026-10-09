@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+
 import yaml
 
 
@@ -73,7 +74,7 @@ class Service:
             parts.append(f"--expose {e}")
         for v in self.volumes or []:
             parts.append(f"-v {v}")
-        for n in (self.networks if isinstance(self.networks, list) else []):
+        for n in self.networks if isinstance(self.networks, list) else []:
             parts.append(f"--network {n}")
         if isinstance(self.labels, list):
             for label in self.labels:

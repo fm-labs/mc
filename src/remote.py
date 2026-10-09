@@ -17,6 +17,7 @@ def remote(ctx, host):
     api_client = McApiClient(api_url=host, api_key=api_key)
     ctx.obj["api_client"] = api_client
 
+
 @remote.command()
 @click.pass_context
 def info(ctx):
@@ -24,12 +25,13 @@ def info(ctx):
     click.echo("API info: ...")
     print(ctx.obj["api_client"].get_info())
 
+
 @remote.command()
 @click.pass_context
 def health(ctx):
     """Show API info."""
     click.echo("API health: ...")
-    print(ctx.obj["api_client"].get('/health'))
+    print(ctx.obj["api_client"].get("/health"))
 
 
 if __name__ == "__main__":

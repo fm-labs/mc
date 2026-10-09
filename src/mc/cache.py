@@ -1,4 +1,3 @@
-
 from mc.util.cached import default_cache_store
 
 # cache = {}
@@ -23,6 +22,7 @@ from mc.util.cached import default_cache_store
 
 cache_store = default_cache_store()
 
+
 def cached_fn(cache_key, func, ttl=30):
     def wrapper(*args, **kwargs):
         key = cache_key
@@ -34,6 +34,7 @@ def cached_fn(cache_key, func, ttl=30):
         cache_store.write_cache(key, result, ttl=ttl)
         print(f"Cache set for key {key} with ttl {ttl}")
         return result
+
     return wrapper
 
 

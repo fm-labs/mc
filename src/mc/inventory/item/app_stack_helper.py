@@ -4,8 +4,8 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-import requests
 import git  # Requires GitPython package
+import requests
 
 from mc.config import DATA_DIR
 
@@ -34,14 +34,14 @@ def create_app_stack(stack_name: str, src: str, stackfile: str, **kwargs) -> dic
     }
 
     if src.startswith("file://"):
-        template_dir = src[len("file://"):]
+        template_dir = src[len("file://") :]
         _item = create_app_stack_from_template_dir(app_dir, template_dir)
         item.update(_item)
 
     elif src.startswith("git://") or (src.startswith("https://") and src.endswith(".git")):
         scheme, url_part = src.split("://", 1)
-        if '#' in url_part:
-            repo_part, branch = src.split('#', 1)
+        if "#" in url_part:
+            repo_part, branch = src.split("#", 1)
         else:
             repo_part = url_part
             branch = "main"
@@ -96,7 +96,6 @@ def create_app_stack_from_git_repo(app_dir: str, git_repo: str, git_branch: str 
     print(f"Cloning repository '{repo_url}' into '{app_dir}'")
     git.Repo.clone_from(repo_url, app_path, branch=git_branch)
     print(f"Cloned repository '{git_repo}' (branch: {git_branch}) into '{app_dir}'")
-
 
     return {
         "source_url": f"{git_repo}#{git_branch}" if git_branch else git_repo,
@@ -161,16 +160,16 @@ def create_app_stack_from_url_template(app_dir: str, template_url: str) -> dict:
         if response.status_code != 200:
             raise Exception(f"Failed to download template from {template_url}: Status code {response.status_code}")
 
-        with open(archive_path, 'wb') as f:
+        with open(archive_path, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 f.write(chunk)
 
         # Extract the archive
-        if template_url.endswith('.zip'):
-            with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+        if template_url.endswith(".zip"):
+            with zipfile.ZipFile(archive_path, "r") as zip_ref:
                 zip_ref.extractall(tmpdir)
-        elif template_url.endswith(('.tar.gz', '.tgz')):
-            with tarfile.open(archive_path, 'r:gz') as tar_ref:
+        elif template_url.endswith((".tar.gz", ".tgz")):
+            with tarfile.open(archive_path, "r:gz") as tar_ref:
                 tar_ref.extractall(tmpdir)
         else:
             raise ValueError("Unsupported archive format. Only .zip and .tar.gz are supported.")

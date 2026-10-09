@@ -24,7 +24,9 @@ class AppStackItem:
     type: Literal["container", "compose", "swarm", "kubernetes"] | None = None
     label: str | None = None
     description: str | None = None
-    repository: dict | None = None  # e.g. {"type": "git", "url": "git://user/repo", "branch": "main", "template_path": "path/to/stack/files"}
+    repository: dict | None = (
+        None  # e.g. {"type": "git", "url": "git://user/repo", "branch": "main", "template_path": "path/to/stack/files"}
+    )
     stackfile: str | None = None  # e.g. compose.yaml
     target_node: str | None = None
     domain_name: str | None = None  # optional domain name for the app
@@ -69,8 +71,7 @@ class AppStackItem:
         template_json_file = app_dir / "template.json"
         template_config = None
         if not template_json_file.exists() or not template_json_file.is_file():
-            raise FileNotFoundError(
-                f"Template JSON file '{template_json_file}' does not exist for stack '{self.id}'")
+            raise FileNotFoundError(f"Template JSON file '{template_json_file}' does not exist for stack '{self.id}'")
             return {}
         with template_json_file.open("r") as f:
             template_config = json.load(f)
@@ -86,8 +87,7 @@ class AppStackItem:
         stackfile_name = self.stackfile or "compose.yaml"
         stackfile_path = app_dir / stackfile_name
         if not stackfile_path.exists() or not stackfile_path.is_file():
-            raise FileNotFoundError(
-                f"Stackfile '{stackfile_path}' does not exist for container app '{self.id}'")
+            raise FileNotFoundError(f"Stackfile '{stackfile_path}' does not exist for container app '{self.id}'")
         with stackfile_path.open("r") as f:
             stackfile_content = f.read()
         return stackfile_content
@@ -154,14 +154,14 @@ def _build_repo_cache_path(repository_url: str) -> Path:
 
 def _build_app_hash(owner_id: str, item_name: str, version: str) -> str:
     import hashlib
+
     hash_input = f"{owner_id}:{item_name}:{version}"
     return hashlib.sha256(hash_input.encode()).hexdigest()
 
 
 def _build_app_key(owner_id: str, item_name: str, version: str) -> str:
     def _normalize(s: str) -> str:
-        return (s.lower().replace(" ", "-").replace("_", "-")
-                .replace(".", "-").replace("/", "-"))
+        return s.lower().replace(" ", "-").replace("_", "-").replace(".", "-").replace("/", "-")
 
     return f"{_normalize(owner_id)}-{_normalize(item_name)}"
 
@@ -238,10 +238,7 @@ def _build_appstack_compose_override(app: AppStackItem) -> dict:
             "networks": service_networks,
         }
 
-    overrides = {
-        "services": override_services,
-        "networks": override_networks
-    }
+    overrides = {"services": override_services, "networks": override_networks}
     return overrides
 
 
@@ -293,7 +290,8 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
                     repo_ssh_key_file = f"{DATA_DIR}/etc/ssh_keys/{repo_ssh_key_id}.pem"
                     if not os.path.exists(repo_ssh_key_file):
                         raise FileNotFoundError(
-                            f"SSH key file '{repo_ssh_key_file}' for repo SSH key ID '{repo_ssh_key_id}' not found")
+                            f"SSH key file '{repo_ssh_key_file}' for repo SSH key ID '{repo_ssh_key_id}' not found"
+                        )
                     private_key_file = repo_ssh_key_file
 
             # if background:
@@ -302,13 +300,15 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             # else:
 
             logger.info(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
-            #repo_url = os.path.expandvars(repo_url)
-            #todo repo_url = replace_env_vars_in_string(repo_url)
-            #todo repo_url = replace_placeholders_in_string(repo_url)
+            # repo_url = os.path.expandvars(repo_url)
+            # todo repo_url = replace_env_vars_in_string(repo_url)
+            # todo repo_url = replace_placeholders_in_string(repo_url)
             logger.debug(f"Expanded repository URL: '{repo_url}'")
             # print(f"Syncing repository '{repo_url}' to cache path '{checkout_path}' for app stack '{app.id}'")
 
-            clone_result = clone_or_update_git_repo(repo_url, str(checkout_path.resolve()), private_key_file=private_key_file)
+            clone_result = clone_or_update_git_repo(
+                repo_url, str(checkout_path.resolve()), private_key_file=private_key_file
+            )
             if clone_result.get("return_code") != 0:
                 raise ValueError(f"Error syncing repository: {clone_result.get('stderr')}")
 
@@ -317,7 +317,8 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             template_dir = checkout_path / repo_path
             if not template_dir.exists() or not template_dir.is_dir():
                 raise FileNotFoundError(
-                    f"Template directory '{template_dir}' does not exist in repository for app stack '{app.id}'")
+                    f"Template directory '{template_dir}' does not exist in repository for app stack '{app.id}'"
+                )
 
             # wipe the target dir if it exists
             if target_dir.exists() and target_dir.is_dir() and wipe_working_dir:
@@ -325,12 +326,14 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
 
             # copy the template directory to the target app directory, overwriting existing files
             IGNORED_DIRS = [".git", ".github", ".gitlab", ".vscode", ".idea"]
+
             def copy_ignore_names(src, names):
                 ignore_list = []
                 for name in names:
                     if name in IGNORED_DIRS:
                         ignore_list.append(name)
                 return ignore_list
+
             shutil.copytree(str(template_dir), str(target_dir), dirs_exist_ok=True, ignore=copy_ignore_names)
 
             # handle_app_stack_action_configure(item, {})
@@ -340,7 +343,7 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             raise ValueError(f"App stack '{app.id}' has unsupported source_url schema '{sschema}'")
     else:
         logger.warning(f"App stack '{app.id}' has no repository to sync")
-        return {"status": "no-op", "message": f"No repository to sync"}
+        return {"status": "no-op", "message": "No repository to sync"}
 
 
 def handle_app_stack_action_configure(item: dict, action_params: dict) -> dict:
@@ -439,8 +442,9 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
         stackfile_name = app.stackfile
         project_stackfiles.append(stackfile_name)
         # check if an override file exists
-        override_file = project_dir / stackfile_name.replace(".yaml", ".override.yaml").replace(".yml",
-                                                                                                ".override.yaml")
+        override_file = project_dir / stackfile_name.replace(".yaml", ".override.yaml").replace(
+            ".yml", ".override.yaml"
+        )
         if override_file.exists() and override_file.is_file():
             project_stackfiles.append("compose.override.yaml")
         # check if a mc override file exists
@@ -461,11 +465,13 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     #                                              host_url=container_host_url)
     #     return {"status": "deploying", "task_id": task.id}
 
-    return task_deploy_compose_project(project_name=app.id,
-                                       project_dir=str(project_dir.resolve()),
-                                       stackfile=project_stackfiles,
-                                       host_url=container_host_url,
-                                       **up_args)
+    return task_deploy_compose_project(
+        project_name=app.id,
+        project_dir=str(project_dir.resolve()),
+        stackfile=project_stackfiles,
+        host_url=container_host_url,
+        **up_args,
+    )
 
 
 def handle_app_stack_redeploy(item: dict, action_params: dict) -> dict:
@@ -488,8 +494,9 @@ def handle_app_stack_redeploy(item: dict, action_params: dict) -> dict:
 
     handle_app_stack_action_configure(item, {"confirm": True, "background": background})
     # handle_app_stack_action_prepare(item, {"confirm": confirm}) # prepare is called inside configure
-    return handle_app_stack_action_deploy(item, {"confirm": True, "background": background,
-                                                 "build": build, "remove_orphans": remove_orphans})
+    return handle_app_stack_action_deploy(
+        item, {"confirm": True, "background": background, "build": build, "remove_orphans": remove_orphans}
+    )
 
 
 def handle_app_stack_action_destroy(item: dict, action_params: dict) -> dict:
@@ -510,11 +517,13 @@ def handle_app_stack_action_destroy(item: dict, action_params: dict) -> dict:
     project_dir = app_dir
     container_host_url = os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock")
 
-    return task_destroy_compose_project(project_name=app.id,
-                                        project_dir=str(project_dir.resolve()),
-                                        stackfile=[],
-                                        host_url=container_host_url,
-                                        **destroy_args)
+    return task_destroy_compose_project(
+        project_name=app.id,
+        project_dir=str(project_dir.resolve()),
+        stackfile=[],
+        host_url=container_host_url,
+        **destroy_args,
+    )
 
 
 def handle_app_stack_view_template_config(item: dict, view_params: dict) -> dict:

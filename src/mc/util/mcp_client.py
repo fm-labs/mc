@@ -3,7 +3,7 @@ import sys
 import time
 
 from fastmcp import Client
-from fastmcp.client.transports import StreamableHttpTransport, StdioTransport
+from fastmcp.client.transports import StdioTransport, StreamableHttpTransport
 
 
 def build_streamable_http_client(url: str, token: str = None):
@@ -11,19 +11,14 @@ def build_streamable_http_client(url: str, token: str = None):
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
-    transport = StreamableHttpTransport(
-        url=url,
-        headers=headers
-    )
+    transport = StreamableHttpTransport(url=url, headers=headers)
     return Client(transport)
 
+
 def build_stdio_client(command: str, args: list = None, env: dict = None):
-    transport = StdioTransport(
-        command=command,
-        args=args,
-        env=env
-    )
+    transport = StdioTransport(command=command, args=args, env=env)
     return Client(transport)
+
 
 async def list_mcp_tools(client) -> list:
     async with client:
@@ -43,7 +38,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         server_url = sys.argv[1]
 
-    #mcp_transport = build_streamable_http_transport(server_url)
-    mcpclient = build_stdio_client(command="uv",
-                                   args=["run", "--with", "fastmcp", "--with", "requests", "mcp-server.py"])
+    # mcp_transport = build_streamable_http_transport(server_url)
+    mcpclient = build_stdio_client(
+        command="uv", args=["run", "--with", "fastmcp", "--with", "requests", "mcp-server.py"]
+    )
     asyncio.run(list_mcp_tools(mcpclient))

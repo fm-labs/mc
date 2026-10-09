@@ -3,7 +3,7 @@ from mc.util.dockercli_helper import dockercli_image_pull
 
 
 def handle_container_image_pull(item: dict, action_params: dict) -> dict:
-    #item_name = item.get("name")
+    # item_name = item.get("name")
     item_props = item
     image_url = item_props.get("image_url")
     image_tag = item_props.get("tag", "latest")
@@ -13,7 +13,9 @@ def handle_container_image_pull(item: dict, action_params: dict) -> dict:
     container_host = action_params.get("container_host")
     pull_policy = action_params.get("pull_policy", "if_not_present")
 
-    print(f"Pulling container image '{image_url_tagged}' with policy '{pull_policy}' on host '{container_host or 'local'}'")
+    print(
+        f"Pulling container image '{image_url_tagged}' with policy '{pull_policy}' on host '{container_host or 'local'}'"
+    )
 
     env = {}
     if container_host:
@@ -46,4 +48,3 @@ def handle_container_image_pull(item: dict, action_params: dict) -> dict:
 actions = {
     "pull": handle_container_image_pull,
 }
-

@@ -1,6 +1,6 @@
 import json
-import os
 import logging
+import os
 
 from mc.config import DATA_DIR
 
@@ -42,7 +42,7 @@ def _read_vault_file() -> dict:
     if not os.path.exists(VAULT_FILE):
         logger.warning("Vault file does not exist, returning empty vault.")
         return {}
-    with open(VAULT_FILE, "r") as f:
+    with open(VAULT_FILE) as f:
         try:
             data = json.load(f)
             return data

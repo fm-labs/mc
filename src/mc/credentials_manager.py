@@ -1,11 +1,13 @@
 """
 Manage a credentials file in YAML format.
 """
+
 from __future__ import annotations
 
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Dict, Iterator, IO
+from typing import IO, Any
 
 import yaml
 
@@ -26,8 +28,8 @@ def load_credentials(path: str) -> dict:
     return data
 
 
-def dump_credentials(path: str, data: Dict[str, Any]) -> None:
-    print(f"[creds] Dumping credentials...")
+def dump_credentials(path: str, data: dict[str, Any]) -> None:
+    print("[creds] Dumping credentials...")
     try:
         with open(path, "w") as f:
             dirpath = os.path.dirname(os.path.abspath(path)) or "."
@@ -40,7 +42,8 @@ def dump_credentials(path: str, data: Dict[str, Any]) -> None:
 
 # --- Operations --------------------------------------------------------------
 
-def add_credentials(path: str, name: str, kv: Dict[str, Any], allow_overwrite=False) -> None:
+
+def add_credentials(path: str, name: str, kv: dict[str, Any], allow_overwrite=False) -> None:
     data = load_credentials(path)
     if name in data and not allow_overwrite:
         raise RuntimeError(f"Error: credential '{name}' already exists. Use 'update' to modify it.")
@@ -52,7 +55,7 @@ def add_credentials(path: str, name: str, kv: Dict[str, Any], allow_overwrite=Fa
     print(f"[creds] Added credential '{name}'")
 
 
-def update_credentials(path: str, name: str, kv: Dict[str, Any]) -> None:
+def update_credentials(path: str, name: str, kv: dict[str, Any]) -> None:
     data = load_credentials(path)
     if name not in data:
         raise RuntimeError(f"Error: credential '{name}' not found. Use 'add' to create it.")
@@ -78,7 +81,7 @@ def remove_credentials(path: str, name: str) -> None:
     print(f"[creds] Removed credential '{name}'")
 
 
-def get_credentials(path: str, name: str | None) -> dict|str|None:
+def get_credentials(path: str, name: str | None) -> dict | str | None:
     data = load_credentials(path)
     if not data:
         return None
@@ -91,7 +94,7 @@ def get_credentials(path: str, name: str | None) -> dict|str|None:
 def credentials(vaultfile: str, vaultpassfile: str = None, mode: str = "r", encrypt: bool = True) -> Iterator[IO]:
     print("[creds] Entering credentials manager context.", encrypt, vaultfile, vaultpassfile)
     if encrypt:
-        with open_vaultfile(vaultfile, mode=mode, passfile=vaultpassfile, create=True) as f: # NamedTemporaryFile
+        with open_vaultfile(vaultfile, mode=mode, passfile=vaultpassfile, create=True) as f:  # NamedTemporaryFile
             yield f  # what becomes `f` in the with-block
     else:
         plainfile = f"{vaultfile}.yaml"

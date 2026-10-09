@@ -1,10 +1,11 @@
-import shlex
 import logging
+import shlex
 
 from mc.docker.compose import Compose, Service
 from mc.util.dockercli_helper import dockercli
 
 logger = logging.getLogger(__name__)
+
 
 def build_traefik_service(
     network_name: str = "traefik-ssl",
@@ -42,9 +43,7 @@ def build_traefik_service(
             "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Powered-By=",
         ]
 
-    docker_endpoint = (
-        "tcp://socket-proxy:2375" if enable_socket_proxy else "unix:///var/run/docker.sock"
-    )
+    docker_endpoint = "tcp://socket-proxy:2375" if enable_socket_proxy else "unix:///var/run/docker.sock"
 
     command = [
         "--api",

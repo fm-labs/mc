@@ -1,7 +1,7 @@
 import os
-from typing import Optional
+
 import paramiko
-from paramiko import PasswordRequiredException, RSAKey, ECDSAKey, Ed25519Key, AuthenticationException
+from paramiko import AuthenticationException, ECDSAKey, Ed25519Key, PasswordRequiredException, RSAKey
 from paramiko.config import SSHConfigDict
 
 from mc.util.rx_util import split_url
@@ -34,7 +34,7 @@ def ssh_params_from_url(ssh_url, ssh_params: dict = None, use_ssh_config=True) -
     if "@" in host:
         [user, host] = host.split("@", 1)
     if ":" in host:
-        [host, _] = host.split(":", 1) # remove the path if any
+        [host, _] = host.split(":", 1)  # remove the path if any
 
     _params = {
         "hostname": host,
@@ -79,15 +79,21 @@ def ssh_load_host_config(host: str) -> SSHConfigDict:
             ssh_config.parse(f)
 
     host_config = ssh_config.lookup(host) or {}
-    print("Found SSH config for host {}: {}".format(host, host_config))
+    print(f"Found SSH config for host {host}: {host_config}")
     return host_config
 
 
-def ssh_connect(hostname, port=22, username: str = None, password: str = None,
-                key_filename: str = None, key_passphrase: str = None,
-                key_passphrase_callback: Optional[callable] = None,
-                use_agent_keys=True,
-                timeout=30) -> paramiko.SSHClient:
+def ssh_connect(
+    hostname,
+    port=22,
+    username: str = None,
+    password: str = None,
+    key_filename: str = None,
+    key_passphrase: str = None,
+    key_passphrase_callback: callable | None = None,
+    use_agent_keys=True,
+    timeout=30,
+) -> paramiko.SSHClient:
     """
     Establish an SSH connection to a remote host.
     Respects user's ~/.ssh/config for host-specific settings.
@@ -118,21 +124,26 @@ def ssh_connect(hostname, port=22, username: str = None, password: str = None,
 
     key_passphrase = key_passphrase or ssh_params.get("key_passphrase")
     if not key_passphrase and key_passphrase_callback and callable(key_passphrase_callback):
-       key_passphrase = key_passphrase_callback(key_filename)
+        key_passphrase = key_passphrase_callback(key_filename)
 
     try:
-        print("Connecting to {}@{}:{}. Using keyfile={}".format(username, hostname, port, key_filename))
+        print(f"Connecting to {username}@{hostname}:{port}. Using keyfile={key_filename}")
 
         pkey = None
         if key_filename:
             pkey, fingerprint = ssh_load_pkey(key_filename, key_passphrase)
 
-        client.connect(hostname=hostname, port=port,
-                       username=username, password=password,
-                       key_filename=key_filename, passphrase=key_passphrase,
-                       pkey=pkey,
-                       auth_timeout=10,
-                       timeout=timeout)
+        client.connect(
+            hostname=hostname,
+            port=port,
+            username=username,
+            password=password,
+            key_filename=key_filename,
+            passphrase=key_passphrase,
+            pkey=pkey,
+            auth_timeout=10,
+            timeout=timeout,
+        )
         return client
     except PasswordRequiredException:
         if not key_passphrase:
@@ -148,8 +159,7 @@ def ssh_connect(hostname, port=22, username: str = None, password: str = None,
                 try:
                     print(agent_key)
                     print(f"Trying to authenticate with agent key {i}: {agent_key.get_fingerprint().hex()}")
-                    client.connect(hostname=hostname, port=port, username=username,
-                                   pkey=agent_key, timeout=timeout)
+                    client.connect(hostname=hostname, port=port, username=username, pkey=agent_key, timeout=timeout)
                     return client
                 except AuthenticationException:
                     print("❌ Authentication failed with this key.")
@@ -159,7 +169,7 @@ def ssh_connect(hostname, port=22, username: str = None, password: str = None,
                     continue
             raise Exception("All keys in SSH agent failed to authenticate.")
 
-        raise("Private key is password-protected, but no key_passphrase provided, and no agent keys available.")
+        raise ("Private key is password-protected, but no key_passphrase provided, and no agent keys available.")
     except Exception as e:
         print(f"Failed to connect to {hostname}:{port} - {e}")
         raise
@@ -176,11 +186,11 @@ def ssh_load_pkey(key_filename: str, key_passphrase: str) -> tuple[paramiko.PKey
     :raises PasswordRequiredException: If the key is password-protected and no password is provided.
     :raises SSHException: If the key file is invalid or cannot be loaded.
     """
-    print("Trying to unlock private key '{}'".format(key_filename))
+    print(f"Trying to unlock private key '{key_filename}'")
     for key_class in (RSAKey, ECDSAKey, Ed25519Key):
         try:
             pkey = key_class.from_private_key_file(key_filename, password=key_passphrase)
-            fingerprint = ':'.join(f'{b:02x}' for b in pkey.get_fingerprint())
+            fingerprint = ":".join(f"{b:02x}" for b in pkey.get_fingerprint())
             print(f"Unlocked {key_class.__name__} key with fingerprint: {fingerprint}")
             return pkey, fingerprint
         except PasswordRequiredException:
@@ -192,7 +202,9 @@ def ssh_load_pkey(key_filename: str, key_passphrase: str) -> tuple[paramiko.PKey
     raise Exception("Unsupported or invalid key file.")
 
 
-def ssh_execute_command(client, command: str, timeout: int = None, environment: dict = None) -> tuple[bytes, bytes, int]:
+def ssh_execute_command(
+    client, command: str, timeout: int = None, environment: dict = None
+) -> tuple[bytes, bytes, int]:
     """
     Execute a command on the remote host via an established SSH connection.
 
@@ -205,11 +217,8 @@ def ssh_execute_command(client, command: str, timeout: int = None, environment: 
     if environment is None:
         environment = {}
     try:
-        print("Executing command via SSH: {}".format(command))
-        stdin, stdout, stderr = client.exec_command(command,
-                                                    get_pty=False,
-                                                    timeout=timeout,
-                                                    environment=environment)
+        print(f"Executing command via SSH: {command}")
+        stdin, stdout, stderr = client.exec_command(command, get_pty=False, timeout=timeout, environment=environment)
         exit_status = stdout.channel.recv_exit_status()
         return stdout.read(), stderr.read(), exit_status
     except Exception as e:

@@ -1,16 +1,13 @@
-from functools import wraps
 import hashlib
-import json
 import inspect
-
+import json
 import os
-import time
 import pickle
-import hashlib
-from pathlib import Path
-from typing import Any, Optional
-
 import sqlite3
+import time
+from functools import wraps
+from pathlib import Path
+from typing import Any
 
 from mc import config
 
@@ -29,10 +26,10 @@ class SqliteCacheStore:
         self,
         db_path: str,
         *,
-        timeout: float = 5.0,          # sqlite3 connect timeout (seconds)
-        busy_timeout_ms: int = 5000,    # PRAGMA busy_timeout (milliseconds)
+        timeout: float = 5.0,  # sqlite3 connect timeout (seconds)
+        busy_timeout_ms: int = 5000,  # PRAGMA busy_timeout (milliseconds)
         wal: bool = False,
-        synchronous: str = "NORMAL",    # FULL | NORMAL | OFF
+        synchronous: str = "NORMAL",  # FULL | NORMAL | OFF
         cache_size_kib: int = -64_000,  # negative => KiB. e.g. -64000 ~= 64MiB
         mmap_size_bytes: int = 128 * 1024 * 1024,  # 128MiB
     ):
@@ -81,7 +78,7 @@ class SqliteCacheStore:
                 if "locked" in msg or "busy" in msg:
                     if i == retries:
                         raise
-                    time.sleep(base_sleep * (2 ** i))
+                    time.sleep(base_sleep * (2**i))
                     continue
                 raise
 
@@ -113,7 +110,7 @@ class SqliteCacheStore:
 
         return self._with_retry(op)
 
-    def write_cache(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
+    def write_cache(self, key: str, value: Any, ttl: float | None = None) -> None:
         expiry = None if ttl is None else (time.time() + float(ttl))
         blob = sqlite3.Binary(pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL))
 
@@ -155,7 +152,6 @@ class SqliteCacheStore:
         self.conn.close()
 
 
-
 class FileCacheStore:
     def __init__(self, directory: str):
         self.dir = Path(directory)
@@ -191,7 +187,7 @@ class FileCacheStore:
 
         return value
 
-    def write_cache(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
+    def write_cache(self, key: str, value: Any, ttl: float | None = None) -> None:
         path = self._path_for_key(key)
         expiry = None if ttl is None else (time.time() + float(ttl))
 
@@ -201,7 +197,6 @@ class FileCacheStore:
 
         # atomic-ish replace
         os.replace(tmp_path, path)
-
 
 
 class RedisCacheStore:
@@ -219,7 +214,7 @@ class RedisCacheStore:
             self.redis.delete(key)
             return None
 
-    def write_cache(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
+    def write_cache(self, key: str, value: Any, ttl: float | None = None) -> None:
         payload = json.dumps(value)
         if ttl is not None:
             self.redis.setex(key, int(ttl), payload)
@@ -241,7 +236,7 @@ class InMemoryCacheStore:
             return None
         return value
 
-    def write_cache(self, key: str, value: Any, ttl: Optional[float] = None) -> None:
+    def write_cache(self, key: str, value: Any, ttl: float | None = None) -> None:
         expiry = None if ttl is None else (time.time() + float(ttl))
         self.store[key] = (expiry, value)
 
@@ -252,6 +247,7 @@ def default_cache_key(func, args, kwargs):
     s = json.dumps(raw, sort_keys=True, default=str)
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
+
 def default_cache_store():
     try:
         os.makedirs(f"{config.DATA_DIR}/cache", exist_ok=True)
@@ -260,13 +256,14 @@ def default_cache_store():
         print(f"Error initializing SqliteCacheStore: {e}. Falling back to InMemoryStore.")
         return InMemoryCacheStore()
 
+
 def cached(ttl=None, cachekey=None, store=None):
     """
     store must provide: store.read_cache(key), store.write_cache(key, value, ttl=None)
     """
 
     if store is None:
-        #raise ValueError("cached(..., store=...) is required")
+        # raise ValueError("cached(..., store=...) is required")
         store = default_cache_store()
 
     def decorator(func):
@@ -281,6 +278,7 @@ def cached(ttl=None, cachekey=None, store=None):
             return default_cache_key(func, args, kwargs)
 
         if is_async:
+
             @wraps(func)
             async def async_wrapper(*args, **kwargs):
                 key = make_key(args, kwargs)
@@ -293,8 +291,10 @@ def cached(ttl=None, cachekey=None, store=None):
                 print(f"Caching result of {func.__name__} with key {key!r} and ttl {ttl}")
                 store.write_cache(key, result, ttl=ttl)
                 return result
+
             return async_wrapper
         else:
+
             @wraps(func)
             def sync_wrapper(*args, **kwargs):
                 key = make_key(args, kwargs)
@@ -307,6 +307,7 @@ def cached(ttl=None, cachekey=None, store=None):
                 print(f"Caching result of {func.__name__} with key {key!r} and ttl {ttl}")
                 store.write_cache(key, result, ttl=ttl)
                 return result
+
             return sync_wrapper
 
     return decorator

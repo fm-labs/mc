@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 import logging
 import os
 import threading
-from typing import Dict, Iterable, Optional, Any
+from collections.abc import Iterable
+from typing import Any
 
 from docker import DockerClient
 from podman import PodmanClient
@@ -13,8 +15,8 @@ ContainerClient = PodmanClient | DockerClient
 
 logger = logging.getLogger(__name__)
 
-class NodeContainerClient:
 
+class NodeContainerClient:
     class Containers:
         def list(self, *args, **kwargs):
             return []
@@ -32,7 +34,7 @@ class NodeContainerClient:
         self.client = McApiClient(api_url=base_url, api_key="")
         self.node_alias = "localdocker"
 
-    def _get(self, endpoint: str) -> Optional[dict]:
+    def _get(self, endpoint: str) -> dict | None:
         try:
             return self.client.get(f"/containers/{self.node_alias}/{endpoint}")
         except Exception as e:
@@ -67,23 +69,23 @@ class NodeContainerClient:
 
 class ContainerClientsManager:
     def __init__(self) -> None:
-        self._clients: Dict[str, ContainerClient] = {}
-        self._urls: Dict[str, str] = {}
+        self._clients: dict[str, ContainerClient] = {}
+        self._urls: dict[str, str] = {}
         self._lock = threading.Lock()
 
-    def get(self, name: str) -> Optional[ContainerClient]:
+    def get(self, name: str) -> ContainerClient | None:
         return self._clients.get(name)
 
     def names(self) -> Iterable[str]:
         return tuple(self._clients.keys())
 
-    def urls(self) -> Dict[str, str]:
+    def urls(self) -> dict[str, str]:
         """
         Return a dict of client names and their base URLs.
         """
         return self._urls
 
-    def add(self, name: str, base_url: str, test_ping: bool = False) -> Optional[ContainerClient]:
+    def add(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient | None:
         with self._lock:
             if name in self._clients:
                 raise ValueError(f"Client '{name}' already exists")
@@ -194,6 +196,7 @@ def bootstrap_container_connection_manager() -> ContainerClientsManager:
     #         print(f"CCM: Failed to configure container host '{url}': {e}")
     # m.ensure("local", "unix:///run/podman/podman.sock", test_ping=False)
     return m
+
 
 # best-effort cleanup if the process exits without FastAPI shutdown
 # atexit.register(lambda: asyncio.run(init_container_connection_manager().close_all()))

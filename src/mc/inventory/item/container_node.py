@@ -28,7 +28,7 @@ def handle_node_ping(item: dict, action_params: dict) -> dict:
 
         # parse output to check for success
         print("OUTPUT:", output)
-        #if f"{packet_count} packets transmitted, {packet_count} packets received" not in output:
+        # if f"{packet_count} packets transmitted, {packet_count} packets received" not in output:
         #    raise subprocess.CalledProcessError(returncode=1, cmd="ping", output=output)
         if "0% packet loss" not in output:
             raise subprocess.CalledProcessError(returncode=1, cmd="ping", output=output)
@@ -46,10 +46,13 @@ def handle_api_probe(item: dict, action_params: dict) -> dict:
     try:
         probe_url = f"{url.rstrip('/')}/api/health"
         response = requests.get(probe_url, timeout=5)
-        return {"status": "reachable", "status_code": response.status_code, "response_time_ms": response.elapsed.total_seconds() * 1000}
+        return {
+            "status": "reachable",
+            "status_code": response.status_code,
+            "response_time_ms": response.elapsed.total_seconds() * 1000,
+        }
     except requests.RequestException as e:
         return {"status": "unreachable", "error": str(e)}
-
 
 
 actions = {

@@ -1,8 +1,8 @@
 import logging
-from rich.logging import RichHandler
-import click
 
-import mc.include # do not remove
+import click
+from rich.logging import RichHandler
+
 from mc.cli.apps import apps
 
 logging.basicConfig(
@@ -16,7 +16,7 @@ logging.basicConfig(
             show_path=True,  # hide file path
             rich_tracebacks=False,  # beautiful exception tracebacks
         )
-    ]
+    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -27,12 +27,14 @@ def cli(ctx):
     """Main CLI."""
     ctx.ensure_object(dict)
 
+
 @cli.command()
 def version():
     """Show version."""
     click.echo("Version 2.0.0")
 
-#cli.add_command(credentials)
+
+# cli.add_command(credentials)
 cli.add_command(apps)
 
 if __name__ == "__main__":

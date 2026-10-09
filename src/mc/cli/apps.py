@@ -1,10 +1,12 @@
 import logging
+
 import click
 
-from mc.inventory.item.app_stack import AppStackItem, handle_app_stack_action_deploy, handle_app_stack_action_sync
 from inventorydb.storage import get_inventory_storage_instance
+from mc.inventory.item.app_stack import AppStackItem, handle_app_stack_action_deploy, handle_app_stack_action_sync
 
 logger = logging.getLogger(__name__)
+
 
 @click.group()
 def apps():
@@ -21,7 +23,7 @@ def inspect_app(name: str):
     if not stack:
         click.echo(f"Stack '{name}' not found.")
         return
-    #for key, value in stack.items():
+    # for key, value in stack.items():
     #    click.echo(f"- {key}: {value}")
     item = AppStackItem.from_item_dict(stack)
     logger.info(item)

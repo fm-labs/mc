@@ -1,10 +1,10 @@
+import asyncio
 import os
 import subprocess
 import sys
-import asyncio
 
 
-def rx_subprocess(cmd: list[str]|str, cwd: str | None = None, env: dict = None, **kwargs) -> tuple[bytes, bytes, int]:
+def rx_subprocess(cmd: list[str] | str, cwd: str | None = None, env: dict = None, **kwargs) -> tuple[bytes, bytes, int]:
     print("[rx][subprocess] command:", " ".join(cmd))
     _env = os.environ.copy()
     _env.update(env or {})
@@ -14,8 +14,8 @@ def rx_subprocess(cmd: list[str]|str, cwd: str | None = None, env: dict = None, 
         env=_env,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        #text=True,
-        **kwargs
+        # text=True,
+        **kwargs,
     )
     assert process.stdout is not None
     assert process.stderr is not None
@@ -42,9 +42,9 @@ def rx_subprocess(cmd: list[str]|str, cwd: str | None = None, env: dict = None, 
     return _out, _err, return_code
 
 
-async def rx_async_subprocess(cmd: list[str],
-                              cwd: str | None = None,
-                              env: dict | None = None) -> tuple[bytes, bytes, int]:
+async def rx_async_subprocess(
+    cmd: list[str], cwd: str | None = None, env: dict | None = None
+) -> tuple[bytes, bytes, int]:
     async def run_command():
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -75,4 +75,5 @@ async def rx_async_subprocess(cmd: list[str],
         if return_code != 0:
             raise subprocess.CalledProcessError(return_code, cmd)
         return _out, _err, return_code
+
     return await run_command()

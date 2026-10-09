@@ -1,11 +1,10 @@
 import requests
 
-class McApiClient:
 
+class McApiClient:
     def __init__(self, api_url: str, api_key: str = None):
         self.api_url = api_url
         self.api_key = api_key
-
 
     def _request(self, method: str, endpoint: str, **kwargs):
         url = self.api_url.rstrip("/") + "/api/" + endpoint.lstrip("/")

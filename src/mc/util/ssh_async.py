@@ -1,10 +1,12 @@
 import asyncio
 import threading
+from collections.abc import AsyncGenerator
+
 import paramiko
 from paramiko.agent import AgentRequestHandler
-from typing import AsyncGenerator, Tuple
 
-Event = Tuple[str, str]  # ("stdout" | "stderr" | "exit", payload)
+Event = tuple[str, str]  # ("stdout" | "stderr" | "exit", payload)
+
 
 def _enqueue_stream(stream, kind: str, q: asyncio.Queue, loop: asyncio.AbstractEventLoop, encoding: str):
     # Read line-by-line; fall back to chunk reads if iteration isn't line-oriented
@@ -12,7 +14,7 @@ def _enqueue_stream(stream, kind: str, q: asyncio.Queue, loop: asyncio.AbstractE
         for raw in iter(stream.readline, ""):
             if raw == "":
                 break
-            #asyncio.run_coroutine_threadsafe(q.put((kind, raw)), asyncio.get_event_loop())
+            # asyncio.run_coroutine_threadsafe(q.put((kind, raw)), asyncio.get_event_loop())
             # push into the asyncio queue from this thread
             loop.call_soon_threadsafe(q.put_nowait, (kind, raw))
     except Exception as e:
@@ -27,7 +29,7 @@ def _enqueue_stream(stream, kind: str, q: asyncio.Queue, loop: asyncio.AbstractE
         #     )
         print(f"[{kind}] {stream}: Exception while reading stream: {e}")
     finally:
-        #asyncio.run_coroutine_threadsafe(q.put((f"{kind}_done", "")), asyncio.get_event_loop())
+        # asyncio.run_coroutine_threadsafe(q.put((f"{kind}_done", "")), asyncio.get_event_loop())
         loop.call_soon_threadsafe(q.put_nowait, (f"{kind}_done", ""))
 
 
@@ -37,7 +39,7 @@ async def ssh_exec_command_stream(
     *,
     agent_forward: bool = False,
     encoding: str = "utf-8",
-) -> AsyncGenerator[Event, None]:
+) -> AsyncGenerator[Event]:
     """
     Yields ("stdout", line_or_chunk) / ("stderr", line_or_chunk) as soon as they arrive.
     Finishes with ("exit", "<code>").
@@ -49,16 +51,17 @@ async def ssh_exec_command_stream(
 
     chan.exec_command(command)
 
-    stdout = chan.makefile("r", -1) #, encoding=encoding, errors="replace")
-    stderr = chan.makefile_stderr("r", -1) #, encoding=encoding, errors="replace")
+    stdout = chan.makefile("r", -1)  # , encoding=encoding, errors="replace")
+    stderr = chan.makefile_stderr("r", -1)  # , encoding=encoding, errors="replace")
 
-    q: asyncio.Queue[Tuple[str, str]] = asyncio.Queue()
-    #loop = asyncio.get_event_loop()
-    loop = asyncio.get_running_loop() # since Python 3.10, captures the current running loop
+    q: asyncio.Queue[tuple[str, str]] = asyncio.Queue()
+    # loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()  # since Python 3.10, captures the current running loop
 
     t_out = threading.Thread(target=_enqueue_stream, args=(stdout, "stdout", q, loop, encoding), daemon=True)
     t_err = threading.Thread(target=_enqueue_stream, args=(stderr, "stderr", q, loop, encoding), daemon=True)
-    t_out.start(); t_err.start()
+    t_out.start()
+    t_err.start()
 
     stdout_done = False
     stderr_done = False
@@ -72,7 +75,7 @@ async def ssh_exec_command_stream(
 
         try:
             kind, payload = await asyncio.wait_for(q.get(), timeout=0.05)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # Periodically check for exit status even if no output arrives
             if chan.exit_status_ready() and stdout_done and stderr_done:
                 yield "exit", str(chan.recv_exit_status())

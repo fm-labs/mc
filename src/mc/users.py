@@ -5,6 +5,7 @@ import bcrypt
 
 from mc.config import USERS_FILE
 
+
 @dataclasses.dataclass
 class User:
     username: str
@@ -41,8 +42,7 @@ def create_user_file(path: str = USERS_FILE) -> None:
         print(f"{path} already exists — skipping")
 
 
-def add_user(username: str, password: str,
-             path: str = USERS_FILE) -> None:
+def add_user(username: str, password: str, path: str = USERS_FILE) -> None:
     """Add a new user. Raises ValueError if the user already exists."""
     users = _load(path)
     if username in users:
@@ -71,8 +71,7 @@ def remove_user(username: str, path: str = USERS_FILE) -> None:
     print(f"Removed user '{username}'")
 
 
-def authenticate_user(username: str, password: str,
-                      path: str = USERS_FILE) -> User|None:
+def authenticate_user(username: str, password: str, path: str = USERS_FILE) -> User | None:
     """Return True if username exists and password matches."""
     try:
         user = get_user(username, path)

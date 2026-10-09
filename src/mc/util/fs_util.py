@@ -2,6 +2,7 @@ import os
 import shutil
 from pathlib import Path
 
+
 def list_files_in_dir_recursive(directory: str, strip_base: bool = True) -> list:
     """
     Lists all files in a directory recursively.
@@ -15,7 +16,6 @@ def list_files_in_dir_recursive(directory: str, strip_base: bool = True) -> list
             else:
                 file_list.append(os.path.join(root, file))
     return file_list
-
 
 
 def copy_recursive(src: Path, dest: Path, exclude: list[str] = None):

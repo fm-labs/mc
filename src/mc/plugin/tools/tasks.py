@@ -1,11 +1,12 @@
 import os
 
-from mc.util.subprocess_helper2 import subprocess_run, subprocess_stream
 from mc.plugin.tools.toolindex import get_tool_def
+from mc.util.subprocess_helper2 import subprocess_run, subprocess_stream
 
 SUBPROCESS_TIMEOUT = 300  # seconds, hard timeout for subprocesses
 
-#@celery.task(bind=True)
+
+# @celery.task(bind=True)
 def task_subprocess_run(self, cmd: list, env: dict = None):
     """
     Synchronous version of subprocess_run, to be used in non-async contexts.
@@ -13,12 +14,12 @@ def task_subprocess_run(self, cmd: list, env: dict = None):
     """
 
     result = subprocess_run(cmd, env)
-    #if "error" in result:
+    # if "error" in result:
     #    self.update_state(state='FAILURE', meta=result)
     return result
 
 
-#@celery.task(bind=True)
+# @celery.task(bind=True)
 def task_subprocess_stream(cmd: list, env: dict = None):
 
     output = []
@@ -37,7 +38,7 @@ def task_subprocess_stream(cmd: list, env: dict = None):
 
         bytes_received += len(line)
         if bytes_received > 10 * 1024 * 1024:  # every 10 MB
-            #self.update_state(state='PROGRESS', meta={"status": f"Received {bytes_received} bytes so far..."})
+            # self.update_state(state='PROGRESS', meta={"status": f"Received {bytes_received} bytes so far..."})
             bytes_received_total += bytes_received
             bytes_received = 0
 
@@ -46,7 +47,7 @@ def task_subprocess_stream(cmd: list, env: dict = None):
     return {"stdout": "".join(output), "returncode": rc}
 
 
-#@celery.task(bind=True)
+# @celery.task(bind=True)
 def task_tool_exec(tool_name: str, command_name: str, **kwargs):
     tool = get_tool_def(tool_name)
     if not tool:
@@ -56,7 +57,7 @@ def task_tool_exec(tool_name: str, command_name: str, **kwargs):
     command = commands.get(command_name)
     if not command:
         return {"error": f"Command '{command_name}' not found in tool '{tool_name}'."}
-    if not "cmd" in command:
+    if "cmd" not in command:
         return {"error": f"Command '{command_name}' in tool '{tool_name}' has no 'cmd' defined."}
 
     try:
@@ -81,9 +82,9 @@ def task_tool_exec(tool_name: str, command_name: str, **kwargs):
         # todo evaluate and set environment variables from command definition
         env = os.environ.copy()
         result = subprocess_run(cmd, env)
-        #if "error" in result:
+        # if "error" in result:
         #    self.update_state(state='FAILURE', meta=result)
 
         return result
     except Exception as e:
-        return {"error": "Unknown exception occurred: " +  str(e)}
+        return {"error": "Unknown exception occurred: " + str(e)}

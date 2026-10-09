@@ -1,11 +1,10 @@
-from datetime import datetime
+import asyncio
 import json
+from collections.abc import AsyncGenerator
+from datetime import datetime
 
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
-import asyncio
-from typing import AsyncGenerator
-
 from starlette.requests import Request
 
 from mc.server.sse import run_subprocess_stream_sse, sse_event
@@ -30,7 +29,7 @@ async def stream_ping(request: Request):
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Content-Type": "text/event-stream",
-        }
+        },
     )
 
 
@@ -69,6 +68,4 @@ async def stream():
         "X-Accel-Buffering": "no",
     }
 
-    return StreamingResponse(event_generator(),
-                             media_type="text/event-stream",
-                             headers=headers)
+    return StreamingResponse(event_generator(), media_type="text/event-stream", headers=headers)

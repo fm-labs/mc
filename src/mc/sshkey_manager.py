@@ -6,13 +6,18 @@ from tempfile import NamedTemporaryFile
 from paramiko import PasswordRequiredException
 
 from mc.credentials_manager import add_credentials, remove_credentials
-from mc.util.ssh_util import ssh_key_read, ssh_key_load_with_fingerprint, ssh_pkey_from_bytes
+from mc.util.ssh_util import ssh_key_load_with_fingerprint, ssh_key_read, ssh_pkey_from_bytes
 
 
-def add_ssh_key(credsfile: str, name: str,
-                key_file: str | None = None, key_content: str | None = None,
-                key_passphrase: str = None, key_passphrase_file: str = None,
-                allow_overwrite: bool = False) -> None:
+def add_ssh_key(
+    credsfile: str,
+    name: str,
+    key_file: str | None = None,
+    key_content: str | None = None,
+    key_passphrase: str = None,
+    key_passphrase_file: str = None,
+    allow_overwrite: bool = False,
+) -> None:
     """
     Add an SSH private key to the credentials store.
 
@@ -42,7 +47,7 @@ def add_ssh_key(credsfile: str, name: str,
         key_passphrase_file = os.path.expanduser(key_passphrase_file)
         if not os.path.exists(key_passphrase_file):
             raise ValueError(f"Passphrase file does not exist: {key_passphrase_file}")
-        with open(key_passphrase_file, "r") as pf:
+        with open(key_passphrase_file) as pf:
             key_passphrase = pf.read().strip()
 
     # Try to load the key to verify it's valid and get the key fingerprint
@@ -54,15 +59,15 @@ def add_ssh_key(credsfile: str, name: str,
     except Exception as e:
         raise ValueError(f"Error loading SSH key: {e}")
 
-    #cname = f"ssh-key-{ssh_key_hash[:16]}"
+    # cname = f"ssh-key-{ssh_key_hash[:16]}"
     cname = f"sshkey-{name}"
     creds = {
-             #"ssh_key_name": name,
-             #"ssh_key_type": key_class.__name__.lower()[:-3],  # e.g. RSAKey -> rsa
-             #"ssh_key_hash": ssh_key_hash,
-             #"ssh_key_fingerprint": fingerprint,
-             "ssh_key": ssh_key_bytes,
-             }
+        # "ssh_key_name": name,
+        # "ssh_key_type": key_class.__name__.lower()[:-3],  # e.g. RSAKey -> rsa
+        # "ssh_key_hash": ssh_key_hash,
+        # "ssh_key_fingerprint": fingerprint,
+        "ssh_key": ssh_key_bytes,
+    }
     if key_passphrase:
         creds["ssh_key_passphrase"] = key_passphrase
 
@@ -71,10 +76,10 @@ def add_ssh_key(credsfile: str, name: str,
     # test pkey construction with the creds
     try:
         # Decode bytes to text
-        #key_str = ssh_key_bytes.decode("utf-8")
-        #key_stream = io.StringIO(key_str)
-        #pkey = key_class.from_private_key(key_stream, password=key_passphrase)
-        #print(f"Test: reconstructed PKey from stored data, fingerprint: {pkey.get_fingerprint().hex()}")
+        # key_str = ssh_key_bytes.decode("utf-8")
+        # key_stream = io.StringIO(key_str)
+        # pkey = key_class.from_private_key(key_stream, password=key_passphrase)
+        # print(f"Test: reconstructed PKey from stored data, fingerprint: {pkey.get_fingerprint().hex()}")
         ssh_pkey_from_bytes(ssh_key_bytes, password=key_passphrase)
     except PasswordRequiredException:
         print("Warning: could not reconstruct PKey from stored data: passphrase required.")

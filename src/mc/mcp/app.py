@@ -50,4 +50,3 @@ mcp = FastMCP("MissionControl MCP", version="1.0.0")
 #     # todo validate schema changes (e.g., prevent removing required fields)
 #     store_inventory_json_schema(item_type, schema)
 #     return {"status": "success", "item_type": item_type}
-

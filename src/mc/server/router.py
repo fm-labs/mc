@@ -1,21 +1,19 @@
-from fastapi import APIRouter, Security
-from fastapi import Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security import OAuth2PasswordRequestForm
 
-from mc.users import authenticate_user
 from inventorydb.routes import router as objbase_router
 from mc.plugin.containers.routes import router as containers_router
-from mc.server.routes_rpc import router as rpc_router
 from mc.server.auth import get_current_user
+from mc.server.routes_rpc import router as rpc_router
+from mc.users import authenticate_user
 from mc.util.jwt_util import create_access_token1
-
 
 # Enabled plugins and integrations
 PLUGINS_ENABLED = ["containers"]
-#INVENTORY_ITEMS_ENABLED = ["app_stack", "container_registry", "mc_node"]
+# INVENTORY_ITEMS_ENABLED = ["app_stack", "container_registry", "mc_node"]
 
 app_router = APIRouter()
-#app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
+# app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(objbase_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
 app_router.include_router(containers_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
@@ -48,7 +46,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     token = create_access_token1(data={"sub": user.username})
-    #refresh_token = create_refresh_token(user.username)
+    # refresh_token = create_refresh_token(user.username)
     return {"access_token": token, "token_type": "bearer"}
 
 

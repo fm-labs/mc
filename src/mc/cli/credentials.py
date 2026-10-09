@@ -3,21 +3,22 @@ from __future__ import annotations
 
 import json
 import sys
-from typing import Any, Dict, Optional
+from typing import Any
 
 import click
 
-from mc.credentials_manager import update_credentials, remove_credentials, get_credentials, add_credentials
+from mc.credentials_manager import add_credentials, get_credentials, remove_credentials, update_credentials
 from mc.vault import open_vaultfile
 
 # ----------------------------- Helpers ---------------------------------- #
+
 
 def _stdin_has_data() -> bool:
     # True if data is being piped into stdin (not a TTY)
     return not sys.stdin.isatty()
 
 
-def _read_json_from_stdin() -> Dict[str, Any]:
+def _read_json_from_stdin() -> dict[str, Any]:
     try:
         raw = sys.stdin.read()
         if not raw.strip():
@@ -30,12 +31,12 @@ def _read_json_from_stdin() -> Dict[str, Any]:
         raise click.BadParameter(f"Invalid JSON on stdin: {e}") from e
 
 
-def _interactive_collect_credentials() -> Dict[str, Any]:
+def _interactive_collect_credentials() -> dict[str, Any]:
     """
     Prompt user for key/value pairs without echoing *values* if desired.
     Finish by entering an empty key.
     """
-    creds: Dict[str, Any] = {}
+    creds: dict[str, Any] = {}
     click.echo("Entering interactive mode. Leave key empty to finish.")
     while True:
         key = click.prompt("Key name", default="", show_default=False)
@@ -49,7 +50,7 @@ def _interactive_collect_credentials() -> Dict[str, Any]:
         # Try bool/null/int/float; otherwise keep string
         v_lower = str(value).lower()
         if v_lower in ("true", "false"):
-            parsed: Any = (v_lower == "true")
+            parsed: Any = v_lower == "true"
         elif v_lower in ("null", "none"):
             parsed = None
         else:
@@ -65,7 +66,7 @@ def _interactive_collect_credentials() -> Dict[str, Any]:
     return creds
 
 
-def _gather_credentials(interactive: bool) -> Dict[str, Any]:
+def _gather_credentials(interactive: bool) -> dict[str, Any]:
     """
     Input policy:
       - If stdin has data: read JSON from stdin.
@@ -76,12 +77,11 @@ def _gather_credentials(interactive: bool) -> Dict[str, Any]:
         return _read_json_from_stdin()
     if interactive:
         return _interactive_collect_credentials()
-    raise click.BadParameter(
-        "No credentials provided. Either pipe JSON on stdin or enable --interactive."
-    )
+    raise click.BadParameter("No credentials provided. Either pipe JSON on stdin or enable --interactive.")
 
 
 # ----------------------------- Helpers ---------------------------------- #
+
 
 def ask_password(prompt: str = "Enter password") -> str:
     return click.prompt(prompt, hide_input=True)
@@ -89,12 +89,14 @@ def ask_password(prompt: str = "Enter password") -> str:
 
 # ----------------------------- CLI Group -------------------------------- #
 
+
 @click.group()
 def credentials():
     pass
 
 
 # ----------------------------- Commands --------------------------------- #
+
 
 @credentials.command("add")
 @click.argument("vaultfile")
@@ -156,7 +158,7 @@ def cmd_remove(vaultfile: str, name: str, yes: bool):
 @credentials.command("show")
 @click.argument("vaultfile")
 @click.argument("name", required=False, default=None)
-def cmd_show(vaultfile: str, name: Optional[str]):
+def cmd_show(vaultfile: str, name: str | None):
     """
     Show credentials (all or one).
 

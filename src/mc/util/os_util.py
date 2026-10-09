@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import shutil
 from pathlib import Path
-from typing import List
 
 
 def lookup_bin_path(bin_name: str) -> str | None:
@@ -24,8 +23,8 @@ def lookup_bin_path(bin_name: str) -> str | None:
     return shutil.which(bin_name) or None
 
 
-def bin_cmd(bin_name: str, args: List[str]) -> List[str]:
+def bin_cmd(bin_name: str, args: list[str]) -> list[str]:
     bin_path = lookup_bin_path(bin_name)
     if not bin_path:
-        raise EnvironmentError(f"Required binary '{bin_name}' is not installed or not found in PATH.")
+        raise OSError(f"Required binary '{bin_name}' is not installed or not found in PATH.")
     return [bin_path] + args

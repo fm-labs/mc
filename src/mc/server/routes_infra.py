@@ -1,6 +1,7 @@
-from typing import Annotated, Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Query, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from objbase import Storage
 from paramiko.client import SSHClient
 from starlette.requests import Request
@@ -11,9 +12,11 @@ from mc.util.sshpy_helper import ssh_connect
 
 router = APIRouter()
 
+
 def dep_storage(request: Request) -> Storage:
     storage = request.app.state.storage
     return storage
+
 
 @router.get("/infrastructure/host/{host_id}/services")
 def get_infrastructure_host_services(host_id: str, db: Storage = Depends(dep_storage)) -> list:
@@ -39,9 +42,8 @@ def get_infrastructure_host_services(host_id: str, db: Storage = Depends(dep_sto
             _app["item_type"] = "compose-project"
             related_items.append(app)
 
-    #return mongodb_results_to_json(related_items)
+    # return mongodb_results_to_json(related_items)
     return related_items
-
 
 
 @router.get("/infrastructure/host/{host_id}/system")
@@ -60,7 +62,9 @@ def get_infrastructure_host_system_info(host_id: str, db: Storage = Depends(dep_
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-    stdin, stdout, stderr = client.exec_command("systemctl list-units --type=service --all --no-pager --no-legend --plain --output=json")
+    stdin, stdout, stderr = client.exec_command(
+        "systemctl list-units --type=service --all --no-pager --no-legend --plain --output=json"
+    )
     services = []
     for line in stdout:
         line = line.strip()
@@ -75,15 +79,16 @@ def get_infrastructure_host_system_info(host_id: str, db: Storage = Depends(dep_
 
 
 @router.get("/infrastructure/host/{host_id}/logs/stream")
-def stream_ssh_host_logs(request: Request,
-                                 host_id: str,
-                                 log_type: Annotated[str, Query()] = "syslog", # auth, systemd, syslog, kernel
-                                 since: Annotated[int, Query()] = None,
-                                 until: Annotated[int, Query()] = None,
-                                 tail: Annotated[int, Query()] = 1000,
-                                 follow: Annotated[bool, Query()] = False,
-                                 db: Storage = Depends(dep_storage)
-                                 ) -> StreamingResponse:
+def stream_ssh_host_logs(
+    request: Request,
+    host_id: str,
+    log_type: Annotated[str, Query()] = "syslog",  # auth, systemd, syslog, kernel
+    since: Annotated[int, Query()] = None,
+    until: Annotated[int, Query()] = None,
+    tail: Annotated[int, Query()] = 1000,
+    follow: Annotated[bool, Query()] = False,
+    db: Storage = Depends(dep_storage),
+) -> StreamingResponse:
 
     host = db.read("host", host_id)
     if not host:
@@ -94,17 +99,17 @@ def stream_ssh_host_logs(request: Request,
 
     kwargs: dict[str, Any] = {
         "stream": True,
-        "follow": False, #todo follow,
+        "follow": False,  # todo follow,
     }
     if since:
-        kwargs['since'] = since
+        kwargs["since"] = since
     if until:
-        kwargs['until'] = until
+        kwargs["until"] = until
     if tail:
-        kwargs['tail'] = tail
+        kwargs["tail"] = tail
     if log_type not in ["syslog", "auth", "system", "kernel"]:
         raise HTTPException(status_code=400, detail="Invalid log type")
-    kwargs['log_type'] = log_type
+    kwargs["log_type"] = log_type
 
     # get log stream (blocking iterator)
     print(f"Opening log stream for host {host_name}")
@@ -123,17 +128,17 @@ def stream_ssh_host_logs(request: Request,
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Content-Type": "text/event-stream",
-        }
+        },
     )
 
 
-async def ssh_host_logs_stream(client: SSHClient, **kwargs) -> AsyncGenerator[tuple[str,str], None]:
-    log_type = kwargs.get('log_type', 'syslog')
-    since = kwargs.get('since')
-    until = kwargs.get('until')
-    tail = kwargs.get('tail', 1000)
-    follow = kwargs.get('follow', False)
-    sudo = kwargs.get('sudo', False)
+async def ssh_host_logs_stream(client: SSHClient, **kwargs) -> AsyncGenerator[tuple[str, str]]:
+    log_type = kwargs.get("log_type", "syslog")
+    since = kwargs.get("since")
+    until = kwargs.get("until")
+    tail = kwargs.get("tail", 1000)
+    follow = kwargs.get("follow", False)
+    sudo = kwargs.get("sudo", False)
 
     if log_type == "syslog":
         cmd = f"journalctl -q -n {tail}"
@@ -161,11 +166,11 @@ async def ssh_host_logs_stream(client: SSHClient, **kwargs) -> AsyncGenerator[tu
 
     # convert to async generator
     async for kind, payload in ssh_exec_command_stream(client, cmd, agent_forward=False):
-        #print(f"[{kind}] {payload}", end="")
-        #yield "data: " + payload + "\n\n"
+        # print(f"[{kind}] {payload}", end="")
+        # yield "data: " + payload + "\n\n"
         yield kind, payload
 
 
-async def ssh_host_logs_stream_sse(client: SSHClient, **kwargs) -> AsyncGenerator[str, None]:
+async def ssh_host_logs_stream_sse(client: SSHClient, **kwargs) -> AsyncGenerator[str]:
     async for kind, payload in ssh_host_logs_stream(client, **kwargs):
         yield "data: " + payload + "\n\n"

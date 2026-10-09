@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 import re
-from typing import List, Optional, Callable, Mapping, Any
+from collections.abc import Callable, Mapping
+from typing import Any
 
 
 def split_url(url: str) -> tuple[str, str]:
@@ -12,7 +13,6 @@ def split_url(url: str) -> tuple[str, str]:
         protocol = ""
         path = url
     return protocol, path
-
 
 
 def split_container_image_url(image_url: str):
@@ -26,7 +26,7 @@ def split_container_image_url(image_url: str):
     - image
     """
     scheme = "https"
-    registry = "" #"docker.io"
+    registry = ""  # "docker.io"
     image = ""
     tag = "latest"
 
@@ -37,7 +37,7 @@ def split_container_image_url(image_url: str):
 
     if "/" in rest:
         parts = rest.split("/")
-        if len(parts) > 2 or (len(parts) == 2 and ('.' in parts[0] or ':' in parts[0])):
+        if len(parts) > 2 or (len(parts) == 2 and ("." in parts[0] or ":" in parts[0])):
             registry = parts[0]
             image = "/".join(parts[1:])
         else:
@@ -51,9 +51,7 @@ def split_container_image_url(image_url: str):
     return [scheme, registry, image, tag]
 
 
-
-
-def parse_image_ref(ref: str) -> List[Optional[str]]:
+def parse_image_ref(ref: str) -> list[str | None]:
     """
     Parse a Docker/OCI image reference and return:
         [registryhost, port, namespace, name, tag, digest]
@@ -82,25 +80,25 @@ def parse_image_ref(ref: str) -> List[Optional[str]]:
     s = ref.strip()
 
     # Strip optional transport scheme like docker://, oci://
-    s = re.sub(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', '', s)
+    s = re.sub(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", "", s)
 
     # Split out digest (everything after first '@')
     digest = None
-    if '@' in s:
-        s, digest = s.split('@', 1)
+    if "@" in s:
+        s, digest = s.split("@", 1)
         digest = digest or None
 
     # Identify tag: the last colon *after* the last slash separates the tag
     tag = None
-    last_slash = s.rfind('/')
-    last_colon = s.rfind(':')
+    last_slash = s.rfind("/")
+    last_colon = s.rfind(":")
     if last_colon > last_slash:
-        s, tag = s[:last_colon], s[last_colon + 1:] or None
+        s, tag = s[:last_colon], s[last_colon + 1 :] or None
 
     # Split into path parts
-    parts = s.split('/') if s else []
+    parts = s.split("/") if s else []
 
-    scheme = split_url(ref.strip())[0] if '://' in ref else None
+    scheme = split_url(ref.strip())[0] if "://" in ref else None
     registryhost = None
     port = None
     remainder_idx = 0
@@ -108,21 +106,21 @@ def parse_image_ref(ref: str) -> List[Optional[str]]:
     def looks_like_registry(p: str) -> bool:
         # A registry segment usually has a dot or a colon, or is 'localhost'
         # (per Docker's heuristics).
-        return '.' in p or ':' in p or p == 'localhost' or p.startswith('[')
+        return "." in p or ":" in p or p == "localhost" or p.startswith("[")
 
     if parts and looks_like_registry(parts[0]):
         registry_part = parts[0]
         remainder_idx = 1
 
         # Handle IPv6 in brackets: [::1]:5000 or [2001:db8::1]
-        if registry_part.startswith('['):
-            close = registry_part.find(']')
+        if registry_part.startswith("["):
+            close = registry_part.find("]")
             if close != -1:
                 host_inside = registry_part[1:close]
                 registryhost = host_inside or None
                 # Optional :port after ]
                 rest = registry_part[close + 1 :]
-                if rest.startswith(':'):
+                if rest.startswith(":"):
                     port_str = rest[1:]
                     port = port_str if port_str else None
             else:
@@ -130,8 +128,8 @@ def parse_image_ref(ref: str) -> List[Optional[str]]:
                 registryhost = registry_part
         else:
             # Non-bracketed: split host:port on the last colon
-            if ':' in registry_part:
-                host, p = registry_part.rsplit(':', 1)
+            if ":" in registry_part:
+                host, p = registry_part.rsplit(":", 1)
                 registryhost = host or None
                 port = p or None
             else:
@@ -144,13 +142,13 @@ def parse_image_ref(ref: str) -> List[Optional[str]]:
     if path_parts:
         name = path_parts[-1] or None
         if len(path_parts) > 1:
-            namespace = '/'.join(path_parts[:-1]) or None
+            namespace = "/".join(path_parts[:-1]) or None
 
     return [scheme, registryhost, port, namespace, name, tag, digest]
 
 
 # Matches ${{var_name}} where var_name is letters/numbers/underscore and doesn't start with a digit
-#DOUBLE_BRACE_PATTERN = re.compile(r"\$\{\{([A-Za-z_.]\w*)\}\}")
+# DOUBLE_BRACE_PATTERN = re.compile(r"\$\{\{([A-Za-z_.]\w*)\}\}")
 DOUBLE_BRACE_PATTERN = re.compile(r"\$\{\{([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\}\}")
 
 
@@ -159,9 +157,9 @@ class MissingVar(KeyError):
 
 
 def substitute_double_brace(
-        template: str,
-        variables: Mapping[str, Any],
-        on_missing: Callable[[str], str] | None = None,
+    template: str,
+    variables: Mapping[str, Any],
+    on_missing: Callable[[str], str] | None = None,
 ) -> str:
     """
     Replace ${{var}} in `template` using `variables`.
@@ -191,5 +189,3 @@ def substitute_double_brace(
         raise MissingVar(f"Missing variable: {name}")
 
     return DOUBLE_BRACE_PATTERN.sub(_repl, template)
-
-

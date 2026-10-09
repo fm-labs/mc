@@ -1,15 +1,22 @@
 import os
 import sys
+from collections.abc import Iterator
 from contextlib import contextmanager
 from tempfile import NamedTemporaryFile
-from typing import Iterator, IO
+from typing import IO
 
 from mc.util.ansible_vault_cli import ansible_vault_cli_decrypt, ansible_vault_cli_encrypt
 
 
 @contextmanager
-def open_vaultfile(encrypted_file: str, mode: str = "r", passfile: str = None, password: str = None,
-                   password_callback=None, create=False) -> Iterator[IO]:
+def open_vaultfile(
+    encrypted_file: str,
+    mode: str = "r",
+    passfile: str = None,
+    password: str = None,
+    password_callback=None,
+    create=False,
+) -> Iterator[IO]:
     """
     Context manager to open an Ansible Vault file, decrypting it for read/write access,
     and re-encrypting it on exit if in write mode.
@@ -30,8 +37,7 @@ def open_vaultfile(encrypted_file: str, mode: str = "r", passfile: str = None, p
         elif mode == "w" and create:
             do_decrypt = False
 
-
-    def _create_tmp_password_file(pw: bytes|str) -> str:
+    def _create_tmp_password_file(pw: bytes | str) -> str:
         if not isinstance(pw, (str, bytes)):
             raise ValueError("password must be a string or bytes")
         if isinstance(pw, str):
@@ -65,7 +71,7 @@ def open_vaultfile(encrypted_file: str, mode: str = "r", passfile: str = None, p
     error = False
     try:
         yield decrypted_file  # what becomes `f` in the with-block
-    except Exception as e:
+    except Exception:
         error = True
         raise
     finally:
