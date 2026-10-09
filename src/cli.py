@@ -4,6 +4,10 @@ import click
 from rich.logging import RichHandler
 
 from mc.cli.apps import apps
+from mc.inventory import setup_inventory
+
+# configure inventorydb for mc, before the inventory is used
+setup_inventory()
 
 logging.basicConfig(
     level="INFO",

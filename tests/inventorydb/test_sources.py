@@ -10,7 +10,8 @@ import pytest
 
 from inventorydb.itemtype import InventoryItemType
 from inventorydb.registry import InventoryRegistry
-from inventorydb.sources import USER_MODULE_PACKAGE, PluginSource, UserDirSource, plugin_item_packages
+from inventorydb.settings import DEFAULT_USER_MODULE_PACKAGE as USER_MODULE_PACKAGE
+from inventorydb.sources import PackageSource, PluginSource, UserDirSource, plugin_item_packages
 
 PING_CODE = "def ping(item, params):\n    return {'pong': item['id']}\n\nactions = {'ping': ping}\n"
 
@@ -87,7 +88,7 @@ class TestUserDirSource:
         # the type is available, without handlers
         assert "thing" in reg
         assert get_type(reg, "thing").module is None
-        assert reg.warnings == ["thing: ignored __init__.py, user code is disabled (set INVENTORY_USER_CODE=true)"]
+        assert reg.warnings == ["thing: ignored __init__.py, user code is disabled"]
 
     @pytest.mark.skipif(os.name == "nt", reason="POSIX permissions")
     @pytest.mark.parametrize("target", ["root", "type_dir", "init", "helper"])
@@ -142,9 +143,7 @@ class TestUserDirSource:
 
     def test_cannot_replace_builtin_type(self, user_dir):
         write_type(user_dir, "ssh-key", {"title": "Mine"}, code="raise RuntimeError('must not run')\n")
-        from inventorydb.sources import PackageSource
-
-        reg = InventoryRegistry([PackageSource(), UserDirSource(str(user_dir), allow_code=True)])
+        reg = InventoryRegistry([PackageSource("mc.inventory.item"), UserDirSource(str(user_dir), allow_code=True)])
         item_type = get_type(reg, "ssh-key")
         assert item_type.source == "mc.inventory.item.ssh_key"
         # the user code was not run (it would have raised)
@@ -182,7 +181,7 @@ class TestPluginSource:
     def test_broken_plugin(self, plugin_package, monkeypatch):
         monkeypatch.setattr(importlib.metadata, "entry_points", lambda group: [])
         (plugin_package / "beta" / "__init__.py").write_text("raise ValueError('boom')\n")
-        reg = InventoryRegistry([PluginSource("mc_test_plugins")])
+        reg = InventoryRegistry([PluginSource(["mc_test_plugins"])])
         # other plugins still load
         assert "widget" in reg
         assert reg.warnings == ["Can't load plugin mc_test_plugins.beta: ValueError: boom"]
@@ -192,7 +191,7 @@ class TestPluginSource:
 
     def test_loads_plugin_types(self, plugin_package, monkeypatch):
         monkeypatch.setattr(importlib.metadata, "entry_points", lambda group: [])
-        reg = InventoryRegistry([PluginSource("mc_test_plugins")])
+        reg = InventoryRegistry([PluginSource(["mc_test_plugins"])])
         assert get_type(reg, "widget").source == "mc_test_plugins.alpha.inventory.widget"
         assert reg.warnings == []
 
@@ -200,16 +199,37 @@ class TestPluginSource:
         # an installed package, here simulated by the "alpha" plugin's item package
         entry_points = [FakeEntryPoint("ext", "mc_test_plugins.alpha.inventory")]
         monkeypatch.setattr(importlib.metadata, "entry_points", lambda group: entry_points)
-        reg = InventoryRegistry([PluginSource("mc_test_no_plugins")])
+        reg = InventoryRegistry([PluginSource()])
         assert "widget" in reg
 
     def test_entry_point_must_name_a_package(self, monkeypatch):
         entry_points = [FakeEntryPoint("ext", "some.module:attr")]
         monkeypatch.setattr(importlib.metadata, "entry_points", lambda group: entry_points)
-        reg = InventoryRegistry([PluginSource("mc_test_no_plugins")])
+        reg = InventoryRegistry([PluginSource()])
         assert reg.warnings == [
-            "Entry point 'ext' (some.module:attr) in mc.inventory_types must name a package, not an attribute"
+            "Entry point 'ext' (some.module:attr) in inventorydb.item_types must name a package, not an attribute"
         ]
 
+    def test_entry_points_can_be_disabled(self, monkeypatch):
+        def entry_points(group):
+            raise AssertionError("entry points must not be read")
+
+        monkeypatch.setattr(importlib.metadata, "entry_points", entry_points)
+        reg = InventoryRegistry([PluginSource(entry_point_group=None)])
+        assert reg.types() == []
+
+    def test_custom_entry_point_group_and_subpackage(self, plugin_package, monkeypatch):
+        groups: list[str] = []
+
+        def entry_points(group):
+            groups.append(group)
+            return []
+
+        monkeypatch.setattr(importlib.metadata, "entry_points", entry_points)
+        (plugin_package / "alpha" / "inventory").rename(plugin_package / "alpha" / "types")
+        reg = InventoryRegistry([PluginSource(["mc_test_plugins"], "myapp.types", subpackage="types")])
+        assert "widget" in reg
+        assert groups == ["myapp.types"]
+
     def test_builtin_plugin_item_packages(self):
-        assert plugin_item_packages() == (["mc.plugin.apps.inventory", "mc.plugin.containers.inventory"], [])
+        assert plugin_item_packages("mc.plugin") == (["mc.plugin.apps.inventory", "mc.plugin.containers.inventory"], [])

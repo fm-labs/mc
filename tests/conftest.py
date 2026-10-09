@@ -22,6 +22,11 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from objbase import LocalDirectoryStorage
 
+from mc.inventory import setup_inventory
+
+# the tests use mc's item types, storage and user directory
+setup_inventory()
+
 
 @pytest.fixture
 def storage(tmp_path) -> LocalDirectoryStorage:

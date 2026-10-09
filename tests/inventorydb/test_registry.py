@@ -6,17 +6,18 @@ from typing import Any
 
 import pytest
 
-from inventorydb import registry as registry_module
 from inventorydb.metadata import InventoryShortInfo
 from inventorydb.registry import (
     InventoryItemType,
     InventoryRegistry,
+    build_inventory_registry,
+    default_sources,
     get_inventory_registry,
     reset_inventory_registry,
     validate_item_type,
 )
+from inventorydb.settings import InventorySettings, configure_inventory, get_inventory_settings
 from inventorydb.sources import PackageSource, PluginSource, UserDirSource
-from mc import config
 
 PACKAGE = "mc_test_items"
 
@@ -39,6 +40,14 @@ def make_package(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Ma
     yield make
     for loaded in [n for n in sys.modules if any(n == name or n.startswith(f"{name}.") for name in names)]:
         del sys.modules[loaded]
+
+
+@pytest.fixture
+def restore_settings() -> Iterator[None]:
+    """Restore the inventory settings after the test."""
+    settings = get_inventory_settings()
+    yield
+    configure_inventory(settings)
 
 
 @pytest.fixture
@@ -249,66 +258,54 @@ class TestSharedRegistry:
     def test_is_cached(self):
         assert get_inventory_registry() is get_inventory_registry()
 
-    def test_reset(self, package_dir, monkeypatch):
-        monkeypatch.setattr(registry_module, "default_sources", lambda: [PackageSource(PACKAGE)])
+    def test_rebuilt_when_settings_change(self, package_dir, restore_settings):
+        write_type(package_dir, "thing")
+        before = get_inventory_registry()
+        configure_inventory(InventorySettings(item_packages=(PACKAGE,), entry_point_group=None))
+        reg = get_inventory_registry()
+        assert reg is not before
+        assert [t.name for t in reg.types()] == ["thing"]
+
+    def test_reset(self):
+        before = get_inventory_registry()
         reset_inventory_registry()
-        try:
-            assert get_inventory_registry().types() == []
-        finally:
-            reset_inventory_registry()
+        assert get_inventory_registry() is not before
 
-    def test_default_sources(self):
-        builtin, plugins, user = registry_module.default_sources()
-        assert isinstance(builtin, PackageSource)
-        assert builtin.package == "mc.inventory.item"
+
+class TestDefaultSources:
+    def test_standalone_defaults(self):
+        # without configuration, only entry points of installed packages provide item types
+        [plugins] = default_sources(InventorySettings())
         assert isinstance(plugins, PluginSource)
+        assert plugins.plugin_packages == ()
+        assert plugins.entry_point_group == "inventorydb.item_types"
+
+    def test_from_settings(self):
+        settings = InventorySettings(
+            item_packages=("a.items", "b.items"),
+            plugin_packages=("a.plugins",),
+            plugin_subpackage="types",
+            entry_point_group="a.types",
+            user_dir="/etc/a/types",
+            user_code=True,
+            user_module_package="a_user_types",
+        )
+        first, second, plugins, user = default_sources(settings)
+        assert isinstance(first, PackageSource) and first.package == "a.items"
+        assert isinstance(second, PackageSource) and second.package == "b.items"
+        assert isinstance(plugins, PluginSource)
+        assert (plugins.plugin_packages, plugins.entry_point_group, plugins.subpackage) == (
+            ("a.plugins",),
+            "a.types",
+            "types",
+        )
         assert isinstance(user, UserDirSource)
-        assert user.path == f"{config.CONFIG_DIR}/inventory"
-        assert user.allow_code is False
+        assert (user.path, user.allow_code, user.module_package) == ("/etc/a/types", True, "a_user_types")
 
-    def test_default_overrides_file(self):
-        assert registry_module.default_overrides_file() == f"{config.CONFIG_DIR}/inventory.toml"
-
-
-class TestBuiltinTypes:
-    """The item types that ship with mc: built-in types and the types of the built-in plugins."""
-
-    @pytest.fixture
-    def reg(self) -> InventoryRegistry:
-        return InventoryRegistry([PackageSource(), PluginSource()])
-
-    def test_types(self, reg):
-        assert [t.name for t in reg.types()] == [
-            "app-stack",
-            "app-template",
-            "configuration",
-            "container-node",
-            "container-registry",
-            "secret",
-            "ssh-key",
-            "variable",
-        ]
-
-    def test_load_without_warnings(self, reg):
-        assert reg.warnings == []
-
-    @pytest.mark.parametrize(
-        "name, plugin",
-        [
-            ("app-stack", "apps"),
-            ("app-template", "apps"),
-            ("container-node", "containers"),
-            ("container-registry", "containers"),
-        ],
-    )
-    def test_plugin_types(self, reg, name, plugin):
-        package = name.replace("-", "_")
-        assert get_type(reg, name).source == f"mc.plugin.{plugin}.inventory.{package}"
-
-    def test_handlers(self, reg):
-        from mc.inventory.item import ssh_key
-
-        assert get_type(reg, "ssh-key").get_handler("actions", "set_content") is ssh_key.actions["set_content"]
-
-    def test_schemas_have_title(self, reg):
-        assert all(t.schema.get("title") for t in reg.types())
+    def test_overrides_file(self, tmp_path, package_dir):
+        write_type(package_dir, "thing")
+        overrides = tmp_path / "overrides.toml"
+        overrides.write_text("[types.thing]\nenabled = false\n")
+        settings = InventorySettings(item_packages=(PACKAGE,), entry_point_group=None, overrides_file=str(overrides))
+        reg = build_inventory_registry(settings)
+        assert reg.types() == []

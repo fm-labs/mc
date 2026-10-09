@@ -5,28 +5,29 @@ An item type is made of a JSON schema, optional UI metadata (meta.json) and an i
 expose `actions` and `views` handler dicts. The registry collects item types from its sources once,
 applies the overrides from inventory.toml, validates them, and serves all lookups from memory.
 
-Default sources, in order of precedence (if several define a type, the first one wins):
+The shared registry is built from the inventory settings (see inventorydb.settings), with these sources in
+order of precedence (if several define a type, the first one wins):
 
-1. built-in types: the packages in `mc.inventory.item`
-2. plugin types: `mc.plugin.<plugin>.inventory` packages and `mc.inventory_types` entry points
-3. user types: folders in `$CONFIG_DIR/inventory` (item modules only with INVENTORY_USER_CODE=true)
+1. item packages: the subpackages of `item_packages`
+2. plugin types: `<plugin_package>.<plugin>.inventory` packages, and packages registered under the entry point group
+3. user types: folders in `user_dir` (item modules only with `user_code`)
 """
 
 import logging
-import os
 import threading
 from collections.abc import Iterable
 
 from inventorydb.itemtype import HandlerKind, InventoryItemType, ItemMethod, type_name
 from inventorydb.overrides import load_overrides
-from inventorydb.sources import ITEM_PACKAGE, ItemTypeSource, PackageSource, PluginSource, UserDirSource
-from mc import config
+from inventorydb.settings import InventorySettings, get_inventory_settings
+from inventorydb.sources import ItemTypeSource, PackageSource, PluginSource, UserDirSource
 
 __all__ = [
     "HandlerKind",
     "InventoryItemType",
     "InventoryRegistry",
     "ItemMethod",
+    "build_inventory_registry",
     "get_inventory_registry",
     "reset_inventory_registry",
     "type_name",
@@ -157,34 +158,38 @@ class InventoryRegistry:
         return found.get_handler(kind, name)
 
 
-def default_sources() -> list[ItemTypeSource]:
-    return [
-        PackageSource(ITEM_PACKAGE),
-        PluginSource(),
-        UserDirSource(os.path.join(config.CONFIG_DIR, "inventory"), allow_code=config.INVENTORY_USER_CODE),
-    ]
+def default_sources(settings: InventorySettings) -> list[ItemTypeSource]:
+    sources: list[ItemTypeSource] = [PackageSource(package) for package in settings.item_packages]
+    sources.append(PluginSource(settings.plugin_packages, settings.entry_point_group, settings.plugin_subpackage))
+    if settings.user_dir:
+        sources.append(UserDirSource(settings.user_dir, settings.user_code, settings.user_module_package))
+    return sources
 
 
-def default_overrides_file() -> str:
-    return os.path.join(config.CONFIG_DIR, "inventory.toml")
+def build_inventory_registry(settings: InventorySettings) -> InventoryRegistry:
+    return InventoryRegistry(default_sources(settings), settings.overrides_file)
 
 
 _registry: InventoryRegistry | None = None
+# the settings the shared registry was built with
+_registry_settings: InventorySettings | None = None
 _registry_lock = threading.Lock()
 
 
 def get_inventory_registry() -> InventoryRegistry:
-    """The shared registry, loaded from the default sources on first use."""
-    global _registry
-    if _registry is None:
-        with _registry_lock:
-            if _registry is None:
-                _registry = InventoryRegistry(default_sources(), default_overrides_file())
-    return _registry
+    """The shared registry, built from the current inventory settings on first use (and when they change)."""
+    global _registry, _registry_settings
+    settings = get_inventory_settings()
+    with _registry_lock:
+        if _registry is None or _registry_settings is not settings:
+            _registry = build_inventory_registry(settings)
+            _registry_settings = settings
+        return _registry
 
 
 def reset_inventory_registry() -> None:
     """Drop the shared registry; the next get_inventory_registry() call loads it again."""
-    global _registry
+    global _registry, _registry_settings
     with _registry_lock:
         _registry = None
+        _registry_settings = None

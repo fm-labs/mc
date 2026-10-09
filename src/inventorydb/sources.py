@@ -23,6 +23,7 @@ import pkgutil
 import re
 import stat
 import sys
+from collections.abc import Sequence
 from functools import partial
 from importlib.resources.abc import Traversable
 from pathlib import Path
@@ -30,13 +31,10 @@ from types import ModuleType
 from typing import Any, Protocol
 
 from inventorydb.itemtype import InventoryItemType, type_name
+from inventorydb.settings import DEFAULT_ENTRY_POINT_GROUP, DEFAULT_PLUGIN_SUBPACKAGE, DEFAULT_USER_MODULE_PACKAGE
 
 logger = logging.getLogger(__name__)
 
-ITEM_PACKAGE = "mc.inventory.item"
-PLUGIN_PACKAGE = "mc.plugin"
-ENTRY_POINT_GROUP = "mc.inventory_types"
-USER_MODULE_PACKAGE = "mc_user_inventory"
 SCHEMA_FILE = "schema.json"
 META_FILE = "meta.json"
 INIT_FILE = "__init__.py"
@@ -92,12 +90,12 @@ def read_type_files(
 
 class PackageSource:
     """
-    Item types defined as the subpackages of a Python package, e.g. `mc.inventory.item.ssh_key`.
+    Item types defined as the subpackages of a Python package, e.g. `myapp.items.server` for the type `server`.
     The schema and meta files are read as package resources, so they ship with the code.
     Subpackages starting with `_` are ignored.
     """
 
-    def __init__(self, package: str = ITEM_PACKAGE) -> None:
+    def __init__(self, package: str) -> None:
         self.package = package
 
     def load(self) -> tuple[list[InventoryItemType], list[str]]:
@@ -133,9 +131,11 @@ class PackageSource:
         return item_types, warnings
 
 
-def plugin_item_packages(plugin_package: str = PLUGIN_PACKAGE) -> tuple[list[str], list[str]]:
+def plugin_item_packages(
+    plugin_package: str, subpackage: str = DEFAULT_PLUGIN_SUBPACKAGE
+) -> tuple[list[str], list[str]]:
     """
-    Find the `<plugin>.inventory` packages of all plugins in the plugin package.
+    Find the `<plugin>.<subpackage>` item packages of all plugins in the plugin package.
     This imports the plugin packages themselves (their `__init__.py`), not their item packages. It uses the import
     system rather than the file system, so it also works in a PyInstaller binary.
 
@@ -151,7 +151,7 @@ def plugin_item_packages(plugin_package: str = PLUGIN_PACKAGE) -> tuple[list[str
     for info in sorted(pkgutil.iter_modules(getattr(package, "__path__", [])), key=lambda i: i.name):
         if not info.ispkg:
             continue
-        item_package = f"{plugin_package}.{info.name}.inventory"
+        item_package = f"{plugin_package}.{info.name}.{subpackage}"
         try:
             spec = importlib.util.find_spec(item_package)
         except Exception as e:
@@ -166,20 +166,34 @@ class PluginSource:
     """
     Item types provided by plugins:
 
-    - built-in plugins: the `inventory` subpackage of each `mc.plugin.<plugin>` package
-    - installed packages: entry points in the `mc.inventory_types` group, whose value is the item package, e.g.
-      `[project.entry-points."mc.inventory_types"] my_plugin = "my_plugin.inventory"`
+    - plugin packages: the `inventory` subpackage (see `subpackage`) of each plugin in the plugin packages,
+      e.g. `myapp.plugins.<plugin>.inventory`
+    - installed packages: entry points in the entry point group, whose value is the item package, e.g.
+      `[project.entry-points."inventorydb.item_types"] my_plugin = "my_plugin.inventory"`
 
     Each item package uses the PackageSource layout.
     """
 
-    def __init__(self, plugin_package: str = PLUGIN_PACKAGE, entry_point_group: str = ENTRY_POINT_GROUP) -> None:
-        self.plugin_package = plugin_package
+    def __init__(
+        self,
+        plugin_packages: Sequence[str] = (),
+        entry_point_group: str | None = DEFAULT_ENTRY_POINT_GROUP,
+        subpackage: str = DEFAULT_PLUGIN_SUBPACKAGE,
+    ) -> None:
+        self.plugin_packages = tuple(plugin_packages)
         self.entry_point_group = entry_point_group
+        self.subpackage = subpackage
 
     def load(self) -> tuple[list[InventoryItemType], list[str]]:
-        packages, warnings = plugin_item_packages(self.plugin_package)
-        for entry_point in importlib.metadata.entry_points(group=self.entry_point_group):
+        packages: list[str] = []
+        warnings: list[str] = []
+        for plugin_package in self.plugin_packages:
+            found, found_warnings = plugin_item_packages(plugin_package, self.subpackage)
+            packages.extend(found)
+            warnings.extend(found_warnings)
+
+        entry_points = importlib.metadata.entry_points(group=self.entry_point_group) if self.entry_point_group else []
+        for entry_point in entry_points:
             if entry_point.attr:
                 warnings.append(
                     f"Entry point '{entry_point.name}' ({entry_point.value}) in {self.entry_point_group} "
@@ -233,16 +247,17 @@ def load_user_module(type_dir: Path, module_name: str) -> ModuleType:
 
 class UserDirSource:
     """
-    User-defined item types in a directory outside the code, one folder per type (e.g. `$CONFIG_DIR/inventory`).
+    User-defined item types in a directory outside the code, one folder per type.
     Folders starting with `.` or `_` are ignored. A missing directory is fine.
 
     Item modules (`__init__.py`) are only loaded if `allow_code` is set, and never from files or folders that are
-    writable by other users. They are loaded as `mc_user_inventory.<type_with_underscores>`.
+    writable by other users. They are loaded as `<module_package>.<type_with_underscores>`.
     """
 
-    def __init__(self, path: str, allow_code: bool = False) -> None:
+    def __init__(self, path: str, allow_code: bool = False, module_package: str = DEFAULT_USER_MODULE_PACKAGE) -> None:
         self.path = path
         self.allow_code = allow_code
+        self.module_package = module_package
 
     def load(self) -> tuple[list[InventoryItemType], list[str]]:
         root = Path(self.path)
@@ -277,9 +292,9 @@ class UserDirSource:
 
     def _module_loader(self, root: Path, type_dir: Path, name: str) -> tuple[partial[ModuleType] | None, str | None]:
         if not self.allow_code:
-            return None, f"{name}: ignored {INIT_FILE}, user code is disabled (set INVENTORY_USER_CODE=true)"
+            return None, f"{name}: ignored {INIT_FILE}, user code is disabled"
         unsafe = _writable_by_others([root, type_dir, *sorted(type_dir.rglob("*.py"))])
         if unsafe:
             return None, f"{name}: ignored {INIT_FILE}, {unsafe} is writable by other users"
-        module_name = f"{USER_MODULE_PACKAGE}.{name.replace('-', '_')}"
+        module_name = f"{self.module_package}.{name.replace('-', '_')}"
         return partial(load_user_module, type_dir, module_name), None

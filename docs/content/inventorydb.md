@@ -4,7 +4,40 @@ The inventory stores the items Mission Control manages (app stacks, container no
 SSH keys, secrets, variables, ...). It is schema-driven: every item type is defined by a JSON schema,
 and the API and UI forms are generated from it.
 
-Code: `src/inventorydb/` · Item types: `src/mc/inventory/item/`
+Code: `src/inventorydb/` · mc's configuration: `src/mc/inventory/__init__.py` · Item types: `src/mc/inventory/item/`
+
+`inventorydb` is self-contained and doesn't import mc. mc configures it at startup with its own settings.
+
+
+## Configuration
+
+`inventorydb.settings.InventorySettings` holds all settings. An application sets them once at startup, before
+the inventory is used. The shared registry and storage are rebuilt when the settings change.
+
+```python
+from inventorydb.settings import InventorySettings, configure_inventory
+
+configure_inventory(InventorySettings(storage_dir="/var/lib/myapp/inventory", item_packages=("myapp.items",)))
+```
+
+| Setting | Default | mc |
+|---|---|---|
+| `storage_type` | `directory` | `INVENTORY_STORAGE` (default `directory`) |
+| `storage_dir` | `inventory` (relative to the working dir) | `$DATA_DIR/inventory` |
+| `item_packages` | none | `mc.inventory.item` |
+| `plugin_packages` | none | `mc.plugin` |
+| `plugin_subpackage` | `inventory` | `inventory` |
+| `entry_point_group` | `inventorydb.item_types` (`None` disables entry points) | `mc.inventory_types` |
+| `user_dir` | none | `$CONFIG_DIR/inventory` |
+| `user_code` | `False` | `INVENTORY_USER_CODE` (default `false`) |
+| `user_module_package` | `inventorydb_user_types` | `mc_user_inventory` |
+| `overrides_file` | none | `$CONFIG_DIR/inventory.toml` |
+
+With the defaults, inventorydb only loads item types from installed packages that register under the
+`inventorydb.item_types` entry point group.
+
+In mc, `mc.inventory.setup_inventory()` applies mc's settings. The server, the CLI and the test suite call it at
+startup. Any other mc entry point that uses the inventory must call it too.
 
 
 ## Item types
@@ -38,11 +71,11 @@ restart**.
 
 The registry loads types from three sources, in order of precedence:
 
-| # | Source | Location |
-|---|---|---|
-| 1 | Built-in types | packages in `mc.inventory.item` (see above) |
-| 2 | Plugin types | `mc.plugin.<plugin>.inventory` packages, and installed packages registered under the `mc.inventory_types` entry point group |
-| 3 | User types | folders in `$CONFIG_DIR/inventory/` |
+| # | Source | Settings | Location in mc |
+|---|---|---|---|
+| 1 | Item packages | `item_packages` | packages in `mc.inventory.item` (see above) |
+| 2 | Plugin types | `plugin_packages`, `plugin_subpackage`, `entry_point_group` | `mc.plugin.<plugin>.inventory` packages, and installed packages registered under the `mc.inventory_types` entry point group |
+| 3 | User types | `user_dir`, `user_code`, `user_module_package` | folders in `$CONFIG_DIR/inventory/` |
 
 All sources use the same layout: one folder per type with `schema.json`, an optional `meta.json` and an
 optional `__init__.py` with the handlers. If several sources define the same type, the first one wins and the
@@ -76,10 +109,11 @@ $CONFIG_DIR/inventory/backup-target/
     checks.py       # optional, imported with "from .checks import ..."
 ```
 
-Schema-only user types always work. Python code is loaded only if `INVENTORY_USER_CODE=true` is set (default
-`false`), because it runs inside the API process with its full permissions. Even then, code is skipped if the
-folder, the type folder or any `.py` file in it is writable by other users. User modules are loaded as
-`mc_user_inventory.<type>` without changing `sys.path`. They can import `mc.*` and any package installed in the
+Schema-only user types always work. Python code is loaded only if `user_code` is set (in mc:
+`INVENTORY_USER_CODE=true`, default `false`), because it runs inside the API process with its full permissions.
+Even then, code is skipped if the folder, the type folder or any `.py` file in it is writable by other users.
+User modules are loaded as `<user_module_package>.<type>` (in mc: `mc_user_inventory.<type>`) without changing
+`sys.path`. They can import `mc.*` and any package installed in the
 environment. In the PyInstaller binary, that means only the bundled packages.
 
 User types can't replace built-in or plugin types. To customise those, use `inventory.toml`.
@@ -117,7 +151,8 @@ When the registry loads, it logs a warning (`Inventory: ...`) for each of these:
 ## Storage
 
 Items are plain JSON objects with a required string `id`, stored via [objbase](https://pypi.org/project/objbase/)
-under `$DATA_DIR/inventory`. The backend is selected with `INVENTORY_STORAGE`:
+in `storage_dir` (in mc: `$DATA_DIR/inventory`). The backend is selected with `storage_type` (in mc:
+`INVENTORY_STORAGE`):
 
 | Value | Layout |
 |---|---|

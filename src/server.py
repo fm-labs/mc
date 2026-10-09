@@ -18,12 +18,16 @@ from starlette.responses import JSONResponse
 from inventorydb.registry import get_inventory_registry
 from inventorydb.storage import get_inventory_storage_instance
 from mc import config
+from mc.inventory import setup_inventory
 from mc.mcp.app import mcp as mcp_app
 from mc.mcp.fastmcp_helper import init_mcp_http_app
 from mc.plugin.containers.manager import bootstrap_container_connection_manager
 from mc.server.models import Problem
 from mc.server.router import app_router
 from mc.setup import setup_admin_auth
+
+# configure inventorydb for mc, before the inventory is used
+setup_inventory()
 
 logging.basicConfig(level=logging.DEBUG)
 
