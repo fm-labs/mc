@@ -2,7 +2,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any
 
 from mc import config
 from mc.config import RESOURCES_DIR
@@ -12,9 +12,9 @@ from mc.config import RESOURCES_DIR
 class InventoryShortInfo:
     item_type: str
     title: str
-    description: Optional[str] = None
-    version: Optional[str] = None
-    icon: Optional[str] = None
+    description: str | None = None
+    version: str | None = None
+    icon: str | None = None
 
 
 def enumerate_inventory_item_types_from_schema_dir() -> list[str]:
@@ -31,7 +31,7 @@ def enumerate_inventory_item_types_from_schema_dir() -> list[str]:
     item_types = []
     for filename in os.listdir(schema_dir):
         if not filename.startswith("_") and filename.endswith(".schema.json"):
-            item_type = filename[:-len(".schema.json")]
+            item_type = filename[: -len(".schema.json")]
             item_types.append(item_type)
     return item_types
 
@@ -50,57 +50,49 @@ def enumerate_inventories_from_schema_dir() -> list[InventoryShortInfo]:
     metadata_list = []
     for filename in os.listdir(schema_dir):
         if not filename.startswith("_") and filename.endswith(".schema.json"):
-            item_type = filename[:-len(".schema.json")]
+            item_type = filename[: -len(".schema.json")]
             schema_path = os.path.join(schema_dir, filename)
             try:
-                with open(schema_path, "r", encoding="utf-8") as f:
-
+                with open(schema_path, encoding="utf-8") as f:
                     schema = json.load(f)
                     title = schema.get("title", item_type)
                     description = schema.get("description")
                     version = schema.get("version")
                     icon = schema.get("$icon")
                     metadata = InventoryShortInfo(
-                        item_type=item_type,
-                        title=title,
-                        description=description,
-                        version=version,
-                        icon=icon
+                        item_type=item_type, title=title, description=description, version=version, icon=icon
                     )
                     metadata_list.append(metadata)
-            except (IOError, json.JSONDecodeError):
+            except (OSError, json.JSONDecodeError):
                 continue
     return metadata_list
 
 
-def lookup_inventory_schema(item_type: str) -> dict:
-    schema_file = os.path.join(RESOURCES_DIR, "schemas", "inventory", f"{item_type.lower()}.schema.json")
-    if not os.path.exists(schema_file):
-        return {}
+def _schema_name(item_type: str) -> str:
+    """Schema files use the hyphenated item type name (e.g. 'app_stack' -> 'app-stack')."""
+    return item_type.lower().replace("_", "-")
 
+
+def _read_json_object(path: str) -> dict[str, Any]:
+    """Read a JSON file containing an object. Returns {} if it is missing or invalid."""
     try:
-        with open(schema_file, "r") as f:
-            schema = json.load(f)
-            return schema
-    except (json.JSONDecodeError, FileNotFoundError):
+        with open(path) as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
         return {}
-    except Exception:
-        return {}
+    return data if isinstance(data, dict) else {}
 
 
-def lookup_inventory_metadata(item_type: str) -> dict:
-    meta_file = os.path.join(RESOURCES_DIR, "schemas", "inventory", f"{item_type.lower()}.meta.json")
-    if not os.path.exists(meta_file):
-        return {}
+def lookup_inventory_schema(item_type: str) -> dict[str, Any]:
+    return _read_json_object(
+        os.path.join(RESOURCES_DIR, "schemas", "inventory", f"{_schema_name(item_type)}.schema.json")
+    )
 
-    try:
-        with open(meta_file, "r") as f:
-            metadata = json.load(f)
-            return metadata
-    except (json.JSONDecodeError, FileNotFoundError):
-        return {}
-    except Exception:
-        return {}
+
+def lookup_inventory_metadata(item_type: str) -> dict[str, Any]:
+    return _read_json_object(
+        os.path.join(RESOURCES_DIR, "schemas", "inventory", f"{_schema_name(item_type)}.meta.json")
+    )
 
 
 # def list_inventory_item_types() -> list[str]:
