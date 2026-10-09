@@ -110,12 +110,44 @@ class TestUserDirSource:
         with pytest.raises(RuntimeError, match="ValueError: boom"):
             reg.get_handler("thing", "actions", "ping")
 
+    @staticmethod
+    def rewrite_keeping_stat(path: Path, content: str) -> None:
+        """Change a file without changing its size and mtime, like an edit within the same second."""
+        before = path.stat()
+        assert len(content.encode()) == before.st_size
+        path.write_text(content)
+        os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+
     def test_reload_runs_changed_code(self, user_dir):
         path = write_type(user_dir, "thing", code="actions = {'a': print}\n")
         reg = load_user_types(user_dir)
-        (path / "__init__.py").write_text("actions = {'b': print}\n")
+        assert set(get_type(reg, "thing").handlers("actions")) == {"a"}
+        self.rewrite_keeping_stat(path / "__init__.py", "actions = {'b': print}\n")
         reg.load()
         assert set(get_type(reg, "thing").handlers("actions")) == {"b"}
+
+    def test_reload_runs_changed_submodule_code(self, user_dir):
+        path = write_type(user_dir, "thing", code="from .names import NAME\nactions = {NAME: print}\n")
+        (path / "names.py").write_text("NAME = 'a'\n")
+        (path / "sub").mkdir()
+        (path / "sub" / "__init__.py").write_text("")
+        (path / "sub" / "more.py").write_text("X = 1\n")
+        (path / "__init__.py").write_text("from .names import NAME\nfrom .sub.more import X\nactions = {NAME: print}\n")
+        reg = load_user_types(user_dir)
+        assert set(get_type(reg, "thing").handlers("actions")) == {"a"}
+        self.rewrite_keeping_stat(path / "names.py", "NAME = 'b'\n")
+        self.rewrite_keeping_stat(path / "sub" / "more.py", "X = 2\n")
+        reg.load()
+        item_type = get_type(reg, "thing")
+        assert set(item_type.handlers("actions")) == {"b"}
+        assert item_type.module is not None
+        assert item_type.module.X == 2
+
+    def test_does_not_write_bytecode(self, user_dir):
+        path = write_type(user_dir, "thing", code="from .helper import ping\nactions = {'ping': ping}\n")
+        (path / "helper.py").write_text(PING_CODE)
+        load_user_types(user_dir)
+        assert list(user_dir.rglob("__pycache__")) == []
 
     def test_skips_hidden_folders_and_files(self, user_dir):
         write_type(user_dir, ".hidden")

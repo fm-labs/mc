@@ -13,6 +13,7 @@ registry calls once it has accepted the type.
 """
 
 import importlib
+import importlib.machinery
 import importlib.metadata
 import importlib.resources
 import importlib.util
@@ -27,7 +28,7 @@ from collections.abc import Sequence
 from functools import partial
 from importlib.resources.abc import Traversable
 from pathlib import Path
-from types import ModuleType
+from types import CodeType, ModuleType
 from typing import Any, Protocol
 
 from inventorydb.itemtype import InventoryItemType, type_name
@@ -220,20 +221,51 @@ def _writable_by_others(paths: list[Path]) -> Path | None:
     return None
 
 
+class _SourceOnlyLoader(importlib.machinery.SourceFileLoader):
+    """
+    Loads Python source without the bytecode cache: the code is compiled on every load and no __pycache__ is
+    written. The cache checks a file's mtime (in whole seconds) and size, so it can miss quick edits before a reload.
+    """
+
+    def get_code(self, fullname: str) -> CodeType:
+        return self.source_to_code(self.get_data(self.path), self.path)
+
+
+def _ensure_parent_packages(module_name: str) -> None:
+    """Register empty packages for the missing parents of a module, e.g. `a` and `a.b` for `a.b.c`."""
+    parts = module_name.split(".")
+    for i in range(1, len(parts)):
+        parent = ".".join(parts[:i])
+        if parent not in sys.modules:
+            spec = importlib.machinery.ModuleSpec(parent, None, is_package=True)
+            sys.modules[parent] = importlib.util.module_from_spec(spec)
+
+
 def load_user_module(type_dir: Path, module_name: str) -> ModuleType:
     """
     Load `<type_dir>/__init__.py` as the package `module_name`, without adding the directory to sys.path.
-    Other modules in the directory can be imported relatively (`from .helper import ...`).
+    Other modules in the directory, and in subpackages, can be imported relatively (`from .helper import ...`).
+    The code is always compiled from source, so a reload runs the current code.
     """
     # drop a previously loaded version (registry reload), including its submodules
     for loaded in [n for n in sys.modules if n == module_name or n.startswith(f"{module_name}.")]:
         del sys.modules[loaded]
+    _ensure_parent_packages(module_name)
 
+    # submodules are found through these finders, so they are loaded from source too
+    loader_details = (_SourceOnlyLoader, importlib.machinery.SOURCE_SUFFIXES)
+    for directory in [type_dir, *(p for p in type_dir.rglob("*") if p.is_dir() and p.name != "__pycache__")]:
+        sys.path_importer_cache[str(directory)] = importlib.machinery.FileFinder(str(directory), loader_details)
+
+    init_file = type_dir / INIT_FILE
     spec = importlib.util.spec_from_file_location(
-        module_name, type_dir / INIT_FILE, submodule_search_locations=[str(type_dir)]
+        module_name,
+        init_file,
+        loader=_SourceOnlyLoader(module_name, str(init_file)),
+        submodule_search_locations=[str(type_dir)],
     )
     if spec is None or spec.loader is None:
-        raise ImportError(f"Can't load {type_dir / INIT_FILE}")
+        raise ImportError(f"Can't load {init_file}")
     module = importlib.util.module_from_spec(spec)
     # must be registered before it runs, for relative imports
     sys.modules[module_name] = module

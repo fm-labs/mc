@@ -113,7 +113,8 @@ Schema-only user types always work. Python code is loaded only if `user_code` is
 `INVENTORY_USER_CODE=true`, default `false`), because it runs inside the API process with its full permissions.
 Even then, code is skipped if the folder, the type folder or any `.py` file in it is writable by other users.
 User modules are loaded as `<user_module_package>.<type>` (in mc: `mc_user_inventory.<type>`) without changing
-`sys.path`. They can import `mc.*` and any package installed in the
+`sys.path`. They may contain submodules and subpackages. User code is always compiled from source, without
+`__pycache__`, so a reload always runs the current files. They can import `mc.*` and any package installed in the
 environment. In the PyInstaller binary, that means only the bundled packages.
 
 User types can't replace built-in or plugin types. To customise those, use `inventory.toml`.
