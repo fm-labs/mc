@@ -11,7 +11,7 @@ const InventoryItemActionButtons = ({item}: { item: InventoryItem<any>}) => {
         <div className={"flex gap-x-1"}>
             {actionsDef.map((def) => {
             if (def.type === "separator") {
-                return <></>
+                return null
             }
             return <Button key={def.name} variant={"outline"} size={"sm"} onClick={() => handleAction(def)(item)}>{def.name}</Button>
         })}

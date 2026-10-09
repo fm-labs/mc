@@ -11,6 +11,7 @@ import AuthenticatedRoute from "@/components/authenticated-route.tsx";
 // lazy load pages
 const StartPage = await import('@/app/start-page.tsx').then(mod => mod.default);
 const InventoryPage = await import('@/app/inventory/page.tsx').then(mod => mod.default);
+const InventoryItemPage = await import('@/app/inventory/item-page.tsx').then(mod => mod.default);
 const ToolsPage = await import('@/app/tools/page.tsx').then(mod => mod.default);
 const ContainerHostsPage = await import('@/app/containers/container-hosts-page.tsx').then(mod => mod.default);
 const ContainerHostPage = await import('@/app/containers/container-host-page.tsx').then(mod => mod.default);
@@ -134,6 +135,19 @@ const ApiRouter = () => {
                                                 if (itemType) {
                                                     return apiClient.getInventoryItems(itemType);
                                                 }
+                                            },
+                                        },
+                                        {
+                                            path: ":itemType/:itemId",
+                                            Component: InventoryItemPage,
+                                            loader: async ({ params }) => {
+                                                const { itemType, itemId } = params;
+                                                if (!itemType || !itemId) {
+                                                    return null;
+                                                }
+                                                // the page shows "not found" for a missing item
+                                                return apiClient.getInventoryItem(itemType, encodeURIComponent(itemId))
+                                                    .catch(() => null);
                                             },
                                         },
                                     ],

@@ -9,6 +9,11 @@ import InventoryActionForm from "@/app/inventory/components/inventory-action-for
 import { InventoryDialogs } from "@/app/inventory/components/inventory-dialogs.tsx";
 import { RJSFSchema } from "@rjsf/utils";
 import InventoryViewForm from "@/app/inventory/components/inventory-view-form.tsx";
+import { Link } from "react-router";
+
+// url of the item detail page
+export const inventoryItemUrl = (itemType: string, itemId: string) =>
+    `/admin/inventory/${itemType}/${encodeURIComponent(itemId)}`;
 
 type InventoryDialogType = "create" | "update" | "delete" | "import"
 
@@ -23,6 +28,7 @@ type InventoryContextType<T> = {
     items: InventoryItem<T>[]
     setItems: React.Dispatch<React.SetStateAction<T[]>>
     fetchItems: () => Promise<void>
+    fetchCurrentItem: () => Promise<void>
     currentItem: InventoryItem<T> | null
     setCurrentItem: React.Dispatch<React.SetStateAction<InventoryItem<T> | null>>
     dialog: ReactNode
@@ -63,7 +69,22 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
         setItems(fetchedData);
     }, [api, itemType, setItems]);
 
+    // reload the current item, e.g. after it was updated
+    const fetchCurrentItem = React.useCallback(async () => {
+        if (!currentItem) {
+            return;
+        }
+        const fetchedItem = await api.getInventoryItem(itemType, encodeURIComponent(currentItem.id));
+        if (fetchedItem) {
+            setCurrentItem(fetchedItem);
+        }
+    }, [api, itemType, currentItem?.id]);
+
     React.useEffect(() => {
+        // a provider for a single item (detail page) doesn't need the item list
+        if (item) {
+            return;
+        }
         fetchItems();
     }, [fetchItems]);
 
@@ -135,9 +156,25 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
         }
     }
 
+    const editItem = React.useCallback((item: InventoryItem<T>) => {
+        setCurrentItem(item);
+        setOpen("update");
+    }, [setOpen]);
+
+    const deleteItem = React.useCallback((item: InventoryItem<T>) => {
+        setCurrentItem(item);
+        setOpen("delete");
+    }, [setOpen]);
+
     const actions: DataTableRowAction[] = React.useMemo(() => {
         const actionsDef: InventoryActionDef[] = metadata?.actions || [];
-        return actionsDef.map((def) => {
+        const separator = { name: "__SEPARATOR__" } as DataTableRowAction;
+        const editAction: DataTableRowAction = { id: "_edit", name: "Edit", handler: editItem };
+        const deleteAction: DataTableRowAction = { id: "_delete", name: "Delete", variant: "destructive", handler: deleteItem };
+        if (actionsDef.length === 0) {
+            return [editAction, separator, deleteAction];
+        }
+        return [editAction, separator, ...actionsDef.map((def) => {
             if (def.type==="separator") {
                 return { name: "__SEPARATOR__" } as DataTableRowAction;
             }
@@ -148,8 +185,8 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
                 variant: def.variant,
                 handler: handleAction(def),
             } as DataTableRowAction;
-        });
-    }, [metadata?.actions]);
+        }), separator, deleteAction];
+    }, [metadata?.actions, editItem, deleteItem]);
 
     const columns: ColumnDef<InventoryItem<T>>[] = React.useMemo(() => {
         // wait for the metadata, so the table doesn't switch from schema columns to configured columns
@@ -164,13 +201,10 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
             accessorKey: "id",
             header: title,
             cell: ({ row }) => {
-                return <span className={"font-bold cursor-pointer"} onClick={() => {
-                    console.log("Clicked on item:", row.original);
-                    setCurrentItem(row.original);
-                    setOpen("update");
-                }}>
+                return <Link className={"font-bold hover:underline"}
+                             to={inventoryItemUrl(itemType, row.original.id)}>
                     {row.original.id}
-                </span>;
+                </Link>;
             },
         });
 
@@ -212,7 +246,7 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
         };
 
         return [...dataCols, actionsCol];
-    }, [metadataLoaded, metadata?.index?.columns, inputSchema, actions]);
+    }, [itemType, metadataLoaded, metadata?.index?.columns, inputSchema, actions]);
 
     const contextValue = {
         itemType,
@@ -222,6 +256,7 @@ export function InventoryProvider<T>({ itemType, data, item, children }: {
         items,
         setItems,
         fetchItems,
+        fetchCurrentItem,
         currentItem,
         setCurrentItem,
         open,

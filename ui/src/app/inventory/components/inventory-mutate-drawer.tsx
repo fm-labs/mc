@@ -29,7 +29,7 @@ export function InventoryMutateDrawer({
                                           onOpenChange,
                                           currentRow,
                                       }: InventoryMutateDrawerProps) {
-    const { itemType, inputSchema, fetchItems } = useInventory();
+    const { itemType, inputSchema, fetchItems, fetchCurrentItem } = useInventory();
     const { api } = useApi();
     const isUpdate = !!currentRow;
 
@@ -52,6 +52,9 @@ export function InventoryMutateDrawer({
             error: isUpdate ? "Error updating item":"Error creating item",
         }).then(() => {
             fetchItems();
+            if (isUpdate) {
+                fetchCurrentItem();
+            }
             onOpenChange(false);
         });
     };

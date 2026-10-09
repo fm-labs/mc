@@ -1,8 +1,9 @@
 import { InventoryMutateDrawer } from "@/app/inventory/components/inventory-mutate-drawer.tsx";
 import { useInventory } from "@/app/inventory/components/inventory-provider.tsx";
+import { InventoryDeleteDialog } from "@/app/inventory/components/inventory-delete-button.tsx";
 
 export function InventoryDialogs() {
-    const { open, setOpen, currentItem, dialog } = useInventory();
+    const { itemType, open, setOpen, currentItem, setCurrentItem, fetchItems, dialog } = useInventory();
 
     if (dialog) {
         return <>{dialog}</>;
@@ -34,6 +35,17 @@ export function InventoryDialogs() {
                             // }, 500)
                         }}
                         currentRow={currentItem}
+                    />
+                    <InventoryDeleteDialog
+                        key={`inventory-delete`}
+                        open={open==="delete"}
+                        onOpenChange={(v) => !v && setOpen(null)}
+                        itemType={itemType}
+                        item={currentItem}
+                        onDeleted={() => {
+                            setCurrentItem(null);
+                            fetchItems();
+                        }}
                     />
                 </>
             )}
