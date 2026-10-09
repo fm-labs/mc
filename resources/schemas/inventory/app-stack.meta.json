@@ -1,4 +1,11 @@
 {
+  "index": {
+    "columns": [
+      {"name": "id", "title": "ID"},
+      {"name": "type", "title": "Type"},
+      {"name": "label", "title": "Label"}
+    ]
+  },
   "actions": [
     {
       "id": "sync",

@@ -129,7 +129,8 @@ def create_app_stack_from_git_repo(app_dir: str, git_repo: str, git_branch: str 
 #             raise FileNotFoundError(f"Template '{template_folder}' not found in repository '{template_git_repo}'")
 #         shutil.copytree(template_path, app_path)
 #         print(
-#             f"Created application '{stack_name}' from template '{template_folder}' in repo '{template_git_repo}' at '{app_dir}'")
+#             f"Created application '{stack_name}' from template '{template_folder}' "
+#             f"in repo '{template_git_repo}' at '{app_dir}'")
 #
 #     return {
 #         "template_url": f"git-template://{template_git_repo}#{template_git_branch}/{template_folder}".rstrip("/"),

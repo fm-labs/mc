@@ -15,7 +15,7 @@ def handle_ssh_key_action_set_content(item: dict, action_params: dict) -> dict:
         dict: The updated SSH key item with the new content.
     """
     content = action_params.get("content", None)
-    passphrase = action_params.get("passphrase", None)  # todo - implement passphrase handling for encrypted keys
+    # todo support action_params["passphrase"] for encrypted keys
     if content is None:
         raise ValueError("Missing 'content' parameter for 'set_content' action")
 

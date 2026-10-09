@@ -15,7 +15,9 @@ PLUGINS_ENABLED = ["containers"]
 # INVENTORY_ITEMS_ENABLED = ["app_stack", "container_registry", "mc_node"]
 
 app_router = APIRouter()
-# app_router.include_router(inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
+# app_router.include_router(
+#     inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)]
+# )
 app_router.include_router(objbase_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
 app_router.include_router(containers_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
@@ -28,7 +30,9 @@ app_router.include_router(containers_router, prefix="/api", tags=["rpc"], depend
 #
 #     router = getattr(module, "router")
 #     if router:
-#         app_router.include_router(router, prefix="/api", tags=[plugin_name], dependencies=[Security(get_current_user)])
+#         app_router.include_router(
+#             router, prefix="/api", tags=[plugin_name], dependencies=[Security(get_current_user)]
+#         )
 
 
 @app_router.get("/api/info", tags=["system"])

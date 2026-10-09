@@ -253,7 +253,6 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
     :return: A dictionary indicating the sync status and task ID.
     """
     logger.info(f"Syncing app stack '{item.get('id')}' with action_params: {action_params}")
-    background = action_params.get("background", False)
     wipe_working_dir = action_params.get("wipe_working_dir", False)
 
     app = AppStackItem.from_item_dict(item)
@@ -263,7 +262,8 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
         if not repo_url:
             raise ValueError(f"App stack '{app.id}' has repository defined but no URL for sync")
 
-        # todo add support for ssh key auth by looking up the key file path from the inventory based on a reference in the repository config
+        # todo add support for ssh key auth by looking up the key file path from the inventory
+        #  based on a reference in the repository config
         sschema, surl = repo_url.split("://", 1)
         if sschema in ["http", "https", "ssh"]:
             # source_ssh_key_file = None
@@ -272,7 +272,8 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             #     source_ssh_key_file = os.path.expanduser(f"~/.ssh/{source_ssh_key_name}")
             #     if not os.path.exists(source_ssh_key_file):
             #         raise FileNotFoundError(
-            #             f"SSH key file '{source_ssh_key_file}' for source_ssh_key_name '{source_ssh_key_name}' not found")
+            #             f"SSH key file '{source_ssh_key_file}' "
+            #             f"for source_ssh_key_name '{source_ssh_key_name}' not found")
             # return update_project_from_git(source_url, str(app_dir.resolve()), private_key_file=source_ssh_key_file)
 
             checkout_path = _build_repo_cache_path(repo_url)
@@ -417,7 +418,6 @@ def handle_app_stack_action_deploy(item: dict, action_params: dict) -> dict:
     """
     logger.info(f"Deploying app stack '{item.get('id')}' with action_params: {action_params}")
     confirm = action_params.get("confirm", False)
-    background = action_params.get("background", False)
     up_args = {
         "build": action_params.get("build", False),
         "remove_orphans": action_params.get("remove_orphans", False),
@@ -500,9 +500,11 @@ def handle_app_stack_redeploy(item: dict, action_params: dict) -> dict:
 
 
 def handle_app_stack_action_destroy(item: dict, action_params: dict) -> dict:
-    """Destroy the app stack by removing the deployed containers and related resources from the target container host."""
+    """
+    Destroy the app stack by removing the deployed containers and related resources
+    from the target container host.
+    """
     confirm = action_params.get("confirm", False)
-    background = action_params.get("background", False)
     destroy_args = {
         "timeout": action_params.get("timeout", 30),
     }

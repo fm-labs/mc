@@ -99,12 +99,13 @@ class DockerComposeStackRunner(abc.ABC):
     def _compose(self, cmd, **kwargs) -> tuple[bytes, bytes, int]:
         raise NotImplementedError("_compose method must be implemented by subclasses")
 
+    @abc.abstractmethod
     def sync(self, **kwargs) -> tuple[bytes, bytes, int]:
         """
-        Sync the stack files to the target
-        Override in subclasses if needed
+        Sync the stack files to the target.
+        Override in subclasses to implement the sync method.
         """
-        pass
+        raise NotImplementedError("sync method must be implemented by subclasses")
 
     def up(self, **kwargs) -> tuple[bytes, bytes, int]:
         """
@@ -123,7 +124,8 @@ class DockerComposeStackRunner(abc.ABC):
             True if "quiet_pull" not in kwargs else kwargs["quiet_pull"]
         )  # Pull without printing progress information
         kwargs["no_color"] = True if "no_color" not in kwargs else kwargs["no_color"]  # Produce monochrome output
-        # kwargs['wait-timeout'] = '300' if 'wait-timeout' not in kwargs else kwargs['wait-timeout'] # wait up to 5 minutes for services to be healthy
+        # wait up to 5 minutes for services to be healthy
+        # kwargs['wait-timeout'] = '300' if 'wait-timeout' not in kwargs else kwargs['wait-timeout']
         return self._compose("up", **kwargs)
 
     def down(self, **kwargs) -> tuple[bytes, bytes, int]:
@@ -181,6 +183,12 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
 
     This class is used to manage the lifecycle of a Docker Compose stack
     """
+
+    def sync(self, **kwargs) -> tuple[bytes, bytes, int]:
+        """
+        Sync the stack files to the target
+        """
+        return b"", b"", 0
 
     def __init__(
         self,

@@ -84,8 +84,10 @@ def task_deploy_compose_project(
     :param project_name: The name of the project (used as the Docker Compose project name).
     :param project_dir: The local directory containing the Docker Compose stack file.
     :param stackfile: The path to the Docker Compose stack file (can be a single file or a list of files).
-    :param host_url: The URL of the Docker host to deploy to (e.g., "unix:///var/run/docker.sock" for local, "ssh://user@remotehost" for remote).
-    :param kwargs: Additional keyword arguments for the Docker Compose up command (e.g., build, remove_orphans, force_recreate).
+    :param host_url: The URL of the Docker host to deploy to
+        (e.g., "unix:///var/run/docker.sock" for local, "ssh://user@remotehost" for remote).
+    :param kwargs: Additional keyword arguments for the Docker Compose up command
+        (e.g., build, remove_orphans, force_recreate).
     :return: A dictionary containing the status, message, and output of the deployment process.
     """
     compose_runner = get_compose_runner(project_name, project_dir, stackfile, host_url)

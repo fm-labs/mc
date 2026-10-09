@@ -175,5 +175,5 @@ async def ssh_host_logs_stream(client: SSHClient, **kwargs) -> AsyncGenerator[tu
 
 
 async def ssh_host_logs_stream_sse(client: SSHClient, **kwargs) -> AsyncGenerator[str]:
-    async for kind, payload in ssh_host_logs_stream(client, **kwargs):
+    async for _kind, payload in ssh_host_logs_stream(client, **kwargs):
         yield "data: " + payload + "\n\n"

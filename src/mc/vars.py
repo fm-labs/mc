@@ -20,8 +20,10 @@ def replace_env_vars_in_string(s: str) -> str:
 
 def replace_placeholders_in_string(s: str) -> str:
     """
-    Replace ${{var.VAR_NAME}}, ${{env.VAR_NAME}} or ${{secret.SECRET_NAME}} in the string with the value of the environment variable VAR_NAME.
-    Find all occurrences of ${{PREFIX.VAR_NAME}} and call get_placeholder_var(VAR_NAME) to get the value, then replace it in the string.
+    Replace ${{var.VAR_NAME}}, ${{env.VAR_NAME}} or ${{secret.SECRET_NAME}} in the string
+    with the value of the environment variable VAR_NAME.
+    Find all occurrences of ${{PREFIX.VAR_NAME}} and call get_placeholder_var(VAR_NAME) to get the value,
+    then replace it in the string.
     """
     pattern = re.compile(r"\$\{\{(\w+\.\w+)\}\}")
 

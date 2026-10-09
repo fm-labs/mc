@@ -53,7 +53,6 @@ async def dep_container_connections_manager(
     check_file = "/tmp/ssh-load-keys-success"
     if os.path.exists(check_file):
         print("!!! Detected SSH keys refresh, forcing container connections refresh")
-        refresh = True
         os.remove(check_file)
 
     check_file = "/tmp/ssh-load-keys-failed"

@@ -32,8 +32,7 @@ def awscli_ecr_login(ecr_url, region=None, profile=None, access_key=None, secret
 
         p_aws = subprocess.run(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=True,
             text=True,
             env=p_aws_env,

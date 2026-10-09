@@ -14,7 +14,8 @@ def handle_container_image_pull(item: dict, action_params: dict) -> dict:
     pull_policy = action_params.get("pull_policy", "if_not_present")
 
     print(
-        f"Pulling container image '{image_url_tagged}' with policy '{pull_policy}' on host '{container_host or 'local'}'"
+        f"Pulling container image '{image_url_tagged}' with policy '{pull_policy}' "
+        f"on host '{container_host or 'local'}'"
     )
 
     env = {}

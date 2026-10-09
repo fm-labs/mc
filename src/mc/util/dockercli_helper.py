@@ -78,12 +78,10 @@ def dockercli_login(username: str, password: str, registry="https://docker.io", 
 
         cmd = bin_cmd("docker", ["login", "--username", username, "--password-stdin", registry])
         print(cmd)
-        print(_env)
         result = subprocess.run(
             cmd,
             input=tmp_file.read(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=False,
             text=False,
             env=_env,

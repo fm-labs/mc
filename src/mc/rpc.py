@@ -283,7 +283,8 @@ def _params_from_signature(fn: Callable[..., Any]) -> dict:
             prop["type"] = "string"
         properties[name] = prop
 
-        # if the annotation is a string literal (e.g. Literal["start", "stop", "restart"]), we can extract the possible values for better schema generation
+        # if the annotation is a string literal (e.g. Literal["start", "stop", "restart"]),
+        # we can extract the possible values for better schema generation
         print(f"Processing parameter '{name}' with annotation", annotation)
         if hasattr(annotation, "__origin__") and annotation.__origin__ is Literal:
             prop["enum"] = annotation.__args__

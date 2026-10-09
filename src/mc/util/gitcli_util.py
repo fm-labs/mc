@@ -78,7 +78,8 @@ def git_update(working_dir=None, force=False, reset=False, **kwargs) -> tuple[by
       > git --version # 'git version 2.39.2'
      using GIT_SSH to set credentials Buildserver SSH keys
      Verifying host key using known hosts file, will automatically accept unseen keys
-      > git fetch --tags --force --progress -- git@git-server:example.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+      > git fetch --tags --force --progress -- git@git-server:example.git
+            +refs/heads/*:refs/remotes/origin/* # timeout=10
      Seen branch in repository origin/dev
      Seen branch in repository origin/main
      Seen 2 remote branches

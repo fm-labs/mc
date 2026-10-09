@@ -16,7 +16,7 @@ def setup_admin_auth():
         logger.info("Initializing admin auth ...")
         create_user_file(USERS_FILE)
         try:
-            admin_user = get_user(DEFAULT_ADMIN_USERNAME)
+            get_user(DEFAULT_ADMIN_USERNAME)
         except KeyError:
             logger.warning("Admin user not found, creating one with random password")
             password = secrets.token_urlsafe(16)

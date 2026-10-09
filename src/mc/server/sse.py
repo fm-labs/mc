@@ -42,7 +42,8 @@ async def run_subprocess_stream_sse(
             # Check if the client has disconnected
             if request and await request.is_disconnected():
                 process.terminate()
-                yield f"data: {json.dumps({'type': 'info', 'message': 'Client disconnected, terminating process.'})}\n\n"
+                event = {"type": "info", "message": "Client disconnected, terminating process."}
+                yield f"data: {json.dumps(event)}\n\n"
                 break
 
             line = await process.stdout.readline()
