@@ -51,17 +51,17 @@ export const buildApiHttpClient = (baseURL: string) => {
                 //window.location.href = "/auth/login";
 
                 // get the current path and add it as a redirect parameter
-                const currentPath = window.location.pathname;
+                const currentPath = window.location.pathname.replace('/#/', '/');
                 const searchParams = new URLSearchParams(/*window.location.search*/);
                 searchParams.set("expired", "1");
                 if (currentPath !== "/auth/login") {
                     searchParams.set("redirect", currentPath);
                 }
-                const redirectUrl = `/auth/login?${searchParams.toString()}`;
 
+                let redirectUrl = `/#/auth/login?${searchParams.toString()}`;
                 setTimeout(() => {
                     window.location.href = redirectUrl;
-                }, 1000)
+                }, 500)
 
             }
             return Promise.reject(error);

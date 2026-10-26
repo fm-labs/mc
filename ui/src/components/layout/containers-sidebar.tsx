@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/collapsible"
 import {
     Sidebar,
-    SidebarContent,
+    SidebarContent, SidebarFooter,
     SidebarGroup, SidebarGroupLabel,
     SidebarHeader,
     SidebarMenu,
@@ -21,6 +21,9 @@ import {
 import AppIcon from "@/components/app-icon.tsx";
 import {NavLink} from "react-router";
 import {useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
+import {NavUser} from "@/components/layout/nav-user.tsx";
+import {navigationData} from "@/components/layout/data/app-navigation-data.ts";
+import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
 
 type NavItem = {
     title: string
@@ -127,7 +130,8 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                                 <AppIcon icon={item?.icon}/>
                                                 {item.title}{" "}
                                                 {item?.isConnected &&
-                                                    <span className={"text-green-500"} title={"Connected"}><PlugZapIcon size={"1em"} /></span>}
+                                                    <span className={"text-green-500"} title={"Connected"}><PlugZapIcon
+                                                        size={"1em"}/></span>}
                                             </div>
                                             <Plus className="ml-auto group-data-[state=open]/collapsible:hidden"/>
                                             <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden"/>
@@ -152,7 +156,11 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                         ))}
                     </SidebarMenu>
                 </SidebarGroup>
+                <NavSecondary items={navigationData?.navAdmin as any[]} className="mt-auto"/>
             </SidebarContent>
+            <SidebarFooter>
+                <NavUser/>
+            </SidebarFooter>
             <SidebarRail/>
         </Sidebar>
     )

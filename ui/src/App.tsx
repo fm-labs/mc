@@ -6,7 +6,7 @@ import { AuthProvider } from "@/context/auth-context.tsx";
 import { SearchProvider } from "@/context/search-provider.tsx";
 import { Toaster } from "@/components/ui/sonner.tsx";
 import ErrorBoundary from "@/components/error-boundary.tsx";
-import ApiRouter from "@/api-router.tsx";
+import AppRouter from "@/app-router.tsx";
 
 const appConfig = {};
 
@@ -19,7 +19,7 @@ function App() {
                     <ErrorBoundary>
                         <ApiProvider>
                             <AuthProvider>
-                                <ApiRouter />
+                                <AppRouter />
                             </AuthProvider>
                         </ApiProvider>
                     </ErrorBoundary>

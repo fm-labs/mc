@@ -1,8 +1,9 @@
 import { Outlet } from "react-router";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar.tsx";
+import {SidebarFooter, SidebarInset, SidebarProvider} from "@/components/ui/sidebar.tsx";
 import { SiteHeader } from "@/components/layout/site-header.tsx";
 import React, { PropsWithChildren } from "react";
 import {ContainersSidebar} from "@/components/layout/containers-sidebar.tsx";
+import {NavUser} from "@/components/layout/nav-user.tsx";
 
 const ContainersLayout = (props: PropsWithChildren) => {
     return (

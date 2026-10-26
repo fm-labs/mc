@@ -4,7 +4,7 @@ import { LoginData, useAuth } from "@/context/auth-context.tsx";
 import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router";
 
-const REDIRECT_URL = '/dashboard';
+const REDIRECT_URL = '/containers';
 
 export default function LoginPage() {
     const auth = useAuth()

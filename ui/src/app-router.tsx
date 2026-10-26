@@ -1,6 +1,6 @@
 import React from "react";
 import { useApi } from "@/context/api-context.tsx";
-import { createBrowserRouter, RouteObject, RouterProvider } from "react-router";
+import {createHashRouter, RouteObject, RouterProvider} from "react-router";
 import Root from "@/app/root.tsx";
 import AuthLayout from "@/components/layout/auth-layout.tsx";
 import AdminLayout from "@/components/layout/admin-layout.tsx";
@@ -25,7 +25,7 @@ const AppStackDetailsPage = await import('@/app/app-stacks/app-stack-details-pag
 const RpcPage = await import('@/app/rpc/rpc-page.tsx').then(mod => mod.default);
 
 
-const ApiRouter = () => {
+const AppRouter = () => {
     const { api: apiClient } = useApi()
 
     const routes: RouteObject[] = [
@@ -165,10 +165,11 @@ const ApiRouter = () => {
     ];
 
     const router = React.useMemo(() => {
-        return createBrowserRouter(routes);
+        //return createBrowserRouter(routes);
+        return createHashRouter(routes);
     }, []);
 
     return <RouterProvider router={router} />
 };
 
-export default ApiRouter;
+export default AppRouter;
