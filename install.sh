@@ -10,7 +10,7 @@
 # - MC_CONTAINER_NAME: The name of the MissionControl container to create (default: mc)
 # - MC_PORT: The port to expose for the MissionControl web interface (default: 3080)
 # - MC_PORT_SSL: The port to expose for the MissionControl web interface with SSL (default: 3443)
-# - MC_DATA_DIR: The path to the directory where MissionControl will store its data (default: /opt/mc)
+# - MC_DATA_VOLUME: The path to the directory where MissionControl will store its data (default: mc-data)
 set -e
 DOCKER=$(which docker)
 DOCKER_HOME=${DOCKER_HOME:-/var/lib/docker}
@@ -19,7 +19,8 @@ MC_IMAGE=${MC_IMAGE:-fmlabs/mc:latest}
 MC_CONTAINER_NAME=${MC_CONTAINER_NAME:-mc}
 MC_PORT=${MC_PORT:-3080}
 MC_PORT_SSL=${MC_PORT_SSL:-3443}
-MC_DATA_DIR=${MC_DATA_DIR:-/opt/mc}
+MC_DATA_VOLUME=${MC_DATA_VOLUME:-mc-data}
+MC_CONFIG_DIR=${MC_CONFIG_DIR:-/etc/mc}
 
 echo "Installing MissionControl with the following configuration:"
 echo "DOCKER=${DOCKER}"
@@ -29,9 +30,10 @@ echo "MC_IMAGE=${MC_IMAGE}"
 echo "MC_CONTAINER_NAME=${MC_CONTAINER_NAME}"
 echo "MC_PORT=${MC_PORT}"
 echo "MC_PORT_SSL=${MC_PORT_SSL}"
-echo "MC_DATA_DIR=${MC_DATA_DIR}"
+echo "MC_DATA_VOLUME=${MC_DATA_VOLUME}"
+echo "MC_CONFIG_DIR=${MC_CONFIG_DIR}"
 
-mkdir -p ${MC_DATA_DIR}
+mkdir -p ${MC_CONFIG_DIR}
 
 $DOCKER stop ${MC_CONTAINER_NAME} && $DOCKER rm ${MC_CONTAINER_NAME}
 $DOCKER pull ${MC_IMAGE} && \
@@ -41,6 +43,7 @@ exec $DOCKER run -d \
   --group-add $(stat -c '%g' ${DOCKER_SOCKET}) \
   -p ${MC_PORT}:3080 \
   -p ${MC_PORT_SSL}:3443 \
+  -v ${MC_CONFIG_DIR}:/etc/mc:ro \
+  -v ${MC_DATA_VOLUME}:/opt/mc \
   -v ${DOCKER_SOCKET}:/var/run/docker.sock:ro \
-  -v ${MC_DATA_DIR}:/opt/mc \
   ${MC_IMAGE}
