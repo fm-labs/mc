@@ -11,18 +11,18 @@ API_NAME = "mission-control"
 API_VERSION = "2.0.0"
 API_PREFIX = "/api"
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
-CONFIG_PATH = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/settings.json")
+CONFIG_PATH = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/mc.conf.json")
 
-load_dotenv(f"{DATA_DIR}/.env")
-load_dotenv(f"{DATA_DIR}/.env.local")
+#load_dotenv(f"{DATA_DIR}/.env")
+#load_dotenv(f"{DATA_DIR}/.env.local")
 
 MC_API_KEY = os.getenv("MC_API_KEY", None)
 
-def read_config():
-    if os.path.exists(CONFIG_PATH):
-        print(f"Loading config from {CONFIG_PATH}")
+def read_config(filepath: str):
+    if os.path.exists(filepath):
+        print(f"Loading config from {filepath}")
         try:
-            with open(CONFIG_PATH) as f:
+            with open(filepath) as f:
                 config = json.load(f)
                 return config
         except Exception as e:
@@ -30,16 +30,15 @@ def read_config():
     return None
 
 
-def write_config(config: dict):
+def write_config(config: dict, filepath: str):
     try:
-        with open(CONFIG_PATH, "w") as f:
+        with open(filepath, "w") as f:
             json.dump(config, f, indent=4)
     except Exception as e:
         print(f"Error writing mc.json: {e}")
 
 
-CONFIG = read_config() or {}
-
+CONFIG = read_config(CONFIG_PATH) or {}
 
 def get_env_var(name: str, default=None):
     if "environment" in CONFIG and name in CONFIG["environment"]:
@@ -93,27 +92,27 @@ VAULT_PASS_FILE = get_env_var("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vaul
 # GITHUB_CALLBACK_URL = get_env_var("GITHUB_CALLBACK_URL")
 
 
-def set_dotenv_var(key: str, value: str):
-    env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
-    lines = []
-    if os.path.exists(env_path):
-        with open(env_path) as f:
-            lines = f.readlines()
-    with open(env_path, "w") as f:
-        found = False
-        for line in lines:
-            if line.startswith(f"{key}="):
-                f.write(f"{key}={value}\n")
-                found = True
-            else:
-                f.write(line)
-        if not found:
-            f.write(f"{key}={value}\n")
-
-
-def set_env_var(name: str, value: str):
-    os.environ[name] = value
-    set_dotenv_var(name, value)
+# def set_dotenv_var(key: str, value: str):
+#     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
+#     lines = []
+#     if os.path.exists(env_path):
+#         with open(env_path) as f:
+#             lines = f.readlines()
+#     with open(env_path, "w") as f:
+#         found = False
+#         for line in lines:
+#             if line.startswith(f"{key}="):
+#                 f.write(f"{key}={value}\n")
+#                 found = True
+#             else:
+#                 f.write(line)
+#         if not found:
+#             f.write(f"{key}={value}\n")
+#
+#
+# def set_env_var(name: str, value: str):
+#     os.environ[name] = value
+#     set_dotenv_var(name, value)
 
 
 # def write_dotenv(config: dict):

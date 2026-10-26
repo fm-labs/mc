@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Annotated, Any, Literal, List
+from typing import Annotated, Any, Literal
 
 import anyio
 from docker.models.containers import Container
@@ -37,75 +37,38 @@ class ContainerHost(BaseModel):
 
 @router.get("/containers/hosts")
 def get_container_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
-    # storage = get_inventory_storage_instance()
-    # items = storage.list_items("container_host")
-    # _items = []
-    # for item in items:
-    #     item_copy = item.copy()
-    #     item_copy["connected"] = item.get("name") in manager.names()
-    #     _items.append(item_copy)
+    hosts: list[ContainerHost] = []
+    for name, url in manager.urls().items():
+        node = manager.nodes.get(name)
+        if node:
+            engine, url = "node", node.base_url
+        elif "+" in url:
+            engine, url = url.split("+", 1)
+        else:
+            engine = "docker"
+        hosts.append(
+            ContainerHost(
+                id=name,
+                name=name,
+                connected=True,
+                properties=ContainerHostProperties(
+                    engine=engine, url=url, autoconnect=node.autoconnect if node else True
+                ),
+            )
+        )
 
-    hosts = []
-    hosts.append(
-        ContainerHost.model_validate({
-            "id": "localdocker",
-            "name": "localdocker",
-            "connected": True,
-            "properties": {
-                "engine": "docker",
-                "url": "unix:///var/run/docker.sock",
-                "autoconnect": True,
-            },
-        })
-    )
-
-    # try:
-    #     storage = get_inventory_storage_instance()
-    #     items = storage.items("mc_node")
-    #     for item in items:
-    #         url = item.get("url")
-    #         name = item.get("id")
-    #         autoconnect = item.get("autoconnect")
-    #         host = {
-    #             "id": name,
-    #             "name": name,
-    #             "connected": False,
-    #             "properties": {
-    #                 "engine": "docker",
-    #                 "url": url,
-    #                 "autoconnect": autoconnect,
-    #             }
-    #         }
-    #         # ensure connection is registered in CCM (if autoconnect is true)
-    #         if autoconnect:
-    #             try:
-    #                 manager._clients.update({name: NodeContainerClient(name, url)})
-    #                 host["connected"] = True
-    #             except Exception as e:
-    #                 print(f"Failed to connect to container host '{name}' at '{url}':", e)
-    #                 host["connected"] = False
-    #
-    #         hosts.append(host)
-    # except Exception as e:
-    #     print("Failed to load container hosts from inventory:", e)
-
-    # for name in manager.names():
-    #     if name == "localdocker":
-    #         continue
-    #     url = f"{name}://"
-    #     host = {
-    #         "id": name,
-    #         "name": name,
-    #         "connected": True,
-    #         "properties": {
-    #             "engine": "docker",
-    #             "url": url,
-    #             "autoconnect": True,
-    #         }
-    #     }
-    #     hosts.append(host)
-
-    return jsonable_encoder(hosts)
+    # configured nodes that aren't connected
+    for name, node in manager.nodes.items():
+        if manager.get(name) is None:
+            hosts.append(
+                ContainerHost(
+                    id=name,
+                    name=name,
+                    connected=False,
+                    properties=ContainerHostProperties(engine="node", url=node.base_url, autoconnect=node.autoconnect),
+                )
+            )
+    return hosts
 
 
 @router.get("/containers/{alias}/version")
@@ -188,6 +151,8 @@ def post_docker_container_action(alias: str, container_id: str, action: str, cli
 
         return {"action": action, "status": "ok", "message": f"Action {action} was successful"}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -210,6 +175,8 @@ def post_docker_container_exec(
         output = exec_instance.output.decode("utf-8", errors="replace")
         rc = exec_instance.exit_code
         return {"container_id": container_id, "command": command, "exit_code": rc, "output": output}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -361,6 +328,8 @@ def pull_docker_image(alias: str, body: PullImageRequest, client: ContainerClien
         # todo - this can take a long time, make it async and stream progress
         pulled_image = client.images.pull(body.image)
         return jsonable_encoder(pulled_image.attrs)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

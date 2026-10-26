@@ -90,7 +90,6 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-
 # Global exception handlers that emit Problem JSON responses
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_: Request, exc: HTTPException):
@@ -143,6 +142,13 @@ STATIC_UI_DIR=os.environ.get("STATIC_UI_DIR", default="ui/dist")
 
 #app.mount("/static/", StaticFiles(directory=STATIC_FILES_DIR), name="static")
 app.mount("/", StaticFiles(directory=STATIC_UI_DIR, html=True), name="ui")
+
+
+# Proxy Middleware for Anthropic API
+# app.add_middleware(
+#     NodeProxyMiddleware
+# )
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=5000)

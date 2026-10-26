@@ -9,62 +9,12 @@ from typing import Any
 from docker import DockerClient
 from podman import PodmanClient
 
-from mc.client.apiclient import McApiClient
+from mc import config
+from mc.plugin.containers.node_client import NodeConfig, NodeContainerClient, load_node_configs
 
-ContainerClient = PodmanClient | DockerClient
+ContainerClient = PodmanClient | DockerClient | NodeContainerClient
 
 logger = logging.getLogger(__name__)
-
-
-class NodeContainerClient:
-    class Containers:
-        def list(self, *args, **kwargs):
-            return []
-
-    class Volumes:
-        def list(self, *args, **kwargs):
-            return []
-
-    class Images:
-        def list(self, *args, **kwargs):
-            return []
-
-    def __init__(self, name: str, base_url: str) -> None:
-        self.name = name
-        self.client = McApiClient(api_url=base_url, api_key="")
-        self.node_alias = "localdocker"
-
-    def _get(self, endpoint: str) -> dict | None:
-        try:
-            return self.client.get(f"/containers/{self.node_alias}/{endpoint}")
-        except Exception as e:
-            print(f"Error getting df from container client '{self.name}': {e}")
-            return None
-
-    def ping(self) -> Any:
-        return self._get("ping")
-
-    def version(self) -> Any:
-        return self._get("version")
-
-    def df(self) -> Any:
-        return self._get("df")
-
-    @property
-    def containers(self) -> Any:
-        return self.Containers()
-
-    @property
-    def images(self) -> Any:
-        return self.Images()
-
-    @property
-    def volumes(self) -> Any:
-        return self.Volumes()
-
-    def close(self):
-        # todo self.client.close()
-        self.client = None
 
 
 class ContainerClientsManager:
@@ -72,6 +22,8 @@ class ContainerClientsManager:
         self._clients: dict[str, ContainerClient] = {}
         self._urls: dict[str, str] = {}
         self._lock = threading.Lock()
+        # all configured nodes, including the ones that aren't connected
+        self.nodes: dict[str, NodeConfig] = {}
 
     def get(self, name: str) -> ContainerClient | None:
         return self._clients.get(name)
@@ -86,40 +38,55 @@ class ContainerClientsManager:
         return self._urls
 
     def add(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient | None:
+        """
+        Create and register a client from a URL like "docker+unix:///var/run/docker.sock", "podman+ssh://..."
+        or "node+http://host:3080" (no engine means docker). Nodes added this way have no API key, use add_node().
+        """
+        # split base_url into engine and url
+        if "+" in base_url:
+            engine, url = base_url.split("+", 1)
+        else:
+            engine, url = "docker", base_url  # default to docker if no engine specified
+
+        try:
+            if engine == "docker":
+                use_ssh = url.startswith("ssh")
+                c = DockerClient(base_url=url, timeout=15, use_ssh_client=use_ssh)
+            elif engine == "podman":
+                c = PodmanClient(base_url=url, timeout=10)
+            elif engine == "node":
+                c = NodeContainerClient(base_url=url)
+            else:
+                raise ValueError(f"Unknown container engine '{engine}' in URL '{base_url}'")
+        except Exception as e:
+            logger.error(f"Failed to create container client for '{name}' with URL '{base_url}': {e}")
+            return None
+
+        return self.register(name, c, base_url, test_ping=test_ping)
+
+    def add_node(self, node: NodeConfig, test_ping: bool = False) -> ContainerClient | None:
+        """Register a client for another mc instance."""
+        return self.register(node.name, NodeContainerClient.from_config(node), f"node+{node.base_url}", test_ping)
+
+    def register(self, name: str, client: ContainerClient, url: str, test_ping: bool = False) -> ContainerClient:
+        """
+        Register a client. If the ping test fails, the client is registered anyway (the host may come up later).
+        """
+        if test_ping:
+            try:
+                client.ping()
+            except Exception as e:
+                logger.warning(f"Failed to ping container client '{name}' at '{url}': {e}")
+
         with self._lock:
             if name in self._clients:
+                client.close()
                 raise ValueError(f"Client '{name}' already exists")
+            self._clients[name] = client
+            self._urls[name] = url
 
-            # split base_url into engine and url
-            if "+" in base_url:
-                engine, url = base_url.split("+", 1)
-            else:
-                engine, url = "docker", base_url  # default to docker if no engine specified
-
-            try:
-                if engine == "docker":
-                    use_ssh = url.startswith("ssh")
-                    c = DockerClient(base_url=url, timeout=15, use_ssh_client=use_ssh)
-                elif engine == "podman":
-                    c = PodmanClient(base_url=url, timeout=10)
-                else:
-                    raise ValueError(f"Unknown container engine '{engine}' in URL '{base_url}'")
-            except Exception as e:
-                logger.error(f"Failed to create container client for '{name}' with URL '{base_url}': {e}")
-                return None
-
-            try:
-                if test_ping:
-                    c.ping(timeout=10)
-            except Exception:
-                c.close()
-                # raise
-                logger.error(f"Failed to ping container client '{name}' at '{base_url}' during add():", exc_info=True)
-
-            print(f"Added container client '{name}' with URL '{base_url}'")
-            self._clients[name] = c
-            self._urls[name] = base_url
-            return c
+        logger.info(f"Added container client '{name}' with URL '{url}'")
+        return client
 
     def ensure(self, name: str, base_url: str, test_ping: bool = True):
         existing = self.get(name)
@@ -156,23 +123,23 @@ class ContainerClientsManager:
 #    return ContainerClientsManager()
 
 
-def bootstrap_container_connection_manager() -> ContainerClientsManager:
-    """Idempotent: make sure defaults exist (read from env/config if you like)."""
+def bootstrap_container_connection_manager(mc_config: dict[str, Any] | None = None) -> ContainerClientsManager:
+    """
+    Create the manager with the local docker connection and the nodes from the mc config.
+    Nodes are not pinged here, so unreachable nodes don't slow down the startup.
+    """
     m = ContainerClientsManager()
     m.ensure("localdocker", os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock"), test_ping=False)
 
-    # storage = get_inventory_storage_instance()
-    # items = storage.list_items("mc_node")
-    # for item in items:
-    #     name = item.get("id")
-    #     url = item.get("url")
-    #     autoconnect = True # item.get("autoconnect", False)
-    #     print(f"Found container host in inventory: {name} at {url} (autoconnect={autoconnect})")
-    #     if autoconnect:
-    #         try:
-    #             m._clients.update({name: NodeContainerClient(name, url)})
-    #         except Exception as e:
-    #             print(f"Failed to connect to container host '{name}' at '{url}':", e)
+    for node in load_node_configs(config.CONFIG if mc_config is None else mc_config):
+        m.nodes[node.name] = node
+        if not node.autoconnect:
+            logger.info(f"Node '{node.name}' is not connected (autoconnect is false)")
+            continue
+        try:
+            m.add_node(node)
+        except ValueError as e:
+            logger.error(f"Can't add node '{node.name}': {e}")
 
     # inventory = get_inventory_storage_instance()
     # items = inventory.list_items("container_host")

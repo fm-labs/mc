@@ -11,7 +11,8 @@ class McApiClient:
         print(f"Making {method.upper()} request to {url} with kwargs: {kwargs}")
         headers = {}
         if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
+            # the server reads bearer tokens as JWTs, API keys go in x-api-key
+            headers["x-api-key"] = self.api_key
         if "headers" in kwargs:
             headers.update(kwargs["headers"])
             del kwargs["headers"]
