@@ -7,9 +7,9 @@ export const DockerHostError = () => {
     }
 
     return (
-        <span>
+        <div>
             <span className={`inline-block mr-1 w-3 h-3 rounded-full bg-red-500`} title={error}></span>
             {error}
-        </span>
+        </div>
     );
 };

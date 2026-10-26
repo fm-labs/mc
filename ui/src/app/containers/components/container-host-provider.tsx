@@ -57,13 +57,13 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
             }
             const hostId = config.hostId;
             const response = await api.get(`/api/containers/${hostId}/${path}`);
-            //console.log("Data fetched:", path, response);
+            console.log("Data fetched:", path, response);
             setError(null);
             return response;
         } catch (error) {
             console.error("Error fetching container data:", path, error);
             //toast.error("Error fetching container data " + path);
-            setError("Error fetching container data: " + String(error));
+            setError("Error fetching container data: " + path + ": " + String(error));
         }
     }, [config, setError, api])
 

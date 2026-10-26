@@ -57,7 +57,7 @@ const DockerHostImagePull = () => {
 
 
 const DockerHostImages = () => {
-    const {fetchImages} = useContainerHost()
+    const {fetchImages, error} = useContainerHost()
     const [images, setImages] = React.useState<any[]>()
 
     const columns: ColumnDef<any>[] = React.useMemo(() => [
@@ -115,16 +115,20 @@ const DockerHostImages = () => {
         loadImages()
     }, [fetchImages])
 
-    if (images === undefined) {
-        return <div>Loading images...</div>
-    }
+    // if (images === undefined) {
+    //     return <div>Loading images...</div>
+    // }
+
+    // if (error) {
+    //     return;
+    // }
 
     return (
         <div>
             <DockerHostHeader title={"Images"}>
                 <DockerHostImagePull />
             </DockerHostHeader>
-            {images?.length === 0 ? (
+            {!images || images?.length === 0 ? (
                 <p>No images found.</p>
             ) : (
                 <DataTableGeneric columns={columns} data={images}/>

@@ -67,11 +67,14 @@ const DockerHostNetworks = () => {
         loadNetworks()
     }, [])
 
+    if (networks === undefined) {
+        return <p>Loading networks ...</p>;
+    }
+
     return (
         <div>
             <DockerHostHeader title={"Networks"}/>
 
-            {networks === undefined && <p>Loading networks...</p>}
             {!networks || networks?.length === 0 ? (
                 <p>No networks found.</p>
             ) : (

@@ -78,7 +78,7 @@ const DockerHostVolumes = () => {
         <div>
             <DockerHostHeader title={"Volumes"}/>
 
-            {volumes?.length === 0 ? (
+            {!volumes || volumes?.length === 0 ? (
                 <p>No volumes found.</p>
             ) : (
                 <DataTableGeneric columns={columns} data={volumes} />

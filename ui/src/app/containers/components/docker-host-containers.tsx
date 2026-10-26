@@ -19,6 +19,7 @@ import DockerContainerInspect from "@/app/containers/components/docker-container
 import DockerContainerUptime from "@/app/containers/components/docker-container-uptime.tsx";
 import {EventStreamReader} from "@/components/event-stream-reader.tsx";
 import DockerHostHeader from "@/app/containers/components/docker-host-header.tsx";
+import {DockerHostError} from "@/app/containers/components/docker-host-error.tsx";
 
 const logMessageFormatter = (message: string) => {
     try {
@@ -120,7 +121,7 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
 
 
 const DockerHostContainers = () => {
-    const { containers } = useContainerHost();
+    const { containers, error } = useContainerHost();
 
     const groupedData = React.useMemo(() => {
         if (!containers) return {};
@@ -135,6 +136,10 @@ const DockerHostContainers = () => {
             Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)),
         );
     }, [containers]);
+
+    if (error) {
+        return;
+    }
 
     if (containers === undefined) {
         return <p>Loading ...</p>;
