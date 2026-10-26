@@ -3,7 +3,7 @@ import logging
 import click
 
 from inventorydb.storage import get_inventory_storage_instance
-from mc.plugin.apps.inventory.app_stack import (
+from mc.inventory.item.app_stack import (
     AppStackItem,
     handle_app_stack_action_deploy,
     handle_app_stack_action_sync,
