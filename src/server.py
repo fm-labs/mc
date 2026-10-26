@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from starlette.staticfiles import StaticFiles
 
 from inventorydb.registry import get_inventory_registry
 from inventorydb.storage import get_inventory_storage_instance
@@ -136,6 +137,12 @@ default_error_responses = {
 }
 
 app.include_router(app_router, responses=default_error_responses)
+
+#STATIC_FILES_DIR=os.environ.get("STATIC_FILES_DIR", default="static")
+STATIC_UI_DIR=os.environ.get("STATIC_UI_DIR", default="ui/dist")
+
+#app.mount("/static/", StaticFiles(directory=STATIC_FILES_DIR), name="static")
+app.mount("/", StaticFiles(directory=STATIC_UI_DIR, html=True), name="ui")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=5000)

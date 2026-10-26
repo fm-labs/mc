@@ -20,7 +20,7 @@ app_router = APIRouter()
 # )
 app_router.include_router(objbase_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
-app_router.include_router(containers_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
+app_router.include_router(containers_router, prefix="/api", tags=["container"], dependencies=[Security(get_current_user)])
 
 # for plugin_name in PLUGINS_ENABLED:
 #     try:
