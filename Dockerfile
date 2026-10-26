@@ -98,8 +98,9 @@ COPY ./container/supervisor/* /etc/supervisor.d/
 
 # Set file and directory permissions
 RUN mkdir -p /app && \
-    mkdir -p /app/config && \
     chown -R app:app /app && \
+    mkdir -p /etc/mc && \
+    chown -R app:app /etc/mc && \
     mkdir -p /opt/mc && \
     chown -R app:app /opt/mc && \
     mkdir -p /var/log/supervisor && \
@@ -136,7 +137,7 @@ ENV PYTHONPATH=/app/src
 
 ENV RESOURCES_DIR=/app/resources
 ENV DATA_DIR=/opt/mc
-ENV CONFIG_DIR=/opt/mc/etc
+ENV CONFIG_DIR=/etc/mc
 ENV STATIC_UI_DIR=/app/ui
 
 CMD ["supervisor"]

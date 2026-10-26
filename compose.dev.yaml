@@ -12,11 +12,17 @@ services:
       #- "5555:5555" # Flower
     networks:
       - mc-net
-    #extra_hosts:
-    #  - "host.docker.internal:host-gateway"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${PWD}/data/local:/opt/mc
+      - ${PWD}/data/local/etc:/etc/mc
+    environment:
+      - MC_API_KEY=supersecretkey
+      - MC_NODES=node01,node02
+      - MC_NODE_NODE01_API_KEY=supersecretkey1
+      - MC_NODE_NODE02_API_KEY=supersecretkey2
       #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
     #environment:
