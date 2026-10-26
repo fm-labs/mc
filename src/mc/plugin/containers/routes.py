@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, List
 
 import anyio
 from docker.models.containers import Container
@@ -23,9 +23,20 @@ CACHE_TTL = 30  # seconds
 class CommandExecRequest(BaseModel):
     command: str
 
+class ContainerHostProperties(BaseModel):
+    engine: str
+    url: str
+    autoconnect: bool
+
+class ContainerHost(BaseModel):
+    id: str
+    name: str
+    connected: bool
+    properties: ContainerHostProperties
+
 
 @router.get("/containers/hosts")
-def get_container_hosts(manager: ContainerManagerDep) -> list[dict]:
+def get_container_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
     # storage = get_inventory_storage_instance()
     # items = storage.list_items("container_host")
     # _items = []
@@ -36,7 +47,7 @@ def get_container_hosts(manager: ContainerManagerDep) -> list[dict]:
 
     hosts = []
     hosts.append(
-        {
+        ContainerHost.model_validate({
             "id": "localdocker",
             "name": "localdocker",
             "connected": True,
@@ -45,7 +56,7 @@ def get_container_hosts(manager: ContainerManagerDep) -> list[dict]:
                 "url": "unix:///var/run/docker.sock",
                 "autoconnect": True,
             },
-        }
+        })
     )
 
     # try:
