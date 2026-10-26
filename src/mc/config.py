@@ -7,7 +7,7 @@ load_dotenv(".env")
 load_dotenv(".env.local")
 
 # Zero-config settings
-API_NAME = "account"
+API_NAME = "mission-control"
 API_VERSION = "2.0.0"
 API_PREFIX = "/api"
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
@@ -16,6 +16,7 @@ CONFIG_PATH = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/settings.json")
 load_dotenv(f"{DATA_DIR}/.env")
 load_dotenv(f"{DATA_DIR}/.env.local")
 
+MC_API_KEY = os.getenv("MC_API_KEY", None)
 
 def read_config():
     if os.path.exists(CONFIG_PATH):
