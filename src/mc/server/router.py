@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security import OAuth2PasswordRequestForm
 
 from inventorydb.routes import router as objbase_router
+from mc.config import API_VERSION
 from mc.plugin.containers.routes import router as containers_router
 from mc.server.auth import get_current_user
 from mc.server.routes_rpc import router as rpc_router
@@ -37,7 +38,7 @@ app_router.include_router(containers_router, prefix="/api", tags=["container"], 
 
 @app_router.get("/api/info", tags=["system"])
 def info() -> dict:
-    return {"version": "2.0.0"}
+    return {"version": API_VERSION}
 
 
 @app_router.get("/api/health", tags=["system"])

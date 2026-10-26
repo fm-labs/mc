@@ -154,7 +154,7 @@ EXPOSE 3443
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
     org.opencontainers.image.description="Container orchestration tool" \
-    org.opencontainers.image.version="v2.0.0" \
+    org.opencontainers.image.version="v2.1.0" \
     org.opencontainers.image.url="https://github.com/fm-labs/mc" \
     org.opencontainers.image.source="https://github.com/fm-labs/mc" \
     org.opencontainers.image.documentation="https://github.com/fm-labs/mc"

@@ -8,7 +8,7 @@ load_dotenv(".env.local")
 
 # Zero-config settings
 API_NAME = "mission-control"
-API_VERSION = "2.0.0"
+API_VERSION = "2.1.0"
 API_PREFIX = "/api"
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
 CONFIG_PATH = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/mc.conf.json")

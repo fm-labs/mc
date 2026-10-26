@@ -4,6 +4,7 @@ import click
 from rich.logging import RichHandler
 
 from mc.cli.apps import apps
+from mc.config import API_VERSION, API_NAME
 from mc.inventory import setup_inventory
 
 # configure inventorydb for mc, before the inventory is used
@@ -35,7 +36,7 @@ def cli(ctx):
 @cli.command()
 def version():
     """Show version."""
-    click.echo("Version 2.0.0")
+    click.echo(f"{API_NAME} v{API_VERSION}")
 
 
 # cli.add_command(credentials)

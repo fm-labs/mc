@@ -109,3 +109,14 @@ pnpm run dev
 ```
 
 The UI in devmode will be available at `http://localhost:3081`.
+
+
+## Releasing
+
+### Bump version
+
+Bump version in following files:
+
+- pyproject.toml
+- ui/package.json
+- Dockerfile
