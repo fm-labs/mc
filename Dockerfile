@@ -85,7 +85,8 @@ COPY ./src /app/src
 COPY ./resources /app/resources
 
 # UI
-COPY --from=ui-builder /builder/dist/ /var/www/html/
+#COPY --from=ui-builder /builder/dist/ /var/www/html/
+COPY --from=ui-builder /builder/dist/ /app/ui
 
 # Nginx configuration
 COPY ./container/nginx/site.default.conf /etc/nginx/http.d/default.conf
@@ -106,6 +107,7 @@ RUN mkdir -p /app && \
     chmod -R 755 /var/log/supervisor && \
     chown -R app:app /run && \
     mkdir -p /etc/nginx/ssl/ && \
+    mkdir -p /var/www/html/ && \
     mkdir -p /var/log/nginx/ && \
     mkdir -p /var/lib/nginx/logs && \
     touch /var/lib/nginx/logs/error.log && \
@@ -128,12 +130,14 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
 
 # Environment variables
 ENV MC_ALPINE=1
+ENV MC_DOCKER=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 
 ENV RESOURCES_DIR=/app/resources
 ENV DATA_DIR=/opt/mc
 ENV CONFIG_DIR=/opt/mc/etc
+ENV STATIC_UI_DIR=/app/ui
 
 CMD ["supervisor"]
 USER app
