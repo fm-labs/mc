@@ -74,8 +74,10 @@ def get_container_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
 @router.get("/containers/{alias}/version")
 def get_docker_version(client: ContainerClientDep) -> dict:
     version_info = client.version()
-    return jsonable_encoder(version_info)
-
+    try:
+        return jsonable_encoder(version_info)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 @router.get("/containers/{alias}/info")
 def get_docker_info(alias: str, client: ContainerClientDep) -> dict:
@@ -83,7 +85,10 @@ def get_docker_info(alias: str, client: ContainerClientDep) -> dict:
         _info = client.info()
         return jsonable_encoder(_info)
 
-    return cached_fn(f"containers_{alias}_info", fetch_info, ttl=CACHE_TTL)()
+    try:
+        return cached_fn(f"containers_{alias}_info", fetch_info, ttl=CACHE_TTL)()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/containers/{alias}/df")
@@ -92,7 +97,10 @@ def get_docker_df(alias: str, client: ContainerClientDep) -> dict:
         summary = client.df()
         return jsonable_encoder(summary)
 
-    return cached_fn(f"containers_{alias}_df", fetch_df, ttl=CACHE_TTL * 2)()
+    try:
+        return cached_fn(f"containers_{alias}_df", fetch_df, ttl=CACHE_TTL * 2)()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/containers/{alias}/containers")
@@ -105,7 +113,10 @@ def list_docker_containers(alias: str, client: ContainerClientDep) -> list[dict]
             _containers.append(c.attrs)
         return jsonable_encoder(_containers)
 
-    return cached_fn(f"containers_{alias}_containers", fetch_containers, ttl=CACHE_TTL)()
+    try:
+        return cached_fn(f"containers_{alias}_containers", fetch_containers, ttl=CACHE_TTL)()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/containers/{alias}/containers/{container_id}")
@@ -114,7 +125,10 @@ def get_docker_container(alias: str, container_id: str, client: ContainerClientD
         _container: Container = client.containers.get(container_id)
         return jsonable_encoder(_container.attrs)
 
-    return cached_fn(f"containers_{alias}_container_{container_id}", fetch_container, ttl=CACHE_TTL)()
+    try:
+        return cached_fn(f"containers_{alias}_container_{container_id}", fetch_container, ttl=CACHE_TTL)()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/containers/{alias}/containers/{container_id}/actions/{action}")
