@@ -20,7 +20,6 @@ MC_CONTAINER_NAME=${MC_CONTAINER_NAME:-mc}
 MC_PORT=${MC_PORT:-3080}
 MC_PORT_SSL=${MC_PORT_SSL:-3443}
 MC_DATA_VOLUME=${MC_DATA_VOLUME:-mc-data}
-MC_CONFIG_DIR=${MC_CONFIG_DIR:-/etc/mc}
 
 echo "Installing MissionControl with the following configuration:"
 echo "DOCKER=${DOCKER}"
@@ -31,9 +30,6 @@ echo "MC_CONTAINER_NAME=${MC_CONTAINER_NAME}"
 echo "MC_PORT=${MC_PORT}"
 echo "MC_PORT_SSL=${MC_PORT_SSL}"
 echo "MC_DATA_VOLUME=${MC_DATA_VOLUME}"
-echo "MC_CONFIG_DIR=${MC_CONFIG_DIR}"
-
-mkdir -p ${MC_CONFIG_DIR}
 
 $DOCKER stop ${MC_CONTAINER_NAME} && $DOCKER rm ${MC_CONTAINER_NAME}
 $DOCKER pull ${MC_IMAGE} && \
@@ -43,7 +39,6 @@ exec $DOCKER run -d \
   --group-add $(stat -c '%g' ${DOCKER_SOCKET}) \
   -p ${MC_PORT}:3080 \
   -p ${MC_PORT_SSL}:3443 \
-  -v ${MC_CONFIG_DIR}:/etc/mc:ro \
   -v ${MC_DATA_VOLUME}:/opt/mc \
   -v ${DOCKER_SOCKET}:/var/run/docker.sock:ro \
   ${MC_IMAGE}
