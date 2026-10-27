@@ -14,7 +14,7 @@ type ContainerHostContextType = {
     host: InventoryItem<any>
     info?: any,
     summary?: any,
-    containers?: Record<string, any>,
+    //containers?: Record<string, any>,
     //images?: Record<string, any>,
     getHostApiEndpointUrl: (path: string) => string,
     fetchContainerData: (path: string) => Promise<any>,
@@ -32,38 +32,52 @@ type ContainerHostContextType = {
 export const ContainerHostContext = React.createContext<ContainerHostContextType | undefined>(undefined);
 
 
-export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: InventoryItem<ContainerHost> }> = ({ children, host }) => {
-    const { api, apiBaseUrl } = useApi()
+export const ContainerHostProvider: React.FC<{
+    children: React.ReactNode,
+    host: InventoryItem<ContainerHost>
+}> = ({children, host}) => {
+    const {api, apiBaseUrl} = useApi()
 
     const [error, setError] = React.useState<string | null>(null);
     const [info, setInfo] = React.useState<any>(null);
     const [summary, setSummary] = React.useState<any>(null);
-    const [containers, setContainers] = React.useState<Record<string, any>>([]);
+    //const [containers, setContainers] = React.useState<Record<string, any>>([]);
     //const [images, setImages] = React.useState<Record<string, any>>([]);
     const [autorefreshInterval, setAutoRefreshInterval] = React.useState<number>(30000);
+    const abortControllerRef = React.useRef<AbortController | null>(null);
 
-    const config = { hostId: host.name, connected: host?.connected }
+    const config = React.useMemo(() => {
+        return {hostId: host.name, connected: host?.connected}
+    }, [host])
 
     const getHostApiEndpointUrl = React.useCallback((path: string) => {
         return `${apiBaseUrl}/api/containers/${config.hostId}/${path}`;
     }, [config.hostId])
 
     const _fetchContainerData = React.useCallback(async (path: string) => {
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
         try {
             if (!config || config.hostId === undefined || config.hostId === null) {
-                //throw new Error("No hostId configured");
-                setError("No hostId configured");
-                return;
+                throw new Error("No hostId configured");
+                //setError("No hostId configured");
+                //return;
             }
             const hostId = config.hostId;
-            const response = await api.get(`/api/containers/${hostId}/${path}`);
-            console.log("Data fetched:", path, response);
-            setError(null);
+            const response = await api.get(`/api/containers/${hostId}/${path}`, {
+                signal: controller.signal
+            });
+            console.log("Data fetched:", path, config.hostId, response);
+            //setError(null);
+            abortControllerRef.current = null;
             return response;
         } catch (error) {
             console.error("Error fetching container data:", path, error);
             //toast.error("Error fetching container data " + path);
-            setError("Error fetching container data: " + path + ": " + String(error));
+            //setError("Error fetching container data: " + path + ": " + String(error));
+            throw error;
+        } finally {
+            abortControllerRef.current = null;
         }
     }, [config, setError, api])
 
@@ -88,11 +102,9 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
     }, [fetchContainerData, setSummary])
 
     const fetchContainers = React.useCallback(async (force?: boolean) => {
-        const response = await fetchContainerData("containers", force);
         //console.log("Containers Data fetched:", response);
-        setContainers(response);
-        return response;
-    }, [fetchContainerData, setContainers])
+        return await fetchContainerData("containers", force);
+    }, [fetchContainerData])
 
     const fetchImages = React.useCallback(async (force?: boolean) => {
         return await fetchContainerData("images", force, 120000);
@@ -108,7 +120,7 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
                 throw new Error("No hostId configured");
             }
             const hostId = config.hostId;
-            await api.post(`/api/containers/${hostId}/images/pull`, { image: imageName });
+            await api.post(`/api/containers/${hostId}/images/pull`, {image: imageName});
             // Refresh images and summary after pulling
             await Promise.all([fetchImages(true), fetchSummary(true)]);
         } catch (error) {
@@ -133,7 +145,7 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
 
         // Initial fetch
         console.log("Initial fetch for Container host", config.hostId, autorefreshInterval);
-        fetchInfo().then(fetchContainers).then(fetchSummary).catch(() => {
+        fetchInfo().then(fetchSummary).catch(() => {
             console.warn("Error fetching initial container data");
         })
 
@@ -159,6 +171,13 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
             if (summeryUpdateTimer) {
                 clearInterval(summeryUpdateTimer);
             }
+
+            // Abort active requests
+            if (abortControllerRef.current) {
+                console.warn("Aborting active request on unmount")
+                abortControllerRef.current.abort();
+                abortControllerRef.current = null;
+            }
         }
     }, [config.hostId, autorefreshInterval]);
 
@@ -168,7 +187,6 @@ export const ContainerHostProvider: React.FC<{ children: React.ReactNode, host: 
             host,
             info,
             summary,
-            containers,
             getHostApiEndpointUrl,
             fetchContainerData,
             fetchInfo,

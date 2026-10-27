@@ -4,7 +4,8 @@ import { DockerContainerProvider } from "@/app/containers/components/docker-cont
 import { DockerHostContainersListItem } from "@/app/containers/components/docker-host-containers.tsx";
 
 const ContainerView = ({ containerId }: {containerId: string}) => {
-    const { containers } = useContainerHost();
+    const { fetchContainers } = useContainerHost();
+    const [containers, setContainers] = React.useState<Array<any>>([]);
 
     const container = React.useMemo(() => {
         if (!containers) {
@@ -12,6 +13,12 @@ const ContainerView = ({ containerId }: {containerId: string}) => {
         }
         return containers.find((c: any) => c.Id === containerId);
     }, [containers, containerId]);
+
+    React.useEffect(() => {
+        fetchContainers().then(setContainers).catch(() => {
+            console.warn("Error fetching containers");
+        });
+    }, [])
 
     if (!container) {
         return <div>Loading container...</div>;

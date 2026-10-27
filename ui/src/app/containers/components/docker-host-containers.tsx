@@ -121,7 +121,8 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
 
 
 const DockerHostContainers = () => {
-    const { containers, error } = useContainerHost();
+    const { fetchContainers, config } = useContainerHost();
+    const [containers, setContainers] = React.useState<Array<any>>();
 
     const groupedData = React.useMemo(() => {
         if (!containers) return {};
@@ -137,9 +138,13 @@ const DockerHostContainers = () => {
         );
     }, [containers]);
 
-    if (error) {
-        return;
-    }
+    React.useEffect(() => {
+        setContainers(undefined);
+        fetchContainers().then(setContainers).catch(() => {
+            console.warn("Error fetching containers");
+            setContainers([]);
+        });
+    }, [config])
 
     if (containers === undefined) {
         return <p>Loading ...</p>;
