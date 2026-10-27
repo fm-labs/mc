@@ -22,7 +22,8 @@ from __future__ import annotations
 import json
 import logging
 import shlex
-from collections.abc import Iterator
+import socket
+from collections.abc import Callable, Iterator
 from typing import Any, NamedTuple
 
 import requests
@@ -222,6 +223,49 @@ def _iter_ndjson(response: requests.Response, convert) -> Iterator[Any]:
         response.close()
 
 
+class NodeEventStream:
+    """
+    Iterator over a node's event stream, like the docker SDK's CancellableStream.
+    close() can be called from another thread: it shuts the socket down, so a read that waits for the next event
+    returns right away.
+    """
+
+    def __init__(self, response: requests.Response, convert: Callable[[Any], Any]) -> None:
+        self._response = response
+        self._lines = _iter_ndjson(response, convert)
+        self._closed = False
+
+    def __iter__(self) -> NodeEventStream:
+        return self
+
+    def __next__(self) -> Any:
+        try:
+            return next(self._lines)
+        except Exception:
+            # a read that close() interrupted fails in different ways depending on where it was
+            if self._closed:
+                raise StopIteration from None
+            raise
+
+    def close(self) -> None:
+        self._closed = True
+        sock = _response_socket(self._response)
+        if sock is not None:
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+        self._response.close()
+
+
+def _response_socket(response: requests.Response) -> socket.socket | None:
+    """The socket of a streamed response, found the same way as the docker SDK does it. None if there is none."""
+    fp = getattr(getattr(response.raw, "_fp", None), "fp", None)
+    raw = getattr(fp, "raw", None)
+    sock = getattr(raw, "_sock", None) or getattr(raw, "sock", None)
+    return sock if isinstance(sock, socket.socket) else None
+
+
 class NodeContainerClient:
     """Container client for a container connection ("remote_alias") on another mc instance."""
 
@@ -290,11 +334,11 @@ class NodeContainerClient:
     def df(self) -> dict[str, Any]:
         return self._json("GET", "df")
 
-    def events(self, decode: bool = True, **_: Any) -> Iterator[Any]:
+    def events(self, decode: bool = True, **_: Any) -> NodeEventStream:
         response = self._request("GET", "events/stream", stream=True)
         if decode:
-            return _iter_ndjson(response, lambda event: event)
-        return _iter_ndjson(response, lambda event: json.dumps(event).encode("utf-8"))
+            return NodeEventStream(response, lambda event: event)
+        return NodeEventStream(response, lambda event: json.dumps(event).encode("utf-8"))
 
     @property
     def containers(self) -> RemoteContainers:

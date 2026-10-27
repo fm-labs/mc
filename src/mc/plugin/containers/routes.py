@@ -1,5 +1,7 @@
 import asyncio
 import json
+import logging
+from collections.abc import AsyncIterator, Iterator
 from typing import Annotated, Any, Literal
 
 import anyio
@@ -8,7 +10,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Path, Query
 from pydantic import BaseModel
-from starlette.concurrency import iterate_in_threadpool
+from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 from starlette.requests import ClientDisconnect, Request
 from starlette.responses import StreamingResponse
 
@@ -16,6 +18,8 @@ from mc.cache import cached_fn, clear_cache
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 CACHE_TTL = 30  # seconds
 
@@ -383,32 +387,54 @@ def list_docker_networks(alias: str, client: ContainerClientDep) -> list[dict]:
     return cached_fn(f"containers_{alias}_networks", fetch_networks, ttl=CACHE_TTL)()
 
 
+_END_OF_STREAM = object()
+
+
+def _next_event(events: Iterator[Any]) -> Any:
+    """next() for a worker thread: the end of the stream is returned, because StopIteration can't cross threads."""
+    return next(events, _END_OF_STREAM)
+
+
+def _close_event_stream(event_stream: Any) -> None:
+    """
+    Close the upstream connection of an event stream. The docker SDK's CancellableStream and NodeEventStream can be
+    closed while another thread waits for the next event.
+    """
+    close = getattr(event_stream, "close", None)
+    if not callable(close):
+        return
+    try:
+        close()
+    except Exception as e:
+        # e.g. docker over SSH, or a plain generator that is running in a worker thread
+        logger.warning(f"Could not close event stream: {e}")
+
+
 @router.get("/containers/{alias}/events/stream")
 async def stream_docker_events(request: Request, alias: str, client: ContainerClientDep) -> StreamingResponse:
-    event_stream = client.events(decode=True)
+    # opening the stream is a blocking request to the host, so it must not run on the event loop:
+    # that would stall every other request until the host answers or the connection times out
+    event_stream = await run_in_threadpool(client.events, decode=True)
 
-    async def event_generator():
+    async def event_generator() -> AsyncIterator[str]:
+        events = iter(event_stream)
         try:
-            async for chunk in iterate_in_threadpool(event_stream):
+            while True:
+                # abandon_on_cancel: when the client disconnects, don't wait for the next event to arrive.
+                # The worker thread is freed when close() below ends its read.
+                chunk = await anyio.to_thread.run_sync(_next_event, events, abandon_on_cancel=True)
+                if chunk is _END_OF_STREAM:
+                    break
                 if await request.is_disconnected():
-                    print("Client disconnected from event stream, stopping generator")
+                    logger.info(f"Client disconnected from event stream, alias={alias}")
                     break
 
                 yield json.dumps(chunk) + "\n"
         except (ClientDisconnect, anyio.EndOfStream):
-            print("Client disconnected from event stream")
-            pass
-        except asyncio.CancelledError:
-            print("Event stream cancelled")
-            pass
+            logger.info(f"Client disconnected from event stream, alias={alias}")
         finally:
-            try:
-                close = getattr(event_stream, "close", None)
-                if callable(close):
-                    close()
-            except Exception:
-                pass
-            print("Event stream closed")
+            _close_event_stream(event_stream)
+            logger.info(f"Event stream closed, alias={alias}")
 
     return StreamingResponse(
         event_generator(),
