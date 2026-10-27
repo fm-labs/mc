@@ -2,6 +2,7 @@
 .vscode/
 .local/
 bak/
+backup/
 config/
 tmp/
 .env.local
