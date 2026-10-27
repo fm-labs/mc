@@ -24,14 +24,12 @@ wget -qO- https://raw.githubusercontent.com/fm-labs/mc/main/install.sh | bash
 docker container run -d \
   --name mc \
   -p 3080:3080 \
-  -p 80:80 \
-  -p 443:443 \
-  -v /var/run/docker.sock:/var/run/docker.sock \
+  -p 3443:3443 \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
   -v mc_data:/app/data \
   --restart unless-stopped \
   fmlabs/mc:latest
 ```
-
 
 
 ## Running as a non-root user
@@ -56,8 +54,7 @@ Then, you can use that GID in the `--group-add` option when running the containe
 docker container run -d \
   --name mc \
   -p 3080:3080 \
-  -p 80:80 \
-  -p 443:443 \
+  -p 3443:3443 \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
   -v /opt/mc:/opt/mc \
   --restart unless-stopped \
@@ -74,4 +71,15 @@ If you encounter permission issues with the data directory, you can change the o
 
 ```bash
 sudo chown -R 33333:33333 /opt/mc
+```
+
+
+## Using custom SSL certificates
+
+SSL certificates can be customized by mounting your own certificate and key files to the container.
+
+This is how nginx is configured:
+```text
+ssl_certificate /etc/nginx/ssl/cert.pem;
+ssl_certificate_key /etc/nginx/ssl/key.pem;
 ```
