@@ -103,6 +103,8 @@ RUN mkdir -p /app && \
     chown -R app:app /etc/mc && \
     mkdir -p /opt/mc && \
     chown -R app:app /opt/mc && \
+    mkdir -p /opt/mc/etc && \
+    chown -R app:app /opt/mc/etc && \
     mkdir -p /var/log/supervisor && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
@@ -137,7 +139,7 @@ ENV PYTHONPATH=/app/src
 
 ENV RESOURCES_DIR=/app/resources
 ENV DATA_DIR=/opt/mc
-ENV CONFIG_DIR=/etc/mc
+ENV CONFIG_DIR=/opt/mc/etc
 ENV STATIC_UI_DIR=/app/ui
 
 CMD ["supervisor"]

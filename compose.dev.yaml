@@ -17,7 +17,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${PWD}/data/local:/opt/mc
-      - ${PWD}/data/local/etc:/etc/mc
+      #- ${PWD}/data/local/etc:/etc/mc
     environment:
       - MC_API_KEY=supersecretkey
       - MC_NODES=node01,node02

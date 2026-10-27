@@ -11,14 +11,12 @@ API_NAME = "mission-control"
 API_VERSION = "2.1.0"
 API_PREFIX = "/api"
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
-CONFIG_PATH = os.getenv("MC_CONFIG", f"{DATA_DIR}/etc/mc.conf.json")
 
 #load_dotenv(f"{DATA_DIR}/.env")
 #load_dotenv(f"{DATA_DIR}/.env.local")
 
-MC_API_KEY = os.getenv("MC_API_KEY", None)
 
-def read_config(filepath: str):
+def read_config(filepath: str) -> dict:
     if os.path.exists(filepath):
         print(f"Loading config from {filepath}")
         try:
@@ -38,7 +36,21 @@ def write_config(config: dict, filepath: str):
         print(f"Error writing mc.json: {e}")
 
 
-CONFIG = read_config(CONFIG_PATH) or {}
+def load_config():
+    config_dirs = [
+        "/etc/mc",
+        os.path.join(DATA_DIR, "etc"),
+    ]
+    merged_config = {}
+    for d in config_dirs:
+        filepath = os.path.join(d, "mc.conf.json")
+        if os.path.exists(filepath):
+            conf = read_config(filepath)
+            if conf is not None:
+                merged_config.update(conf)
+    return merged_config
+
+CONFIG = load_config()
 
 def get_env_var(name: str, default=None):
     if "environment" in CONFIG and name in CONFIG["environment"]:
@@ -65,6 +77,9 @@ INVENTORY_USER_CODE = get_env_var("INVENTORY_USER_CODE", "false").lower() == "tr
 
 # Admin credentials
 USERS_FILE = f"{CONFIG_DIR}/users.json"
+
+# Api Key auth
+MC_API_KEY = get_env_var("MC_API_KEY", None)
 
 # Mongodb connection settings
 MONGODB_URL = get_env_var("MONGODB_URL", "")
