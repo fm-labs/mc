@@ -58,9 +58,9 @@ export const buildApiHttpClient = (baseURL: string) => {
                     searchParams.set("redirect", currentPath);
                 }
 
-                let redirectUrl = `/#/auth/login?${searchParams.toString()}`;
+                //let redirectUrl = `/#/auth/login?${searchParams.toString()}`;
                 //let redirectUrl = '/#/auth/login'
-               // let redirectUrl = '/'
+               let redirectUrl = '/'
                 setTimeout(() => {
                     window.location.href = redirectUrl;
                 }, 1500)
