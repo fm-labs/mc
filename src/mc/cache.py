@@ -30,10 +30,14 @@ def cached_fn(cache_key, func, ttl=30):
         if _cached is not None:
             print(f"Cache hit for key {key}")
             return _cached
-        result = func(*args, **kwargs)
-        cache_store.write_cache(key, result, ttl=ttl)
-        print(f"Cache set for key {key} with ttl {ttl}")
-        return result
+        try:
+            result = func(*args, **kwargs)
+            cache_store.write_cache(key, result, ttl=ttl)
+            print(f"Cache set for key {key} with ttl {ttl}")
+            return result
+        except Exception as e:
+            print(f"Cache: function threw an exception: {e}. Skip cache")
+            raise e from e
 
     return wrapper
 

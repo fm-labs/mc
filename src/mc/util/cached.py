@@ -4,6 +4,7 @@ import json
 import os
 import pickle
 import sqlite3
+import threading
 import time
 from functools import wraps
 from pathlib import Path
@@ -33,6 +34,9 @@ class SqliteCacheStore:
         cache_size_kib: int = -64_000,  # negative => KiB. e.g. -64000 ~= 64MiB
         mmap_size_bytes: int = 128 * 1024 * 1024,  # 128MiB
     ):
+        # One connection is shared across threads; SQLite transactions are
+        # per connection, so every use of it must be serialized.
+        self._lock = threading.RLock()
         self.conn = sqlite3.connect(
             db_path,
             timeout=timeout,
@@ -72,13 +76,12 @@ class SqliteCacheStore:
     def _with_retry(self, fn, *, retries: int = 3, base_sleep: float = 0.02):
         for i in range(retries + 1):
             try:
-                return fn()
+                with self._lock:
+                    return fn()
             except sqlite3.OperationalError as e:
                 msg = str(e).lower()
-                if "locked" in msg or "busy" in msg:
-                    if i == retries:
-                        raise
-                    time.sleep(base_sleep * (2**i))
+                if ("locked" in msg or "busy" in msg) and i < retries:
+                    time.sleep(base_sleep * (2**i))  # sleep outside the lock
                     continue
                 raise
 
@@ -149,7 +152,8 @@ class SqliteCacheStore:
         return self._with_retry(op)
 
     def close(self) -> None:
-        self.conn.close()
+        with self._lock:
+            self.conn.close()
 
 
 class FileCacheStore:
