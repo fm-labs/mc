@@ -63,7 +63,7 @@ export function LoginForm({
                                 <Input
                                     id="username"
                                     name="username"
-                                    type="email"
+                                    type="text"
                                     placeholder="Enter username"
                                     value={formData.username}
                                     required
