@@ -41,11 +41,17 @@ For each node,
 - SSH into the node host
 - Run the install script on every node with export MC_MODE=node ; curl ...
 - Edit `/etc/mc/mc.conf.json`
-  - Add MC_API_KEY env variable
+  - Add MC_API_KEY env variable (more than 8 characters)
 
 Then, on the primary host:
 - Edit `/etc/mc/mc.conf.json`
-  - Add { "nodes": { "node1": {}, ... }}
+  - Add each node to `docker_hosts`:
+    ```json
+    { "docker_hosts": { "node1": { "url": "node+https://node1:3443", "api_key": "<MC_API_KEY of node1>" } } }
+    ```
+- Restart mc
+
+See [Container hosts](./container-hosts.md) for all options.
 
 
 
