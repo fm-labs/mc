@@ -308,10 +308,12 @@ class NodeContainerClient:
         except requests.RequestException as e:
             raise NodeApiError(502, f"Node {self.base_url} is unreachable: {e}") from e
 
+        # raise "400 bad request" for all >=400 response status codes
         if response.status_code >= 400:
             detail = _error_detail(response)
             response.close()
-            raise NodeApiError(response.status_code, f"Node {self.base_url}: {detail}")
+            #raise NodeApiError(response.status_code, f"Node {self.base_url}: {detail}")
+            raise NodeApiError(400, f"Node {self.remote_alias}: ({response.status_code}) {detail}")
         return response
 
     def _json(self, method: str, path: str, **kwargs: Any) -> Any:
