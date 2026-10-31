@@ -5,7 +5,7 @@ import { DockerHostContainersListItem } from "@/app/containers/components/docker
 
 const ContainerView = ({ containerId }: {containerId: string}) => {
     const { fetchContainers } = useContainerHost();
-    const [containers, setContainers] = React.useState<Array<any>>([]);
+    const [containers, setContainers] = React.useState<Array<any>>();
 
     const container = React.useMemo(() => {
         if (!containers) {

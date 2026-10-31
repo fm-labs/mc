@@ -61,7 +61,10 @@ const DockerHostNetworks = () => {
 
     React.useEffect(() => {
         const loadNetworks = async () => {
-            const data = await fetchContainerData("networks")
+            const data = await fetchContainerData("networks").catch(() => {
+                console.log("Failed to fetch networks")
+                return []
+            })
             setNetworks(data)
         }
         loadNetworks()

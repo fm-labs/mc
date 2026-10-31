@@ -147,10 +147,10 @@ const DockerHostContainers = () => {
     }, [config])
 
     if (containers === undefined) {
-        return <p>Loading ...</p>;
+        return <div>Loading ...</div>;
     }
     if (containers.length === 0) {
-        return <p>No containers running.</p>;
+        return <div>No containers running.</div>;
     }
 
     return (

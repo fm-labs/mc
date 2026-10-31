@@ -11,6 +11,7 @@ import DockerHostVolumes from "@/app/containers/components/docker-host-volumes.t
 import DockerHostNetworks from "@/app/containers/components/docker-host-networks.tsx";
 import DockerHostEvents from "@/app/containers/components/docker-host-events.tsx";
 import {DockerHostError} from "@/app/containers/components/docker-host-error.tsx";
+import DockerHostEngine from "@/app/containers/components/docker-host-engine.tsx";
 
 const ContainerHost = ({hostId, view}: {hostId: string, view?: string}) => {
     const {hosts} = useContainerHosts()
@@ -26,6 +27,7 @@ const ContainerHost = ({hostId, view}: {hostId: string, view?: string}) => {
             {view === "images" && <DockerHostImages/>}
             {view === "volumes" && <DockerHostVolumes/>}
             {view === "networks" && <DockerHostNetworks/>}
+            {view === "engine" && <DockerHostEngine />}
             {view === "events" && <DockerHostEvents/>}
         </ContainerHostProvider>
     </div>;

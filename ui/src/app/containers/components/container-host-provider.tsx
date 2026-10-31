@@ -2,7 +2,11 @@ import React from "react";
 import {useApi} from "@/context/api-context.tsx";
 import {cached} from "@/utils/session-cache.ts";
 import {InventoryItem} from "@/features/inventory/inventory.types.ts";
-import {ContainerHost} from "@/app/containers/components/container-hosts-provider.tsx";
+import {
+    ContainerHost,
+    useContainerHosts
+} from "@/app/containers/components/container-hosts-provider.tsx";
+import { Button } from "@/components/ui/button";
 
 type ContainerHostContextConfig = {
     hostId: string,
@@ -10,6 +14,8 @@ type ContainerHostContextConfig = {
 }
 
 type ContainerHostContextType = {
+    enabled: boolean,
+    setEnabled: (val: boolean) => void
     config: ContainerHostContextConfig
     host: InventoryItem<any>
     info?: any,
@@ -37,7 +43,8 @@ export const ContainerHostProvider: React.FC<{
     host: InventoryItem<ContainerHost>
 }> = ({children, host}) => {
     const {api, apiBaseUrl} = useApi()
-
+    const {isHostEnabled, setHostEnabledState} = useContainerHosts()
+    const enabled = isHostEnabled(host.name)
     const [error, setError] = React.useState<string | null>(null);
     const [info, setInfo] = React.useState<any>(null);
     const [summary, setSummary] = React.useState<any>(null);
@@ -47,8 +54,12 @@ export const ContainerHostProvider: React.FC<{
     const abortControllerRef = React.useRef<AbortController | null>(null);
 
     const config = React.useMemo(() => {
-        return {hostId: host.name, connected: host?.connected}
-    }, [host])
+        return {hostId: host.name, connected: !!summary}
+    }, [host.name, summary])
+
+    const setEnabled = React.useCallback((newVal: boolean) => {
+        setHostEnabledState(host.name, newVal);
+    }, [host.name, setHostEnabledState]);
 
     const getHostApiEndpointUrl = React.useCallback((path: string) => {
         return `${apiBaseUrl}/api/containers/${config.hostId}/${path}`;
@@ -139,7 +150,13 @@ export const ContainerHostProvider: React.FC<{
     // }, [fetchContainers, fetchSummary])
 
     React.useEffect(() => {
-        if (!config || config.hostId === undefined || config.hostId === null || config?.connected === false) {
+        setInfo(undefined)
+        setSummary(undefined)
+        setError(null)
+    }, [config.hostId])
+
+    React.useEffect(() => {
+        if (!config || config.hostId === undefined || config.hostId === null || !enabled /*|| config?.connected === false*/) {
             return;
         }
 
@@ -179,10 +196,12 @@ export const ContainerHostProvider: React.FC<{
                 abortControllerRef.current = null;
             }
         }
-    }, [config.hostId, autorefreshInterval]);
+    }, [config.hostId, autorefreshInterval, enabled]);
 
     return (
         <ContainerHostContext.Provider value={{
+            enabled,
+            setEnabled,
             config,
             host,
             info,
@@ -199,7 +218,14 @@ export const ContainerHostProvider: React.FC<{
             setAutoRefreshInterval,
             error
         }}>
-            {children}
+            {enabled ?
+                <>
+                    {children}
+                    <div><Button onClick={() => setEnabled(false)}>Disconnect</Button></div>
+                </>
+                : <div>
+                    {config.hostId}: Not connected <Button onClick={() => setEnabled(true)}>Connect</Button>
+                </div>}
         </ContainerHostContext.Provider>
     );
 }

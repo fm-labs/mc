@@ -1,16 +1,19 @@
-import { useContainerHost } from "@/app/containers/components/container-host-provider.tsx";
-import { Icon3dCubeSphere, IconCube, IconCubeOff } from "@tabler/icons-react";
+import {useContainerHost} from "@/app/containers/components/container-host-provider.tsx";
+import React from "react";
 
-export const DockerHostStatus = ({ showText }: { showText?: boolean }) => {
-    const { summary } = useContainerHost();
-    const status = summary ? "Connected" : "Disconnected";
+export const DockerHostStatus = ({showText}: { showText?: boolean }) => {
+    const {summary, enabled} = useContainerHost();
+    const status = enabled ? (summary ? "Connected" : "Disconnected") : "Disabled";
 
-    let colorClass = "bg-gray-500";
-    if (status.toLowerCase() === "connected") {
-        colorClass = "bg-green-500";
-    } else if (status.toLowerCase() === "disconnected") {
-        colorClass = "bg-red-500";
-    }
+    const colorClass = React.useMemo(() => {
+        let colorClass = "bg-gray-500";
+        if (status.toLowerCase() === "connected") {
+            colorClass = "bg-green-500";
+        } else if (status.toLowerCase() === "disconnected") {
+            colorClass = "bg-red-500";
+        }
+        return colorClass
+    }, [status])
 
     return (
         <span>

@@ -38,13 +38,16 @@ type ContainerNavItem = NavItem & {
 }
 
 export function ContainersSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
-    const {hosts} = useContainerHosts()
+    const {hosts, isHostEnabled} = useContainerHosts()
 
     const navContainers: ContainerNavItem[] = React.useMemo(() => {
-        const items: ContainerNavItem[] = hosts.map((host) => ({
+
+        const items: ContainerNavItem[] = hosts.map((host) => {
+
+            return {
             title: host.id || host.id,
             isActive: false,
-            isConnected: host?.connected,
+            isConnected: isHostEnabled(host.id),
             url: `/containers/${host.id}`,
             icon: host.properties?.engine || "container-host",
             items: [
@@ -69,18 +72,24 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                     icon: "container-network"
                 },
                 {
+                    title: "Engine",
+                    url: `/containers/${host.id}/engine`,
+                    icon: "info"
+                },
+                {
                     title: "Events",
                     url: `/containers/${host.id}/events`,
                     icon: "container-events"
                 },
             ],
-        }))
+        }
+        })
 
         if (items.length > 0) {
             items[0].isActive = true
         }
         return items
-    }, [hosts])
+    }, [hosts, isHostEnabled])
 
     return (
         <Sidebar {...props}>
