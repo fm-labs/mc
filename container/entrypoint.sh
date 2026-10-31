@@ -9,7 +9,7 @@ FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
 FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-admin}
 
 # Not recommended to change the socket path, but provided for flexibility.
-SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-/ssh-agent/agent.sock}
+SSH_AUTH_SOCK=/ssh-agent/agent.sock
 export SSH_AUTH_SOCK
 SSH_CONFIG=${SSH_CONFIG:-/home/app/.ssh/config}
 export SSH_CONFIG
@@ -160,67 +160,75 @@ case $CMD in
 
     # ensure the .ssh directory exists
     mkdir -p /home/app/.ssh
-    chown app:app /home/app/.ssh
-    chmod 700 /home/app/.ssh
+    #chown app:app /home/app/.ssh
+    #chmod 700 /home/app/.ssh
 
-#    # check if the app user has a default RSA ssh key, if not generate one
-#    if [ ! -f /home/app/.ssh/id_rsa ]; then
-#      echo "No default SSH key found for app user, generating one..."
-#      ssh-keygen -t rsa -b 4096 -f /home/app/.ssh/id_rsa -N "" -C "default"
-#      chown app:app /home/app/.ssh/id_rsa*
-#      chmod 600 /home/app/.ssh/id_rsa
-#    else
-#      echo "Default SSH key found for app user."
-#    fi
-#    ssh-add /home/app/.ssh/id_rsa
-#    echo "Default SSH public key:"
-#    cat /home/app/.ssh/id_rsa.pub
+    #    # check if the app user has a default RSA ssh key, if not generate one
+    #    if [ ! -f /home/app/.ssh/id_rsa ]; then
+    #      echo "No default SSH key found for app user, generating one..."
+    #      ssh-keygen -t rsa -b 4096 -f /home/app/.ssh/id_rsa -N "" -C "default"
+    #      chown app:app /home/app/.ssh/id_rsa*
+    #      chmod 600 /home/app/.ssh/id_rsa
+    #    else
+    #      echo "Default SSH key found for app user."
+    #    fi
+    #    ssh-add /home/app/.ssh/id_rsa
+    #    echo "Default SSH public key:"
+    #    cat /home/app/.ssh/id_rsa.pub
 
-    # check if the app user has a default ED25519 ssh key, if not generate one
-    if [ ! -f /home/app/.ssh/ed25519 ]; then
-      echo "No default SSH key found for app user, generating one..."
-      ssh-keygen -t ed25519 -f /home/app/.ssh/ed25519 -N "" -C "default"
-      chown app:app /home/app/.ssh/ed25519*
-      chmod 600 /home/app/.ssh/ed25519
-    else
-      echo "Default SSH key found for app user."
-    fi
-    # add the default key to the agent
-    ssh-add /home/app/.ssh/ed25519
-    echo "Default SSH public key:"
-    cat /home/app/.ssh/ed25519.pub
-
-    # Ensure known_hosts file exists
-    touch /home/app/.ssh/known_hosts
-    chown app:app /home/app/.ssh/known_hosts
-    chmod 600 /home/app/.ssh/known_hosts
-
-    # load all keys from vault
-    if ! uv run /app/src/ssh_agent.py ; then
-      echo "WARNING! Failed to load SSH keys from vault"
-      rm -f /tmp/ssh-load-keys-success
-      touch /tmp/ssh-load-keys-failed
-      #exit 1
-    else
-      echo "SSH keys loaded successfully from vault"
-      rm -f /tmp/ssh-load-keys-failed
-      touch /tmp/ssh-load-keys-success
-    fi
+    #    # check if the app user has a default ED25519 ssh key, if not generate one
+    #    if [ ! -f /home/app/.ssh/ed25519 ]; then
+    #      echo "No default SSH key found for app user, generating one..."
+    #      ssh-keygen -t ed25519 -f /home/app/.ssh/ed25519 -N "" -C "default"
+    #      chown app:app /home/app/.ssh/ed25519*
+    #      chmod 600 /home/app/.ssh/ed25519
+    #    else
+    #      echo "Default SSH key found for app user."
+    #    fi
+    #    # add the default key to the agent
+    #    ssh-add /home/app/.ssh/ed25519
+    #    echo "Default SSH public key:"
+    #    cat /home/app/.ssh/ed25519.pub
+    #
+    #    # Ensure known_hosts file exists
+    #    touch /home/app/.ssh/known_hosts
+    #    chown app:app /home/app/.ssh/known_hosts
+    #    chmod 600 /home/app/.ssh/known_hosts
+    #
+    #    # load all keys from vault
+    #    if ! uv run /app/src/ssh_agent.py ; then
+    #      echo "WARNING! Failed to load SSH keys from vault"
+    #      rm -f /tmp/ssh-load-keys-success
+    #      touch /tmp/ssh-load-keys-failed
+    #      #exit 1
+    #    else
+    #      echo "SSH keys loaded successfully from vault"
+    #      rm -f /tmp/ssh-load-keys-failed
+    #      touch /tmp/ssh-load-keys-success
+    #    fi
 
 
     # start the hoststunnel process to maintain SSH tunnels
     #echo "Starting hoststunnel process..."
     #uv run /app/src/hoststunnel.py
 
+    # scan for keys and add to agent
+    if ! ssh-add-all ; then
+      echo "WARNING! Failed to add some SSH keys"
+    fi
+
     # delegate to a keepalive process to keep the agent alive
+    echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
+    export SSH_AUTH_SOCK=$SSH_AUTH_SOCK
     exec "$0" ssh-agent-keepalive
     ;;
 
   ssh-agent-keepalive)
-    echo "Starting ssh-agent keepalive..."
+    echo "Starting ssh-agent keepalive... ${SSH_AUTH_SOCK}"
     # Keep the container running to maintain the ssh-agent
     while true; do
-      ssh-add -l > /dev/null # List added keys to keep the agent active
+      export SSH_AUTH_SOCK=$SSH_AUTH_SOCK
+      ssh-add -l > /dev/null || true # List added keys to keep the agent active
       sleep 60
     done
     ;;

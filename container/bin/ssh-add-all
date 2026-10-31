@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# ssh-add-all.sh — load all private keys from an .ssh directory into ssh-agent.
+#
+# For each private key <dir>/<name>:
+#   - if <pwdir>/<name> exists, the passphrase is read from it (via ssh-add-enc)
+#   - otherwise plain ssh-add is used (prompts if the key is encrypted)
+# Keys already loaded in the agent are skipped.
+#
+# Usage: ssh-add-all.sh [ssh-dir] [password-dir]
+#   ssh-dir       default: ~/.ssh
+#   password-dir  default: <ssh-dir>/passwords
+# Env:   SSH_ADD_OPTS  extra options for ssh-add, e.g. SSH_ADD_OPTS="-t 3600"
+
+set -u
+
+PATH=$(pwd):$PATH
+SSH_DIR=${1:-$HOME/.ssh}
+PW_DIR=${2:-$HOME/.sshpass}
+read -r -a EXTRA_OPTS <<< "${SSH_ADD_OPTS:-}"
+
+SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-/ssh-agent/agent.sock}
+export SSH_AUTH_SOCK
+
+# --- ssh-add with passphrase from file -------------------------------------
+#ssh-add-enc() {
+#    if [[ $# -ne 2 ]]; then
+#        echo "usage: ssh-add-enc <path-to-key> <path-to-pwfile>" >&2
+#        return 2
+#    fi
+#    local key=$1 pwfile=$2
+#    [[ -r $key    ]] || { echo "ssh-add-enc: cannot read key: $key" >&2; return 1; }
+#    [[ -r $pwfile ]] || { echo "ssh-add-enc: cannot read password file: $pwfile" >&2; return 1; }
+#
+#    local askpass
+#    askpass=$(mktemp "${TMPDIR:-/tmp}/ssh-askpass.XXXXXX") || return 1
+#    printf '#!/bin/sh\nexec cat "$SSH_ADD_ENC_PWFILE"\n' > "$askpass"
+#    chmod 700 "$askpass"
+#
+#    SSH_ADD_ENC_PWFILE=$pwfile \
+#    SSH_ASKPASS=$askpass \
+#    SSH_ASKPASS_REQUIRE=force \
+#    DISPLAY=${DISPLAY:-:0} \
+#        ssh-add "${EXTRA_OPTS[@]}" "$key" < /dev/null
+#    local rc=$?
+#
+#    rm -f "$askpass"
+#    return $rc
+#}
+
+# --- helpers ---------------------------------------------------------------
+is_private_key() {
+    # OpenSSH, RSA/EC/DSA PEM and PKCS#8 keys all start with a
+    # "-----BEGIN ... PRIVATE KEY-----" line.
+    [[ -f $1 && -r $1 ]] && head -n 1 "$1" 2>/dev/null | grep -q -- '-----BEGIN .*PRIVATE KEY-----'
+}
+
+fingerprint() {
+    # Prefer the .pub file; fall back to the private key (works for
+    # OpenSSH-format keys without the passphrase).
+    local key=$1 src=$1
+    [[ -r $key.pub ]] && src=$key.pub
+    ssh-keygen -l -f "$src" 2>/dev/null | awk '{print $2}'
+}
+
+# --- main ------------------------------------------------------------------
+if [[ -z ${SSH_AUTH_SOCK:-} ]]; then
+    echo "error: no ssh-agent running (SSH_AUTH_SOCK unset). Try: eval \"\$(ssh-agent)\"" >&2
+    exit 1
+fi
+[[ -d $SSH_DIR ]] || { echo "error: not a directory: $SSH_DIR" >&2; exit 1; }
+
+loaded=$(ssh-add -l 2>/dev/null | awk '{print $2}')
+added=0 skipped=0 failed=0
+
+shopt -s nullglob
+for key in "$SSH_DIR"/*; do
+    [[ $key == *.pub ]] && continue
+    is_private_key "$key" || continue
+
+    name=$(basename "$key")
+    fp=$(fingerprint "$key")
+    #if [[ -n $fp ]] && grep -qxF -- "$fp" <<< "$loaded"; then
+    #    echo "skip   $name (already loaded)"
+    #    ((skipped++))
+    #    continue
+    #fi
+
+    pwfile=$PW_DIR/$name
+    if [[ -f $pwfile ]]; then
+        echo "add    $name (password file)"
+        ssh-add-enc "$key" "$pwfile"
+    else
+        echo "add    $name"
+        SSH_ASKPASS=/usr/bin/false \
+        SSH_ASKPASS_REQUIRE=force \
+        DISPLAY=${DISPLAY:-:0} \
+        ssh-add "${EXTRA_OPTS[@]}" "$key"
+    fi
+
+    if [[ $? -eq 0 ]]; then
+        ((added++))
+    else
+        echo "FAILED $name" >&2
+        ((failed++))
+    fi
+done
+
+echo "done: $added added, $skipped skipped, $failed failed"
+[[ $failed -eq 0 ]]

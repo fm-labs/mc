@@ -88,6 +88,9 @@ COPY ./resources /app/resources
 #COPY --from=ui-builder /builder/dist/ /var/www/html/
 COPY --from=ui-builder /builder/dist/ /app/ui
 
+# Binaries
+COPY ./container/bin/* /usr/local/bin/
+
 # Nginx configuration
 COPY ./container/nginx/site.default.conf /etc/nginx/http.d/default.conf
 COPY ./container/nginx/site.ssl.conf /etc/nginx/http.d/ssl.conf
@@ -102,9 +105,8 @@ RUN mkdir -p /app && \
     mkdir -p /etc/mc && \
     chown -R app:app /etc/mc && \
     mkdir -p /opt/mc && \
-    chown -R app:app /opt/mc && \
     mkdir -p /opt/mc/etc && \
-    chown -R app:app /opt/mc/etc && \
+    chown -R app:app /opt/mc && \
     mkdir -p /var/log/supervisor && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
@@ -117,19 +119,22 @@ RUN mkdir -p /app && \
     touch /var/lib/nginx/logs/access.log && \
     chown -R app:app /var/lib/nginx/logs/error.log && \
     chown -R app:app /var/lib/nginx/logs/access.log && \
-    chown -R app:app /var/lib/nginx /var/lib/nginx/logs /run/nginx /etc/nginx/ssl
-
+    chown -R app:app /var/lib/nginx /var/lib/nginx/logs /run/nginx /etc/nginx/ssl && \
+    chmod +x /usr/local/bin/ssh-add-all && \
+    chmod +x /usr/local/bin/ssh-add-enc && \
+    mkdir -p /ssh-agent && \
+    chown app:app /ssh-agent
 
 # Entry point script
-COPY ./container/entrypoint.sh /usr/bin/entrypoint
-RUN ["chmod", "+x", "/usr/bin/entrypoint"]
-ENTRYPOINT ["/usr/bin/entrypoint"]
+COPY ./container/entrypoint.sh /usr/local/bin/entrypoint
+RUN ["chmod", "+x", "/usr/local/bin/entrypoint"]
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
 
 # Healthcheck
-COPY ./container/healthcheck.sh /usr/bin/healthcheck
-RUN ["chmod", "+x", "/usr/bin/healthcheck"]
+COPY ./container/healthcheck.sh /usr/local/bin/healthcheck
+RUN ["chmod", "+x", "/usr/local/bin/healthcheck"]
 HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
-  CMD ["/usr/bin/healthcheck"]
+  CMD ["/usr/local/bin/healthcheck"]
 
 # Environment variables
 ENV MC_ALPINE=1

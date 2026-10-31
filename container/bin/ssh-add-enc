@@ -1,0 +1,32 @@
+#!/bin/bash
+# ssh-add-enc — add a private key to ssh-agent, reading the passphrase from a file.
+# Env: SSH_ADD_OPTS  extra options for ssh-add, e.g. SSH_ADD_OPTS="-t 3600"
+
+if [[ $# -ne 2 ]]; then
+    echo "usage: ssh-add-enc <path-to-key> <path-to-pwfile>" >&2
+    exit 2
+fi
+
+key=$1 pwfile=$2
+[[ -r $key    ]] || { echo "ssh-add-enc: cannot read key: $key" >&2; exit 1; }
+[[ -r $pwfile ]] || { echo "ssh-add-enc: cannot read password file: $pwfile" >&2; exit 1; }
+
+read -r -a EXTRA_OPTS <<< "${SSH_ADD_OPTS:-}"
+
+askpass=$(mktemp "${TMPDIR:-/tmp}/ssh-askpass.XXXXXX") || exit 1
+trap 'rm -f "$askpass" "$askpass.used"' EXIT
+# Answer only the first prompt. ssh-add re-prompts on a wrong passphrase until
+# it gets an empty answer, so repeating the same one would loop forever.
+cat > "$askpass" <<'EOF'
+#!/bin/sh
+[ -e "$0.used" ] && exit 0
+: > "$0.used"
+exec cat "$SSH_ADD_ENC_PWFILE"
+EOF
+chmod 700 "$askpass"
+
+SSH_ADD_ENC_PWFILE=$pwfile \
+SSH_ASKPASS=$askpass \
+SSH_ASKPASS_REQUIRE=force \
+DISPLAY=${DISPLAY:-:0} \
+    ssh-add "${EXTRA_OPTS[@]}" "$key" < /dev/null

@@ -1,6 +1,9 @@
 # RPC handlers
 import inspect
+import os
+import subprocess
 from collections.abc import Callable
+from tempfile import mkstemp
 from typing import Any, Literal
 
 from mc.util.random_util import generate_random_secret
@@ -220,6 +223,41 @@ def rpc_docker_swarm_leave(force: bool = False, **kwargs) -> dict:
         return {"error": str(e)}
 
 
+def rpc_ssh_add_key(key_path: str, passphrase: str | None = None, **kwargs) -> dict:
+    passphrase_path = None
+    try:
+        if passphrase:
+            # mkstemp creates the file with mode 0600
+            fd, passphrase_path = mkstemp(prefix="ssh-pass-")
+            with os.fdopen(fd, "w") as f:
+                f.write(passphrase)
+            cmd = ["ssh-add-enc", key_path, passphrase_path]
+        else:
+            cmd = ["ssh-add", key_path]
+
+        print("Executing ssh-add command:", cmd)
+        result = subprocess.run(cmd, capture_output=True)
+    finally:
+        if passphrase_path:
+            os.unlink(passphrase_path)
+
+    if result.returncode != 0:
+        return {"error": result.stderr.decode("utf-8")}
+
+    return {"status": "success", "stdout": result.stdout.decode("utf-8")}
+
+
+def rpc_ssh_list_keys(**kwargs) -> dict:
+    cmd = ["ssh-add", "-l"]
+    print("Executing ssh-list command:", cmd)
+    result = subprocess.run(cmd, capture_output=True)
+
+    if result.returncode != 0:
+        return {"error": result.stderr.decode("utf-8")}
+
+    return {"status": "success", "stdout": result.stdout.decode("utf-8")}
+
+
 # RPC registry and dispatcher
 
 RPC_HANDLERS = {
@@ -241,6 +279,9 @@ RPC_HANDLERS = {
     # user handlers
     "user.change_password": rpc_user_change_password,
     "user.reset_password": rpc_user_reset_password,
+    # ssh keys
+    "ssh.add_key": rpc_ssh_add_key,
+    "ssh.list_keys": rpc_ssh_list_keys,
 }
 
 
