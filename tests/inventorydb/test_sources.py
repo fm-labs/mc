@@ -264,4 +264,4 @@ class TestPluginSource:
         assert groups == ["myapp.types"]
 
     def test_builtin_plugin_item_packages(self):
-        assert plugin_item_packages("mc.plugin") == (["mc.plugin.apps.inventory", "mc.plugin.containers.inventory"], [])
+        assert plugin_item_packages("mc.plugin") == (["mc.plugin.containers.inventory"], [])

@@ -79,8 +79,8 @@ class TestShippedTypes:
         [
             ("configuration", "mc.inventory.item.configuration"),
             ("ssh-key", "mc.inventory.item.ssh_key"),
-            ("app-stack", "mc.plugin.apps.inventory.app_stack"),
-            ("app-template", "mc.plugin.apps.inventory.app_template"),
+            ("app-stack", "mc.inventory.item.app_stack"),
+            ("app-template", "mc.inventory.item.app_template"),
             ("container-node", "mc.plugin.containers.inventory.container_node"),
             ("container-registry", "mc.plugin.containers.inventory.container_registry"),
         ],

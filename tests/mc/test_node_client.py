@@ -14,7 +14,7 @@ from requests.adapters import BaseAdapter
 from requests.structures import CaseInsensitiveDict
 
 from mc.plugin.containers.manager import ContainerClientsManager, bootstrap_container_connection_manager
-from mc.plugin.containers.node_client import NodeApiError, NodeConfig, NodeContainerClient, load_node_configs
+from mc.plugin.containers.node_client import NodeApiError, NodeConfig, NodeContainerClient, parse_node_configs
 
 API_KEY = "node-test-api-key"
 NODE_URL = "http://node1:3080"
@@ -121,7 +121,7 @@ def remote_docker() -> FakeDocker:
 
 @pytest.fixture
 def remote_app(remote_docker, monkeypatch) -> TestClient:
-    """The remote mc instance: the container routes with API key auth and a fake 'localdocker' connection."""
+    """The remote mc instance: the container routes with API key auth and a fake 'localhost' connection."""
     from mc.cache import cache_store
     from mc.plugin.containers.routes import router
     from mc.server import auth
@@ -132,7 +132,7 @@ def remote_app(remote_docker, monkeypatch) -> TestClient:
 
     app = FastAPI()
     app.state.ccm = ContainerClientsManager()
-    app.state.ccm.register("localdocker", remote_docker, "docker+fake")
+    app.state.ccm.register("localhost", remote_docker, "docker+fake")
     app.include_router(router, prefix="/api", dependencies=[Security(auth.get_current_user)])
 
     @app.get("/api/health")
@@ -153,11 +153,12 @@ def node(remote_app) -> NodeContainerClient:
     return make_node_client(remote_app)
 
 
-def test_load_node_configs_skips_invalid_entries():
-    nodes = load_node_configs(
+def test_parse_node_configs_skips_invalid_entries():
+    nodes = parse_node_configs(
         {
-            "nodes": {
-                "srv03": {"host": "srv03", "base_url": "http://srv03:3080", "api_key": "k1"},
+            "docker_hosts": {
+                "srv03": {"url": "node+http://srv03:3080", "api_key": "k1"},
+                "local": {"url": "unix:///var/run/docker.sock"},
                 "broken": {"api_key": "no-url"},
                 "wrong": "not-an-object",
             }
@@ -165,12 +166,12 @@ def test_load_node_configs_skips_invalid_entries():
     )
     assert [n.name for n in nodes] == ["srv03"]
     assert nodes[0].api_key == "k1"
-    assert nodes[0].remote_alias == "localdocker"
-    assert nodes[0].autoconnect is True
+    assert nodes[0].remote_alias == "localhost"
+    assert NodeContainerClient.from_config(nodes[0]).base_url == "http://srv03:3080"
 
 
-def test_load_node_configs_without_nodes():
-    assert load_node_configs({}) == []
+def test_parse_node_configs_without_nodes():
+    assert parse_node_configs({}) == []
 
 
 def test_ping_and_system_info(node):
@@ -183,7 +184,9 @@ def test_ping_and_system_info(node):
 def test_sends_api_key(remote_app):
     with pytest.raises(NodeApiError) as e:
         make_node_client(remote_app, api_key="wrong-api-key").version()
-    assert e.value.status_code == 401
+    # 401 from the node is returned as 400, so the local UI doesn't log out
+    assert e.value.status_code == 400
+    assert "(401)" in e.value.detail
 
 
 def test_list_and_get(node):
@@ -237,25 +240,34 @@ def test_bootstrap_registers_nodes(monkeypatch):
     monkeypatch.setattr(ContainerClientsManager, "add", lambda self, name, url, test_ping=False: None)
     m = bootstrap_container_connection_manager(
         {
-            "nodes": {
-                "node1": {"base_url": NODE_URL, "api_key": API_KEY},
-                "node2": {"base_url": "http://node2:3080", "autoconnect": False},
+            "docker_hosts": {
+                "node1": {"url": f"node+{NODE_URL}", "api_key": API_KEY},
+                "node2": {"url": "node+http://node2:3080"},
             }
         }
     )
     assert isinstance(m.get("node1"), NodeContainerClient)
-    assert m.get("node2") is None
+    assert m.urls()["node1"] == f"node+{NODE_URL}"
     assert set(m.nodes) == {"node1", "node2"}
     m.close_all()
 
 
-def test_local_routes_use_node(remote_app):
+def test_local_routes_use_node(remote_app, monkeypatch):
     """The local container routes work for a node like for a docker connection."""
+    from mc import config
     from mc.plugin.containers.routes import router
 
+    monkeypatch.setattr(
+        config,
+        "CONFIG",
+        {
+            "docker_hosts": {
+                "node1": {"url": f"node+{NODE_URL}", "api_key": API_KEY, "autoconnect": True},
+                "node2": {"url": "node+http://node2:3080"},
+            }
+        },
+    )
     manager = ContainerClientsManager()
-    node = NodeConfig(name="node1", base_url=NODE_URL, api_key=API_KEY)
-    manager.nodes = {"node1": node, "node2": NodeConfig(name="node2", base_url="http://node2:3080", autoconnect=False)}
     manager.register("node1", make_node_client(remote_app), f"node+{NODE_URL}")
 
     app = FastAPI()
@@ -267,6 +279,7 @@ def test_local_routes_use_node(remote_app):
     assert hosts["node1"]["connected"] is True
     assert hosts["node1"]["properties"] == {"engine": "node", "url": NODE_URL, "autoconnect": True}
     assert hosts["node2"]["connected"] is False
+    assert hosts["localhost"]["connected"] is False
 
     assert [c["Id"] for c in local.get("/api/containers/node1/containers").json()] == ["c1"]
     r = local.post("/api/containers/node1/containers/c1/actions/start")
@@ -277,3 +290,68 @@ def test_local_routes_use_node(remote_app):
         '{"line": 2, "log": "line two\\n"}',
     ]
     assert local.get("/api/containers/node1/networks").json()[0]["Name"] == "bridge"
+
+
+def test_ensure_is_safe_for_parallel_requests(monkeypatch):
+    """Parallel first requests for a host create one client, not an 'already exists' error."""
+    import threading
+    import time
+
+    created = []
+
+    def slow_add(self, name, url, test_ping=False):
+        time.sleep(0.05)
+        client = object.__new__(NodeContainerClient)
+        created.append(client)
+        with self._lock:
+            if name in self._clients:
+                raise ValueError(f"Client '{name}' already exists")
+            self._clients[name] = client
+        return client
+
+    monkeypatch.setattr(ContainerClientsManager, "add", slow_add)
+    m = ContainerClientsManager()
+    results, errors = [], []
+
+    def worker():
+        try:
+            results.append(m.ensure("h1", "unix:///fake.sock"))
+        except Exception as e:
+            errors.append(e)
+
+    threads = [threading.Thread(target=worker) for _ in range(5)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert errors == []
+    assert len(created) == 1
+    assert all(r is created[0] for r in results)
+
+
+def test_ensure_node_adds_prefix_once():
+    m = ContainerClientsManager()
+    m.ensure_node(NodeConfig(name="n1", url=NODE_URL))
+    m.ensure_node(NodeConfig(name="n2", url=f"node+{NODE_URL}"))
+    assert m.urls() == {"n1": f"node+{NODE_URL}", "n2": f"node+{NODE_URL}"}
+    assert m.get("n2").base_url == NODE_URL
+
+
+def test_dep_errors(monkeypatch):
+    """Unknown hosts are 404, hosts that can't be created are 502 (not 500)."""
+    from fastapi import HTTPException
+
+    from mc import config
+    from mc.plugin.containers.deps import dep_container_connection
+
+    monkeypatch.setattr(config, "CONFIG", {"docker_hosts": {"bad": {"url": "nope+tcp://x"}}})
+    m = ContainerClientsManager()
+
+    with pytest.raises(HTTPException) as e:
+        dep_container_connection("unknown", m)
+    assert e.value.status_code == 404
+
+    with pytest.raises(HTTPException) as e:
+        dep_container_connection("bad", m)
+    assert e.value.status_code == 502
