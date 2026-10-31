@@ -2,11 +2,12 @@
 
 set -e
 
+PATH=/app/.venv/bin:$PATH
 PYTHON_PATH="/app/src:$PYTHON_PATH"
 export PYTHONPATH
 
-FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
-FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-admin}
+FLOWER_USER_NAME=${FLOWER_USER_NAME:-}
+FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-}
 
 # Not recommended to change the socket path, but provided for flexibility.
 SSH_AUTH_SOCK=/ssh-agent/agent.sock
@@ -106,7 +107,8 @@ case $CMD in
     echo "Starting API server: Waiting for other services ..."
     sleep 1 # wait for other services to be ready
     echo "Starting API server: Starting on 0.0.0.0:5000 ..."
-    exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
+    exec python -m uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
+    #exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
     #exec /usr/bin/mc-srv
     ;;
 

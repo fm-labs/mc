@@ -21,31 +21,6 @@ read -r -a EXTRA_OPTS <<< "${SSH_ADD_OPTS:-}"
 SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-/ssh-agent/agent.sock}
 export SSH_AUTH_SOCK
 
-# --- ssh-add with passphrase from file -------------------------------------
-#ssh-add-enc() {
-#    if [[ $# -ne 2 ]]; then
-#        echo "usage: ssh-add-enc <path-to-key> <path-to-pwfile>" >&2
-#        return 2
-#    fi
-#    local key=$1 pwfile=$2
-#    [[ -r $key    ]] || { echo "ssh-add-enc: cannot read key: $key" >&2; return 1; }
-#    [[ -r $pwfile ]] || { echo "ssh-add-enc: cannot read password file: $pwfile" >&2; return 1; }
-#
-#    local askpass
-#    askpass=$(mktemp "${TMPDIR:-/tmp}/ssh-askpass.XXXXXX") || return 1
-#    printf '#!/bin/sh\nexec cat "$SSH_ADD_ENC_PWFILE"\n' > "$askpass"
-#    chmod 700 "$askpass"
-#
-#    SSH_ADD_ENC_PWFILE=$pwfile \
-#    SSH_ASKPASS=$askpass \
-#    SSH_ASKPASS_REQUIRE=force \
-#    DISPLAY=${DISPLAY:-:0} \
-#        ssh-add "${EXTRA_OPTS[@]}" "$key" < /dev/null
-#    local rc=$?
-#
-#    rm -f "$askpass"
-#    return $rc
-#}
 
 # --- helpers ---------------------------------------------------------------
 is_private_key() {
@@ -85,12 +60,14 @@ for key in "$SSH_DIR"/*; do
     #    continue
     #fi
 
-    pwfile=$PW_DIR/$name
+    echo "Loading ssh key $key ($name) ($fp) into ssh-agent running at $SSH_AUTH_SOCK"
+
+    pwfile="${PW_DIR}/${name}.pass"
     if [[ -f $pwfile ]]; then
-        echo "add    $name (password file)"
+        echo "ssh-add    $name (password file)"
         ssh-add-enc "$key" "$pwfile"
     else
-        echo "add    $name"
+        echo "ssh-add    $name"
         SSH_ASKPASS=/usr/bin/false \
         SSH_ASKPASS_REQUIRE=force \
         DISPLAY=${DISPLAY:-:0} \
@@ -106,4 +83,10 @@ for key in "$SSH_DIR"/*; do
 done
 
 echo "done: $added added, $skipped skipped, $failed failed"
+
+echo "currently loaded keys:"
+echo "---"
+ssh-add -l || true
+echo "---"
+
 [[ $failed -eq 0 ]]

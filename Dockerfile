@@ -76,9 +76,13 @@ RUN apk update && apk add --no-cache \
 
 # Install python dependencies
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_NO_DEV=1
+
 WORKDIR /app
 COPY ./pyproject.toml ./uv.lock /app/
-RUN uv sync --no-cache-dir --frozen --no-install-project --no-dev
+RUN uv sync --no-cache-dir --no-dev --locked
 
 # Copy the rest of the files
 COPY ./src /app/src

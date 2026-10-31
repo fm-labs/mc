@@ -17,13 +17,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${PWD}/data/local:/opt/mc
-      - /Users/phil/.ssh:/home/app/.ssh:ro
+      - ${HOME}/.ssh:/home/app/.ssh:ro
+      - ${HOME}/.sshpass:/home/app/.sshpass:ro
       #- ${PWD}/data/local/etc:/etc/mc
-    environment:
-      - MC_API_KEY=supersecretkey
-      #- ${SSH_AUTH_SOCK}:/ssh-agent:ro
+    # environment:
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
-    #environment:
       #- REDIS_HOST=redis
       #- REDIS_PORT=6379
       #- REDIS_DB=0
@@ -31,7 +29,6 @@ services:
       #- HOST_DATA_DIR=${PWD}/data
       #- FLOWER_USER_NAME=${FLOWER_USER_NAME:-admin}
       #- FLOWER_USER_PASS=${FLOWER_USER_PASS:-password}
-      #- SSH_AUTH_SOCK=/ssh-agent
       #- SSH_CONFIG=/data/ssh_config
     #env_file:
     #  - ./.env.docker.local
