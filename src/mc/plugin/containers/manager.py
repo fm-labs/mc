@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import threading
 from collections.abc import Iterable
 from typing import Any
@@ -9,8 +8,7 @@ from typing import Any
 from docker import DockerClient
 from podman import PodmanClient
 
-from mc import config
-from mc.plugin.containers.node_client import NodeConfig, NodeContainerClient, load_node_configs
+from mc.plugin.containers.node_client import NodeConfig, NodeContainerClient, parse_node_configs
 
 ContainerClient = PodmanClient | DockerClient | NodeContainerClient
 
@@ -22,6 +20,8 @@ class ContainerClientsManager:
         self._clients: dict[str, ContainerClient] = {}
         self._urls: dict[str, str] = {}
         self._lock = threading.Lock()
+        # one lock per client name, so parallel requests don't create the same client twice
+        self._create_locks: dict[str, threading.Lock] = {}
         # all configured nodes, including the ones that aren't connected
         self.nodes: dict[str, NodeConfig] = {}
 
@@ -37,7 +37,7 @@ class ContainerClientsManager:
         """
         return self._urls
 
-    def add(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient | None:
+    def add(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient:
         """
         Create and register a client from a URL like "docker+unix:///var/run/docker.sock", "podman+ssh://..."
         or "node+http://host:3080" (no engine means docker). Nodes added this way have no API key, use add_node().
@@ -60,13 +60,14 @@ class ContainerClientsManager:
                 raise ValueError(f"Unknown container engine '{engine}' in URL '{base_url}'")
         except Exception as e:
             logger.error(f"Failed to create container client for '{name}' with URL '{base_url}': {e}")
-            return None
+            raise
 
         return self.register(name, c, base_url, test_ping=test_ping)
 
-    def add_node(self, node: NodeConfig, test_ping: bool = False) -> ContainerClient | None:
+    def add_node(self, node: NodeConfig, test_ping: bool = False) -> ContainerClient:
         """Register a client for another mc instance."""
-        return self.register(node.name, NodeContainerClient.from_config(node), f"node+{node.base_url}", test_ping)
+        url = node.url if node.url.startswith("node+") else f"node+{node.url}"
+        return self.register(node.name, NodeContainerClient.from_config(node), url, test_ping)
 
     def register(self, name: str, client: ContainerClient, url: str, test_ping: bool = False) -> ContainerClient:
         """
@@ -88,11 +89,32 @@ class ContainerClientsManager:
         logger.info(f"Added container client '{name}' with URL '{url}'")
         return client
 
-    def ensure(self, name: str, base_url: str, test_ping: bool = True):
+    def _create_lock(self, name: str) -> threading.Lock:
+        with self._lock:
+            return self._create_locks.setdefault(name, threading.Lock())
+
+    def ensure(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient:
+        """Return the client named `name`, or create it from `base_url`. Safe to call from parallel requests."""
         existing = self.get(name)
         if existing:
             return existing
-        return self.add(name, base_url, test_ping)
+        with self._create_lock(name):
+            existing = self.get(name)
+            if existing:
+                return existing
+            return self.add(name, base_url, test_ping)
+
+    def ensure_node(self, node: NodeConfig, test_ping: bool = False) -> ContainerClient:
+        """Like ensure(), for a node."""
+        existing = self.get(node.name)
+        if existing:
+            return existing
+        with self._create_lock(node.name):
+            existing = self.get(node.name)
+            if existing:
+                return existing
+            self.nodes[node.name] = node
+            return self.add_node(node, test_ping)
 
     def remove(self, name: str, close: bool = True) -> bool:
         with self._lock:
@@ -125,44 +147,38 @@ class ContainerClientsManager:
 
 def bootstrap_container_connection_manager(mc_config: dict[str, Any] | None = None) -> ContainerClientsManager:
     """
-    Create the manager with the local docker connection and the nodes from the mc config.
-    Nodes are not pinged here, so unreachable nodes don't slow down the startup.
+    Create the manager. With mc_config, the "docker_hosts" from it are registered right away;
+    without it, the manager starts empty and clients are created on first use (see deps.dep_container_connection).
+    Hosts are not pinged here, so unreachable hosts don't slow down the startup.
     """
     m = ContainerClientsManager()
-    m.ensure("localdocker", os.getenv("DOCKER_HOST", "unix:///var/run/docker.sock"), test_ping=False)
+    if mc_config is not None and isinstance(mc_config, dict):
+        bootstrap_ccm_from_config(m, mc_config)
 
-    for node in load_node_configs(config.CONFIG if mc_config is None else mc_config):
-        m.nodes[node.name] = node
-        if not node.autoconnect:
-            logger.info(f"Node '{node.name}' is not connected (autoconnect is false)")
+    return m
+
+
+def bootstrap_ccm_from_config(ccm: ContainerClientsManager, mc_config: dict[str, Any]) -> None:
+    docker_hosts = mc_config.get("docker_hosts", {})
+    for k, v in docker_hosts.items():
+        if ccm.get(k) is not None:
+            logger.warning(f"Container client '{k}' already exists")
+            continue
+        if not isinstance(v, dict) or not v.get("url"):
+            logger.warning(f"Container client '{k}' has no URL")
+            continue
+        if v.get("url").startswith("node"):
             continue
         try:
-            m.add_node(node)
-        except ValueError as e:
-            logger.error(f"Can't add node '{node.name}': {e}")
+            ccm.ensure(k, v.get("url"), test_ping=False)
+        except Exception as e:
+            logger.error(f"Can't add container client '{k}': {e}")
 
-    # inventory = get_inventory_storage_instance()
-    # items = inventory.list_items("container_host")
-    # for item in items:
-    #     url = item.get("url")
-    #     engine = item.get("engine", "docker").lower()
-    #     autoconnect = item.get("autoconnect", False)
-    #     print("CCM: Found container host in inventory:", engine, url)
-    #     if not autoconnect:
-    #         print("CCM: Skipping container host (autoconnect is false):", url)
-    #         continue
-    #
-    #     engine_url = engine + "+" + url
-    #     try:
-    #         if engine == "docker" or engine == "podman":
-    #             m.ensure(item.get("name", url), engine_url, test_ping=False)
-    #             print("CCM: Configured container host:", engine_url)
-    #         else:
-    #             print(f"CCM: Unknown container engine '{engine}' for host '{url}'")
-    #     except Exception as e:
-    #         print(f"CCM: Failed to configure container host '{url}': {e}")
-    # m.ensure("local", "unix:///run/podman/podman.sock", test_ping=False)
-    return m
+    for node in parse_node_configs(mc_config):
+        try:
+            ccm.ensure_node(node)
+        except Exception as e:
+            logger.error(f"Can't add node '{node.name}': {e}")
 
 
 # best-effort cleanup if the process exits without FastAPI shutdown

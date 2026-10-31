@@ -14,8 +14,10 @@ from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 from starlette.requests import ClientDisconnect, Request
 from starlette.responses import StreamingResponse
 
+from mc import config
 from mc.cache import cached_fn, clear_cache
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
+from mc.plugin.containers.manager import ContainerClientsManager
 
 router = APIRouter()
 
@@ -27,10 +29,12 @@ CACHE_TTL = 30  # seconds
 class CommandExecRequest(BaseModel):
     command: str
 
+
 class ContainerHostProperties(BaseModel):
     engine: str
     url: str
     autoconnect: bool
+
 
 class ContainerHost(BaseModel):
     id: str
@@ -39,49 +43,72 @@ class ContainerHost(BaseModel):
     properties: ContainerHostProperties
 
 
-@router.get("/containers/hosts")
-def get_container_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
+def parse_docker_hosts_config(mc_config: dict, manager: ContainerClientsManager | None = None) -> list[ContainerHost]:
+    """
+    List the hosts from the "docker_hosts" config section, plus the localhost fallback.
+    A host is "connected" if its client was created already (clients are created on first use, see deps.py).
+    """
+    docker_hosts = mc_config.get("docker_hosts") or {}
+    if not isinstance(docker_hosts, dict):
+        docker_hosts = {}
+
+    def is_connected(name: str) -> bool:
+        return manager is not None and manager.get(name) is not None
+
     hosts: list[ContainerHost] = []
-    for name, url in manager.urls().items():
-        node = manager.nodes.get(name)
-        if node:
-            engine, url = "node", node.base_url
-        elif "+" in url:
-            engine, url = url.split("+", 1)
-        else:
-            engine = "docker"
+
+    # localhost fallback
+    if "localhost" not in docker_hosts:
         hosts.append(
             ContainerHost(
-                id=name,
-                name=name,
-                connected=True,
+                id="localhost",
+                name="localhost",
+                connected=is_connected("localhost"),
                 properties=ContainerHostProperties(
-                    engine=engine, url=url, autoconnect=node.autoconnect if node else True
+                    engine="docker", url="unix:///var/run/docker.sock", autoconnect=False
                 ),
             )
         )
 
-    # configured nodes that aren't connected
-    for name, node in manager.nodes.items():
-        if manager.get(name) is None:
-            hosts.append(
-                ContainerHost(
-                    id=name,
-                    name=name,
-                    connected=False,
-                    properties=ContainerHostProperties(engine="node", url=node.base_url, autoconnect=node.autoconnect),
-                )
+    for name, entry in docker_hosts.items():
+        if not isinstance(entry, dict) or not entry.get("url"):
+            logger.warning(f"Container host '{name}' has no URL, skipping")
+            continue
+        url = entry["url"]
+        engine = "docker"
+        if "+" in url:
+            engine, url = url.split("+", 1)
+
+        hosts.append(
+            ContainerHost(
+                id=name,
+                name=name,
+                connected=is_connected(name),
+                properties=ContainerHostProperties(
+                    engine=engine, url=url, autoconnect=bool(entry.get("autoconnect", False))
+                ),
             )
+        )
+
     return hosts
 
 
+@router.get("/containers/hosts")
+def get_container_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
+    return parse_docker_hosts_config(config.CONFIG, manager)
+
+
 @router.get("/containers/{alias}/version")
-def get_docker_version(client: ContainerClientDep) -> dict:
-    version_info = client.version()
-    try:
+def get_docker_version(alias: str, client: ContainerClientDep) -> dict:
+    def fetch_version():
+        version_info = client.version()
         return jsonable_encoder(version_info)
+
+    try:
+        return cached_fn(f"containers_{alias}_version", fetch_version, ttl=3600)()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+
 
 @router.get("/containers/{alias}/info")
 def get_docker_info(alias: str, client: ContainerClientDep) -> dict:

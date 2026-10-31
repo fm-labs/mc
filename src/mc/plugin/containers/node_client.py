@@ -5,16 +5,17 @@ The client mimics the parts of the docker SDK client that the container routes u
 networks, info, version, df, events), so a node can be registered in the ContainerClientsManager like a local
 docker or podman connection.
 
-Nodes are configured in the "nodes" section of the mc config file:
+Nodes are configured in the "docker_hosts" section of the mc config file, with a "node+" URL:
 
-    "nodes": {
+    "docker_hosts": {
         "srv03": {
-            "base_url": "http://srv03:3080",
+            "url": "node+http://srv03:3080",
             "api_key": "...",
-            "remote_alias": "localdocker",   # optional, container connection on the node
-            "autoconnect": true              # optional
+            "remote_alias": "localhost",     # optional, container connection on the node
         }
     }
+
+See docs/content/container-hosts.md.
 """
 
 from __future__ import annotations
@@ -38,24 +39,26 @@ CONNECT_TIMEOUT = 5.0
 
 class NodeConfig(BaseModel):
     name: str
-    base_url: str
+    url: str
+    remote_alias: str = "localhost"
     api_key: str | None = None
-    remote_alias: str = "localdocker"
     autoconnect: bool = True
     timeout: float = DEFAULT_TIMEOUT
 
 
-def load_node_configs(config: dict[str, Any]) -> list[NodeConfig]:
-    """Read the node configs from the "nodes" section of the mc config. Invalid entries are logged and skipped."""
-    nodes = config.get("nodes") or {}
+def parse_node_configs(config: dict[str, Any]) -> list[NodeConfig]:
+    """Read the node configs ("node+" URLs) from the "docker_hosts" section of the mc config. Invalid entries are logged and skipped."""
+    nodes = config.get("docker_hosts") or {}
     if not isinstance(nodes, dict):
-        logger.error("Invalid 'nodes' section in mc config: expected an object")
+        logger.error("Invalid 'docker_hosts' section in mc config: expected an object")
         return []
 
     result: list[NodeConfig] = []
     for name, entry in nodes.items():
         if not isinstance(entry, dict):
             logger.error("Invalid node config '%s': expected an object", name)
+            continue
+        if not str(entry.get("url", "")).startswith("node+"):
             continue
         try:
             result.append(NodeConfig.model_validate({**entry, "name": name}))
@@ -275,11 +278,11 @@ class NodeContainerClient:
         self,
         base_url: str,
         api_key: str | None = None,
-        remote_alias: str = "localdocker",
+        remote_alias: str = "localhost",
         timeout: float = DEFAULT_TIMEOUT,
         session: requests.Session | None = None,
     ) -> None:
-        self.base_url = base_url.rstrip("/")
+        self.base_url = base_url.removeprefix("node+").rstrip("/")
         self.remote_alias = remote_alias
         self.timeout = timeout
         self.session = session or requests.Session()
@@ -288,7 +291,7 @@ class NodeContainerClient:
 
     @classmethod
     def from_config(cls, node: NodeConfig) -> NodeContainerClient:
-        return cls(base_url=node.base_url, api_key=node.api_key, remote_alias=node.remote_alias, timeout=node.timeout)
+        return cls(base_url=node.url, api_key=node.api_key, remote_alias=node.remote_alias, timeout=node.timeout)
 
     def __repr__(self) -> str:
         return f"<NodeContainerClient {self.base_url} alias={self.remote_alias}>"
@@ -308,12 +311,12 @@ class NodeContainerClient:
         except requests.RequestException as e:
             raise NodeApiError(502, f"Node {self.base_url} is unreachable: {e}") from e
 
-        # raise "400 bad request" for all >=400 response status codes
         if response.status_code >= 400:
             detail = _error_detail(response)
             response.close()
-            #raise NodeApiError(response.status_code, f"Node {self.base_url}: {detail}")
-            raise NodeApiError(400, f"Node {self.remote_alias}: ({response.status_code}) {detail}")
+            # a 401 from the node (e.g. wrong api key) is returned as 400, because the UI logs out on 401
+            status = 400 if response.status_code == 401 else response.status_code
+            raise NodeApiError(status, f"Node {self.base_url}: ({response.status_code}) {detail}")
         return response
 
     def _json(self, method: str, path: str, **kwargs: Any) -> Any:
