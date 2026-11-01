@@ -15,6 +15,7 @@ from requests.structures import CaseInsensitiveDict
 
 from mc.plugin.containers.manager import ContainerClientsManager, bootstrap_container_connection_manager
 from mc.plugin.containers.node_client import NodeApiError, NodeConfig, NodeContainerClient, parse_node_configs
+from mc.server import deps
 
 API_KEY = "node-test-api-key"
 NODE_URL = "http://node1:3080"
@@ -128,16 +129,15 @@ def remote_app(remote_docker, monkeypatch) -> TestClient:
     """The remote mc instance: the container routes with API key auth and a fake 'localhost' connection."""
     from mc.cache import cache_store
     from mc.plugin.containers.routes import router
-    from mc.server import auth
 
-    monkeypatch.setattr(auth, "MC_API_KEY", API_KEY)
+    monkeypatch.setattr(deps, "MC_API_KEY", API_KEY)
     # the routes cache their results, don't serve results of other tests
     monkeypatch.setattr(cache_store, "read_cache", lambda key: None)
 
     app = FastAPI()
     app.state.ccm = ContainerClientsManager()
     app.state.ccm.register("localhost", remote_docker, "docker+fake")
-    app.include_router(router, prefix="/api", dependencies=[Security(auth.get_current_user)])
+    app.include_router(router, prefix="/api", dependencies=[Security(deps.dep_auth_user)])
 
     @app.get("/api/health")
     def health():

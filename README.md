@@ -68,16 +68,16 @@ It is safe to run multiple times, but the initial credentials will only be print
   - [ ] Execute command in interactive shell (websocket)
 - [ ] Images
   - [x] List images
-  - [ ] Pull image
+  - [x] Pull image
   - [x] Remove image
-  - [ ] Inspect image
+  - [x] Inspect image
   - [ ] Remove image
 - [ ] Networks
   - [x] List networks
-  - [ ] Inspect network
+  - [x] Inspect network
 - [x] Volumes
   - [x] List volumes
-  - [ ] Inspect volume
+  - [x] Inspect volume
 - [ ] Compose Stacks
   - [ ] List compose stacks
     - [x] List compose stacks from local filesystem

@@ -1,10 +1,6 @@
 from pymongo import MongoClient
 
-from mc import config
-
-
-def get_mongo_client(ping: bool = False) -> MongoClient:
-    mongodb_uri = config.MONGODB_URL
+def get_mongo_client(mongodb_uri: str, ping: bool = False) -> MongoClient:
     if not mongodb_uri:
         raise ValueError("MONGODB_URL is not set in environment variables.")
 

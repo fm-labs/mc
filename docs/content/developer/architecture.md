@@ -22,7 +22,8 @@ browser ──► nginx :3080 / :3443 (TLS)
 | `src/server.py` | FastAPI app: lifespan, exception handler, router, static UI mount |
 | `src/cli.py` | Click CLI (`version`, `apps inspect/update/deploy`) |
 | `src/mc/config.py` | Config file loading and env settings |
-| `src/mc/server/` | Routers (`router.py` wires them), auth, config and RPC routes |
+| `src/mc/server/` | Routers (`router.py` wires them), auth (`deps.py`, `auth_helper.py`), config and RPC routes |
+| `src/mc/db.py` | Redis client (unused by default) |
 | `src/mc/plugin/containers/` | Container host clients, manager and `/api/containers` routes |
 | `src/mc/inventory/` | mc's inventory setup and core item types (`app_stack`, `secret`, `ssh_key`, ...) |
 | `src/inventorydb/` | Standalone schema-driven item store (no mc imports) |
@@ -30,7 +31,7 @@ browser ──► nginx :3080 / :3443 (TLS)
 | `src/mc/tasks.py` | Git clone/update and compose deploy/destroy functions |
 | `src/mc/rpc.py` | JSON-RPC handlers and schema generation |
 | `src/mc/mcp/` | MCP server (FastMCP), optional |
-| `src/mc/util/` | Subprocess, SSH, git, YAML, JWT helpers |
+| `src/mc/util/` | Subprocess, SSH, git, YAML, MongoDB helpers |
 | `ui/` | React 19 + Vite + Tailwind + shadcn/ui |
 | `container/` | Entrypoint, supervisor, nginx, redis configs for the image |
 | `tests/` | pytest (`inventorydb`, `mc`) |
@@ -39,7 +40,7 @@ browser ──► nginx :3080 / :3443 (TLS)
 
 1. nginx serves the request. Anything not found as a static file goes to uvicorn on `127.0.0.1:5000`.
 2. FastAPI routes `/api/...` through `app_router` (`src/mc/server/router.py`). Every router except
-   `/api/info`, `/api/health` and `/api/auth/login` requires `get_current_user` (JWT bearer or `x-api-key`).
+   `/api/info`, `/api/health` and `/api/auth/login` requires `dep_auth_user` (JWT bearer or `x-api-key`).
 3. Container routes resolve the `{alias}` to a client through the `ContainerClientsManager` in `app.state.ccm`.
    Clients are created lazily on first use (see [Container hosts](container-hosts.md)).
 4. Inventory routes load the item type from the registry and read/write storage. Actions (e.g. `deploy`) call

@@ -4,13 +4,24 @@ All routes are under `/api`. With `DEV_MODE=true`, the OpenAPI docs are at `/doc
 
 ## Auth
 
-`mc.server.auth.get_current_user` accepts either:
+The routers depend on `mc.server.deps.dep_auth_user`, which accepts either:
 
-- **Bearer JWT** from `POST /api/auth/login` (OAuth2 password form: `username`, `password`). HS256, 60 minute
-  expiry, `sub` = username. The UI stores it in `localStorage`.
+- **Bearer JWT** from `POST /api/auth/login` (OAuth2 password form: `username`, `password`). The UI stores it
+  in `localStorage`.
 - **`x-api-key` header** matching `MC_API_KEY` (more than 8 chars). Used by a primary mc to talk to its nodes.
 
 Missing or invalid credentials return `401`.
+
+| Module | Role |
+|---|---|
+| `mc/server/deps.py` | `dep_auth_user`: reads the bearer token or API key, returns the user dict |
+| `mc/server/auth_helper.py` | `create_jwt_access_token` / `verify_jwt_access_token` (PyJWT) |
+| `mc/server/auth.py` | Maps verified JWT claims or an API key to a user (`{"username": ...}`) |
+| `mc/config.py` | `JWT_*` settings |
+
+Tokens are HS256, signed with `JWT_SECRET_KEY`, and expire after 60 minutes. Claims: `sub` (username),
+`iss` (`mc`), `iat`, `nbf`, `exp`, `jti`. The header has a `kid` (first 16 hex chars of the key's MD5), so tokens
+signed with an older key can be told apart. Verification pins the algorithm and checks the issuer.
 
 ```bash
 TOKEN=$(curl -s -X POST localhost:3080/api/auth/login -d 'username=operator&password=...' | jq -r .access_token)

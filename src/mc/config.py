@@ -1,5 +1,6 @@
 import json
 import os
+import secrets
 
 from dotenv import load_dotenv
 
@@ -73,6 +74,10 @@ def get_env_var(name: str, default=None):
         print(f"Warning: Environment variable {name} is not set and no default value provided.")
     return value
 
+def generate_random_jwt_secret_key(length: int = 32) -> str:
+    return secrets.token_urlsafe(length)
+
+
 
 DEV_MODE = get_env_var("DEV_MODE", "false").lower() == "true"
 
@@ -109,6 +114,22 @@ REDIS_PASSWORD = get_env_var("REDIS_PASSWORD", "")
 VAULT_ENABLED = get_env_var("VAULT_ENABLED", "false").lower() == "true"
 VAULT_FILE = get_env_var("VAULT_FILE", f"{CONFIG_DIR}/credentials.vault")
 VAULT_PASS_FILE = get_env_var("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vault.pass")
+
+# JWT settings
+
+
+JWT_ISSUER = "mc"
+JWT_AUDIENCE = "mc"
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 60 minutes
+JWT_REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
+JWT_ALGORITHM = "HS256"
+# should be kept secret:
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", default=generate_random_jwt_secret_key())
+JWT_REFRESH_SECRET_KEY = os.environ.get("JWT_REFRESH_SECRET_KEY", default=generate_random_jwt_secret_key())
+
+
+
+
 
 # Github personal access token
 # GITHUB_TOKEN = get_env_var("GITHUB_TOKEN", "")

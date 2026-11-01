@@ -56,7 +56,7 @@ uv run pytest -x -q                         # stop at the first failure, short o
 
 ### Lint and format (ruff)
 
-Rules: pycodestyle, pyflakes, isort, pyupgrade and bugbear. Line length is 120, and the target is Python 3.13.
+Rules: pycodestyle, pyflakes, isort, pyupgrade and bugbear. Line length is 120, and the target is Python 3.14.
 
 ```bash
 uv run ruff check .                 # lint

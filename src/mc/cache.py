@@ -1,4 +1,4 @@
-from mc.util.cached import default_cache_store
+from mc.cached import default_cache_store
 
 # cache = {}
 # def simple_cached(cache_key, func, ttl=60):

@@ -6,11 +6,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from inventorydb.routes import router as objbase_router
 from mc.config import API_VERSION
 from mc.plugin.containers.routes import router as containers_router
-from mc.server.auth import get_current_user
+from mc.server.auth_helper import create_jwt_access_token
+from mc.server.deps import dep_auth_user
 from mc.server.routes_config import router as config_router
 from mc.server.routes_rpc import router as rpc_router
 from mc.users import authenticate_user
-from mc.util.jwt_util import create_access_token1
 
 # Enabled plugins and integrations
 PLUGINS_ENABLED = ["containers"]
@@ -21,13 +21,13 @@ app_router = APIRouter()
 #     inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)]
 # )
 app_router.include_router(objbase_router, prefix="/api", tags=["inventory"],
-                          dependencies=[Security(get_current_user)])
+                          dependencies=[Security(dep_auth_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"],
-                          dependencies=[Security(get_current_user)])
+                          dependencies=[Security(dep_auth_user)])
 app_router.include_router(containers_router, prefix="/api", tags=["container"],
-                          dependencies=[Security(get_current_user)])
+                          dependencies=[Security(dep_auth_user)])
 app_router.include_router(config_router, prefix="/api", tags=["config"],
-                          dependencies=[Security(get_current_user)])
+                          dependencies=[Security(dep_auth_user)])
 
 # for plugin_name in PLUGINS_ENABLED:
 #     try:
@@ -58,16 +58,16 @@ def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     if not user:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token1(data={"sub": user.username})
+    token = create_jwt_access_token(data={"sub": user.username})
     # refresh_token = create_refresh_token(user.username)
     return {"access_token": token, "token_type": "bearer"}
 
 
-@app_router.post("/api/auth/logout", tags=["auth"], dependencies=[Security(get_current_user)])
+@app_router.post("/api/auth/logout", tags=["auth"], dependencies=[Security(dep_auth_user)])
 def logout():
     return {"status": "logged out"}
 
 
-@app_router.get("/api/auth/user", tags=["auth"], dependencies=[Security(get_current_user)])
-def me(current_user: Annotated[dict[str, Any], Depends(get_current_user)]):
+@app_router.get("/api/auth/user", tags=["auth"], dependencies=[Security(dep_auth_user)])
+def me(current_user: Annotated[dict[str, Any], Depends(dep_auth_user)]):
     return current_user
