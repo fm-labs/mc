@@ -25,7 +25,7 @@ curl -H "Authorization: Bearer $TOKEN" localhost:3080/api/containers/hosts
 | `/api/auth/login`, `/logout`, `/user` | `server/router.py` | Login and current user |
 | `/api/containers/hosts` | `plugin/containers/routes.py` | Configured hosts and connection state |
 | `/api/containers/{alias}/...` | `plugin/containers/routes.py` | `version`, `info`, `df`, `containers`, `images`, `volumes`, `networks`, `prune/{scope}`, `events/stream` |
-| `/api/containers/{alias}/containers/{id}/...` | same | `actions/{action}`, `exec`, `logs`, `logs/stream` |
+| `/api/containers/{alias}/containers/{id}/...` | same | `actions/{action}`, `exec`, `top` (`?ps_args=aux`), `logs`, `logs/stream` |
 | `/api/inventory/...` | `inventorydb/routes.py` | Item types, schema/meta, CRUD, actions, views (see [inventorydb](inventorydb.md#api)) |
 | `/api/rpc` | `server/routes_rpc.py` | JSON-RPC (below) |
 | `/api/config?conf=mc\|ssh` | `server/routes_config.py` | Read and (if enabled) write config files |

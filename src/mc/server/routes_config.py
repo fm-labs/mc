@@ -76,7 +76,7 @@ def update_config(body: ConfigUpdate, conf: str = Query(...)):
         try:
             json.loads(body.content)
         except json.JSONDecodeError as e:
-            raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}") from e
 
     # Write atomically: temp file in the same dir, then rename over the original.
     path = entry["path"]

@@ -39,7 +39,7 @@ If you want to connect additional nodes to the primary mission control host, fol
 
 For each node,
 - SSH into the node host
-- Run the install script on every node with export MC_MODE=node ; curl ...
+- Run the install script on every node (same command as on the primary host)
 - Edit `/etc/mc/mc.conf.json`
   - Add MC_API_KEY env variable (more than 8 characters)
 

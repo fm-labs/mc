@@ -19,6 +19,7 @@ from mc.cache import cached_fn, clear_cache
 from mc.docker.helper import docker_prune
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
 from mc.plugin.containers.manager import ContainerClientsManager
+from mc.rpc import PruneScopeLiteral
 
 router = APIRouter()
 
@@ -227,6 +228,28 @@ def post_docker_container_exec(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@router.get("/containers/{alias}/containers/{container_id}/top")
+def get_docker_container_top(
+    alias: str,
+    container_id: str,
+    client: ContainerClientDep,
+    ps_args: Annotated[str | None, Query()] = None,
+) -> dict:
+    """
+    Running processes of a container, like `docker top`.
+    Returns {"Titles": [...], "Processes": [[...], ...]}. The container must be running.
+    """
+    try:
+        container: Container = client.containers.get(container_id)
+        kwargs = {"ps_args": ps_args} if ps_args else {}
+        result = container.top(**kwargs)
+        return {"Titles": result.get("Titles") or [], "Processes": result.get("Processes") or []}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @router.get("/containers/{alias}/containers/{container_id}/logs")
 def get_docker_container_logs(
     alias: str,
@@ -417,7 +440,7 @@ def list_docker_networks(alias: str, client: ContainerClientDep) -> list[dict]:
 
 @router.get("/containers/{alias}/prune/{scope}")
 def prune_docker_resources(alias: str,
-                           scope: Literal["system", "containers", "images", "volumes", "networks", "buildcache", "buildx"],
+                           scope: PruneScopeLiteral,
                            client: ContainerClientDep) -> dict:
     try:
         return docker_prune(client, scope)

@@ -128,8 +128,9 @@ def rpc_self_update(**kwargs) -> dict:
         "message": f"Image '{image_name}' pulled successfully. Please restart the server to apply the update.",
     }
 
+type PruneScopeLiteral = Literal["system", "containers", "images", "volumes", "networks", "buildcache", "buildx"]
 
-def rpc_docker_prune(scope: Literal["system", "containers", "images", "volumes", "networks", "buildcache", "buildx"]) -> dict:
+def rpc_docker_prune(scope: PruneScopeLiteral) -> dict:
     """
     Prune a Docker container using the Docker SDK for Python.
 
@@ -144,7 +145,9 @@ def rpc_docker_prune(scope: Literal["system", "containers", "images", "volumes",
         pruned = docker_prune(client, scope)
     except Exception as e:
         return {"error": str(e)}
-    return {"status": "success", "message": f"Docker resources pruned successfully for scope '{scope}'.", "data": pruned}
+    return {"status": "success",
+            "message": f"Docker resources pruned successfully for scope '{scope}'.",
+            "data": pruned}
 
 
 def rpc_container_action(

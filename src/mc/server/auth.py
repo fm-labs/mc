@@ -1,5 +1,5 @@
 from fastapi import HTTPException, Security
-from fastapi.security import OAuth2PasswordBearer, APIKeyHeader
+from fastapi.security import APIKeyHeader, OAuth2PasswordBearer
 from jose import ExpiredSignatureError, JWTError, jwt
 from jose.exceptions import JWTClaimsError
 

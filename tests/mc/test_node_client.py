@@ -45,6 +45,10 @@ class FakeContainer(FakeModel):
     def exec_run(self, cmd, **_):
         return type("ExecResult", (), {"exit_code": 0, "output": f"ran {cmd}".encode()})()
 
+    def top(self, ps_args=None, **_):
+        self.calls.append(f"top {ps_args}")
+        return {"Titles": ["PID", "CMD"], "Processes": [["1", "nginx"]]}
+
     def logs(self, stream=False, **_):
         lines = [b"line one\n", b"line two\n"]
         return iter(lines) if stream else b"".join(lines)
@@ -216,6 +220,19 @@ def test_exec(node):
     result = node.containers.get("c1").exec_run(["echo", "hi there"])
     assert result.exit_code == 0
     assert result.output == b"ran echo 'hi there'"
+
+
+def test_top(node, remote_docker):
+    container = node.containers.get("c1")
+    assert container.top() == {"Titles": ["PID", "CMD"], "Processes": [["1", "nginx"]]}
+    container.top(ps_args="aux")
+    assert remote_docker.container.calls == ["top None", "top aux"]
+
+
+def test_top_route_errors(remote_app):
+    headers = {"x-api-key": API_KEY}
+    r = remote_app.get("/api/containers/localhost/containers/missing/top", headers=headers)
+    assert r.status_code == 400
 
 
 def test_logs(node):

@@ -4,7 +4,7 @@ import click
 from rich.logging import RichHandler
 
 from mc.cli.apps import apps
-from mc.config import API_VERSION, API_NAME
+from mc.config import API_NAME, API_VERSION
 from mc.inventory import setup_inventory
 
 # configure inventorydb for mc, before the inventory is used

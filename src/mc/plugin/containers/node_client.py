@@ -47,7 +47,10 @@ class NodeConfig(BaseModel):
 
 
 def parse_node_configs(config: dict[str, Any]) -> list[NodeConfig]:
-    """Read the node configs ("node+" URLs) from the "docker_hosts" section of the mc config. Invalid entries are logged and skipped."""
+    """
+    Read the node configs ("node+" URLs) from the "docker_hosts" section of the mc config.
+    Invalid entries are logged and skipped.
+    """
     nodes = config.get("docker_hosts") or {}
     if not isinstance(nodes, dict):
         logger.error("Invalid 'docker_hosts' section in mc config: expected an object")
@@ -130,6 +133,11 @@ class RemoteContainer(RemoteObject):
         command = cmd if isinstance(cmd, str) else shlex.join(cmd)
         result = self.client._json("POST", self._path("/exec"), json={"command": command})
         return ExecResult(result.get("exit_code"), (result.get("output") or "").encode("utf-8"))
+
+    def top(self, ps_args: str | None = None, **_: Any) -> dict[str, Any]:
+        params = {"ps_args": ps_args} if ps_args else {}
+        result: dict[str, Any] = self.client._json("GET", self._path("/top"), params=params)
+        return result
 
     def logs(
         self,

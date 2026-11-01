@@ -14,6 +14,7 @@ import DockerContainerEnvTable from "@/app/containers/components/docker-containe
 import DockerContainerNetworksTable from "@/app/containers/components/docker-container-networks-table.tsx";
 import DockerContainerPathsTable from "@/app/containers/components/docker-container-paths-table.tsx";
 import DockerContainerExec from "@/app/containers/components/docker-container-exec.tsx";
+import DockerContainerTop from "@/app/containers/components/docker-container-top.tsx";
 import { Layers } from "lucide-react";
 import DockerContainerInspect from "@/app/containers/components/docker-container-inspect.tsx";
 import DockerContainerUptime from "@/app/containers/components/docker-container-uptime.tsx";
@@ -71,6 +72,7 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                     <div className={"flex justify-between items-center"}>
                         <TabsList variant="line">
                             <TabsTrigger value="logs">Logs</TabsTrigger>
+                            <TabsTrigger value="top">Top</TabsTrigger>
                             <TabsTrigger value="inspect">Inspect</TabsTrigger>
                             <TabsTrigger value="labels">Labels</TabsTrigger>
                             <TabsTrigger value="mounts">Mounts</TabsTrigger>
@@ -102,6 +104,9 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                         </TabsContent>
                         <TabsContent value="exec">
                             <DockerContainerExec />
+                        </TabsContent>
+                        <TabsContent value="top">
+                            <DockerContainerTop />
                         </TabsContent>
                         <TabsContent value="logs">
                             {containerLogStreamUrl}
