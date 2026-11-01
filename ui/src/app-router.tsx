@@ -24,6 +24,7 @@ const PortainerTemplatesPage = await import('@/app/app-stacks/portainer-template
 const AppStacksPage = await import('@/app/app-stacks/app-stacks-page.tsx').then(mod => mod.default);
 const AppStackDetailsPage = await import('@/app/app-stacks/app-stack-details-page.tsx').then(mod => mod.default);
 const RpcPage = await import('@/app/rpc/rpc-page.tsx').then(mod => mod.default);
+const SettingsPage = await import('@/app/settings/page.tsx').then(mod => mod.default);
 
 
 const AppRouter = () => {
@@ -53,6 +54,16 @@ const AppRouter = () => {
                                 {
                                     index: true,
                                     Component: DashboardPage,
+                                }
+                            ]
+                        },
+                        {
+                            path: "settings",
+                            Component: MainLayout,
+                            children: [
+                                {
+                                    index: true,
+                                    Component: SettingsPage,
                                 }
                             ]
                         },

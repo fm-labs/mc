@@ -3,6 +3,7 @@ import {
     //IconNotification,
     IconDotsVertical,
     IconLogout,
+    IconSettings,
     IconUserCircle,
 } from "@tabler/icons-react";
 
@@ -92,6 +93,10 @@ export function NavUser() {
                             <DropdownMenuItem>
                                 <IconUserCircle />
                                 Account
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate("/settings")}>
+                                <IconSettings />
+                                Settings
                             </DropdownMenuItem>
                             {/*<DropdownMenuItem>
                                 <IconCreditCard />

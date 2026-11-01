@@ -7,6 +7,7 @@ from inventorydb.routes import router as objbase_router
 from mc.config import API_VERSION
 from mc.plugin.containers.routes import router as containers_router
 from mc.server.auth import get_current_user
+from mc.server.routes_config import router as config_router
 from mc.server.routes_rpc import router as rpc_router
 from mc.users import authenticate_user
 from mc.util.jwt_util import create_access_token1
@@ -22,6 +23,7 @@ app_router = APIRouter()
 app_router.include_router(objbase_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"], dependencies=[Security(get_current_user)])
 app_router.include_router(containers_router, prefix="/api", tags=["container"], dependencies=[Security(get_current_user)])
+app_router.include_router(config_router, prefix="/api", tags=["config"], dependencies=[Security(get_current_user)])
 
 # for plugin_name in PLUGINS_ENABLED:
 #     try:
