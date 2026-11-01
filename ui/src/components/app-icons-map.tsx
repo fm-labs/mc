@@ -33,6 +33,7 @@ import {
     IconTrendingDown, IconTrendingUp, IconNetwork, IconReport, IconWebhook, IconWorldDollar, IconWorld, IconCube,
     IconDatabase, IconCube3dSphere, IconCubeOff, IconCubeSpark, IconShieldBolt, IconAlertTriangle,
     IconAlertTriangleFilled, IconInfoCircle, IconRocket, IconFolderCode, IconLayersOff,
+    IconServer2,
 } from "@tabler/icons-react";
 import { type SVGProps } from "react";
 import { IconPodman } from "@/assets/brand-icons/icon-podman.tsx";
@@ -113,6 +114,7 @@ const appIconsMap: {[key: string]: any} = {
     "host": IconCloud,
     "host-network": IconNetwork,
     "container-host": IconDocker,
+    "node": IconServer2, // container host via another mc node
     "container-image": IconCube3dSphere,
     "container-volume": IconDatabase,
     "container-network": IconNetwork,
