@@ -153,10 +153,13 @@ export const ContainerHostProvider: React.FC<{
             throw new Error("No hostId configured");
         }
         const response = await api.get(`/api/containers/${config.hostId}/prune/${scope}`);
-        // Refresh host data so counts and sizes reflect the prune
-        await Promise.allSettled([fetchInfo(true), fetchSummary(true)]);
+        // Refresh host data and the cached lists of the prune
+        await Promise.allSettled([
+            fetchInfo(true),
+            fetchSummary(true),
+        ]);
         return response;
-    }, [config, api, fetchInfo, fetchSummary])
+    }, [config, api, fetchInfo, fetchSummary, fetchContainerData])
 
     // const updateAll = React.useCallback(async (force?: boolean) => {
     //     await Promise.all([

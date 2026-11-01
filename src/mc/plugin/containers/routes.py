@@ -438,6 +438,18 @@ def list_docker_networks(alias: str, client: ContainerClientDep) -> list[dict]:
     return cached_fn(f"containers_{alias}_networks", fetch_networks, ttl=CACHE_TTL)()
 
 
+# Cached list endpoints affected by each prune scope ("info" and "df" are always cleared)
+_PRUNE_CACHE_KEYS: dict[str, list[str]] = {
+    "containers": ["containers"],
+    "images": ["images"],
+    "volumes": ["volumes"],
+    "networks": ["networks"],
+    "buildcache": [],
+    "buildx": [],
+    "system": ["containers", "images", "volumes", "networks"],
+}
+
+
 @router.get("/containers/{alias}/prune/{scope}")
 def prune_docker_resources(alias: str,
                            scope: PruneScopeLiteral,
@@ -446,6 +458,9 @@ def prune_docker_resources(alias: str,
         return docker_prune(client, scope)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
+    finally:
+        for name in ["info", "df", *_PRUNE_CACHE_KEYS.get(scope, [])]:
+            clear_cache(f"containers_{alias}_{name}")
 
 
 _END_OF_STREAM = object()
