@@ -8,12 +8,20 @@ import threading
 import time
 from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from mc import config
 
+DEFAULT_CACHE_TTL = 60
 
-class SqliteCacheStore:
+class CacheStoreProtocol(Protocol):
+    def read_cache(self, key: str) -> Any | None:
+        ...
+    def write_cache(self, key: str, value: Any, ttl: int) -> None:
+        ...
+
+
+class SqliteCacheStore(CacheStoreProtocol):
     """
     SQLite-backed cache with tighter connection PRAGMAs for cross-process use.
 
@@ -113,8 +121,8 @@ class SqliteCacheStore:
 
         return self._with_retry(op)
 
-    def write_cache(self, key: str, value: Any, ttl: float | None = None) -> None:
-        expiry = None if ttl is None else (time.time() + float(ttl))
+    def write_cache(self, key: str, value: Any, ttl: int = DEFAULT_CACHE_TTL) -> None:
+        expiry =time.time() + ttl
         blob = sqlite3.Binary(pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL))
 
         def op():
@@ -156,7 +164,7 @@ class SqliteCacheStore:
             self.conn.close()
 
 
-class FileCacheStore:
+class FileCacheStore(CacheStoreProtocol):
     def __init__(self, directory: str):
         self.dir = Path(directory)
         self.dir.mkdir(parents=True, exist_ok=True)
@@ -191,9 +199,9 @@ class FileCacheStore:
 
         return value
 
-    def write_cache(self, key: str, value: Any, ttl: float | None = None) -> None:
+    def write_cache(self, key: str, value: Any, ttl: int = DEFAULT_CACHE_TTL) -> None:
         path = self._path_for_key(key)
-        expiry = None if ttl is None else (time.time() + float(ttl))
+        expiry = time.time() + ttl
 
         tmp_path = path.with_suffix(".tmp")
         with tmp_path.open("wb") as f:
@@ -203,7 +211,7 @@ class FileCacheStore:
         os.replace(tmp_path, path)
 
 
-class RedisCacheStore:
+class RedisCacheStore(CacheStoreProtocol):
     def __init__(self, redis_client):
         self.redis = redis_client
 
@@ -218,17 +226,17 @@ class RedisCacheStore:
             self.redis.delete(key)
             return None
 
-    def write_cache(self, key: str, value: Any, ttl: float | None = None) -> None:
+    def write_cache(self, key: str, value: Any, ttl: int = DEFAULT_CACHE_TTL) -> None:
         payload = json.dumps(value)
-        if ttl is not None:
+        if ttl > 0:
             self.redis.setex(key, int(ttl), payload)
         else:
             self.redis.set(key, payload)
 
 
-class InMemoryCacheStore:
+class InMemoryCacheStore(CacheStoreProtocol):
     def __init__(self):
-        self.store = {}
+        self.store: dict[str, tuple[int, Any]] = {}
 
     def read_cache(self, key: str) -> Any | None:
         entry = self.store.get(key)
@@ -240,19 +248,19 @@ class InMemoryCacheStore:
             return None
         return value
 
-    def write_cache(self, key: str, value: Any, ttl: float | None = None) -> None:
-        expiry = None if ttl is None else (time.time() + float(ttl))
+    def write_cache(self, key: str, value: Any, ttl: int = DEFAULT_CACHE_TTL) -> None:
+        expiry = int(time.time() + ttl)
         self.store[key] = (expiry, value)
 
 
-def default_cache_key(func, args, kwargs):
+def default_cache_key(func, args, kwargs) -> str:
     raw = {"func": func.__name__, "args": args, "kwargs": kwargs}
     print(">>> Generating cache key for:", raw)
     s = json.dumps(raw, sort_keys=True, default=str)
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
 
-def default_cache_store():
+def default_cache_store() -> CacheStoreProtocol:
     try:
         os.makedirs(f"{config.DATA_DIR}/cache", exist_ok=True)
         return SqliteCacheStore(f"{config.DATA_DIR}/cache/cached.sqlite")
@@ -274,7 +282,7 @@ def cached(ttl=None, cachekey=None, store=None):
         is_async = inspect.iscoroutinefunction(func)
         is_cache_disabled = os.getenv("MC_CACHE_DISABLED") == "true"
 
-        def make_key(args, kwargs):
+        def make_key(args, kwargs) -> str:
             if callable(cachekey):
                 return cachekey(func, args, kwargs)
             if isinstance(cachekey, str):
