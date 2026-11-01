@@ -13,6 +13,8 @@ API_VERSION = "2.3.0"
 API_PREFIX = "/api"
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
 
+MC_BACKUP_DIR = os.getenv("MC_BACKUP_DIR", "/tmp/backup") # in docker environments, this is on the host!
+
 #load_dotenv(f"{DATA_DIR}/.env")
 #load_dotenv(f"{DATA_DIR}/.env.local")
 

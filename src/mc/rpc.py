@@ -6,7 +6,7 @@ from collections.abc import Callable
 from tempfile import mkstemp
 from typing import Any, Literal
 
-from mc.docker.helper import docker_prune
+from mc.docker.helper import docker_prune, docker_volume_backup, docker_volume_clone, docker_volume_restore
 from mc.util.random_util import generate_random_secret
 
 
@@ -148,6 +148,55 @@ def rpc_docker_prune(scope: PruneScopeLiteral) -> dict:
     return {"status": "success",
             "message": f"Docker resources pruned successfully for scope '{scope}'.",
             "data": pruned}
+
+
+def _run_volume_helper(helper: Callable[..., Any], message: str, *args) -> dict:
+    import docker
+
+    client = docker.from_env()
+    try:
+        output = helper(client, *args)
+    except Exception as e:
+        return {"error": str(e)}
+    if isinstance(output, bytes):
+        output = output.decode("utf-8", errors="replace")
+    return {"status": "success", "message": message, "stdout": output or ""}
+
+
+def rpc_docker_volume_backup(volume: str, backup_file: str, **kwargs) -> dict:
+    """
+    Back up a Docker volume to a .tar.gz file.
+
+    :param volume: Name of the volume to back up.
+    :param backup_file: Absolute path of the backup file on the Docker host.
+    """
+    return _run_volume_helper(
+        docker_volume_backup, f"Volume '{volume}' backed up to '{backup_file}'.", volume, backup_file
+    )
+
+
+def rpc_docker_volume_restore(volume: str, backup_file: str, **kwargs) -> dict:
+    """
+    Restore a Docker volume from a .tar.gz backup file. The volume is created if it does not exist.
+
+    :param volume: Name of the volume to restore into.
+    :param backup_file: Absolute path of the backup file on the Docker host.
+    """
+    return _run_volume_helper(
+        docker_volume_restore, f"Volume '{volume}' restored from '{backup_file}'.", volume, backup_file
+    )
+
+
+def rpc_docker_volume_clone(source_volume: str, target_volume: str, **kwargs) -> dict:
+    """
+    Copy a Docker volume into a new volume.
+
+    :param source_volume: Name of the volume to copy.
+    :param target_volume: Name of the new volume. Must not exist yet.
+    """
+    return _run_volume_helper(
+        docker_volume_clone, f"Volume '{source_volume}' cloned to '{target_volume}'.", source_volume, target_volume
+    )
 
 
 def rpc_container_action(
@@ -294,6 +343,10 @@ RPC_HANDLERS = {
     "docker.info": rpc_docker_info,
     "docker.prune": rpc_docker_prune,
     "docker.container.action": rpc_container_action,
+    # volume handlers
+    "docker.volume.backup": rpc_docker_volume_backup,
+    "docker.volume.restore": rpc_docker_volume_restore,
+    "docker.volume.clone": rpc_docker_volume_clone,
     # swarm handlers
     "docker.swarm.info": rpc_docker_swarm_info,
     "docker.swarm.join_token": rpc_docker_swarm_join_token,
