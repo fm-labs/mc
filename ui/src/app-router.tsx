@@ -8,6 +8,7 @@ import MainLayout from "@/components/layout/main-layout.tsx";
 import { NotFoundError } from "@/features/errors/not-found-error.tsx";
 import AuthenticatedRoute from "@/components/authenticated-route.tsx";
 import ContainerHostsStatsPage from "@/app/containers/container-hosts-stats-page.tsx";
+import ContainerHostsNetworkPage from "@/app/containers/container-hosts-network-page.tsx";
 
 // lazy load pages
 const StartPage = await import('@/app/start-page.tsx').then(mod => mod.default);
@@ -114,6 +115,10 @@ const AppRouter = () => {
                                 {
                                     path: "stats",
                                     Component: ContainerHostsStatsPage,
+                                },
+                                {
+                                    path: "network",
+                                    Component: ContainerHostsNetworkPage,
                                 },
                             ],
                         },

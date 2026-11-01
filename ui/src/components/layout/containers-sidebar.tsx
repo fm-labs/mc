@@ -127,6 +127,12 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                 <NavLink to={"/containers/stats"}>Stats</NavLink>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton>
+                                <AppIcon icon={"container-network"}/>
+                                <NavLink to={"/containers/network"}>Network</NavLink>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarGroup>
                 <SidebarGroup>
