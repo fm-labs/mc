@@ -4,11 +4,20 @@ export type Point = { x: number, y: number }
 
 export type HostBox = { hostId: string, x: number, y: number, w: number, h: number }
 
+export type LayoutMode = "graph" | "tree"
+
+// In the tree layout each edge is either part of the tree or an extra cross link
+export type EdgeRole = "tree" | "cross"
+
 export type Layout = {
+    mode: LayoutMode
     positions: Record<string, Point>
     width: number
     height: number
+    edgeRoles?: Record<string, EdgeRole>
 }
+
+export type Extent = { x: number, top: number, bottom: number, right?: number }
 
 // Space a node needs around its center (labels included)
 export const nodeRadius = (n: GraphNode) => {
@@ -20,7 +29,7 @@ export const nodeRadius = (n: GraphNode) => {
 };
 
 // Extra room below a node for its label, used for the host boxes
-export const nodeExtent = (n: GraphNode) => {
+export const nodeExtent = (n: GraphNode): Extent => {
     switch (n.kind) {
         case "host": return {x: 60, top: 36, bottom: 64};
         case "network": return {x: networkNodeWidth(n) / 2 + 6, top: 26, bottom: 26};
@@ -140,13 +149,14 @@ const layoutHost = (nodes: GraphNode[], edges: GraphEdge[]): Record<string, Poin
 };
 
 // Bounding box of a host's nodes, including labels and room for the box header
-export const hostBox = (hostId: string, nodes: GraphNode[], positions: Record<string, Point>): HostBox | null => {
+export const hostBox = (hostId: string, nodes: GraphNode[], positions: Record<string, Point>,
+                        extent: (n: GraphNode) => Extent = nodeExtent): HostBox | null => {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     nodes.forEach((n) => {
         const p = positions[n.id];
         if (!p) return;
-        const e = nodeExtent(n);
-        minX = Math.min(minX, p.x - e.x); maxX = Math.max(maxX, p.x + e.x);
+        const e = extent(n);
+        minX = Math.min(minX, p.x - e.x); maxX = Math.max(maxX, p.x + (e.right ?? e.x));
         minY = Math.min(minY, p.y - e.top); maxY = Math.max(maxY, p.y + e.bottom);
     });
     if (!isFinite(minX)) return null;
@@ -156,16 +166,10 @@ export const hostBox = (hostId: string, nodes: GraphNode[], positions: Record<st
 
 const GAP = 56;
 
-export const layoutGraph = (graph: Graph): Layout => {
-    const hostIds = graph.nodes.filter((n) => n.kind === "host").map((n) => n.hostId);
-    const parts = hostIds.map((hostId) => {
-        const nodes = graph.nodes.filter((n) => n.hostId === hostId);
-        const edges = graph.edges.filter((e) => e.hostId === hostId);
-        const positions = layoutHost(nodes, edges);
-        return {hostId, nodes, positions, box: hostBox(hostId, nodes, positions)!};
-    });
+export type HostPart = { positions: Record<string, Point>, box: HostBox }
 
-    // Pack the host clusters into rows
+// Pack the laid out host clusters into rows
+export const packHosts = (parts: HostPart[]): Pick<Layout, "positions" | "width" | "height"> => {
     const area = parts.reduce((acc, p) => acc + p.box.w * p.box.h, 0);
     const rowWidth = Math.max(...parts.map((p) => p.box.w), Math.sqrt(area) * 1.6);
     const positions: Record<string, Point> = {};
@@ -183,4 +187,16 @@ export const layoutGraph = (graph: Graph): Layout => {
         width = Math.max(width, x - GAP);
     });
     return {positions, width, height: y + rowH};
+};
+
+export const hostIdsOf = (graph: Graph) => graph.nodes.filter((n) => n.kind === "host").map((n) => n.hostId);
+
+export const layoutGraph = (graph: Graph): Layout => {
+    const parts = hostIdsOf(graph).map((hostId) => {
+        const nodes = graph.nodes.filter((n) => n.hostId === hostId);
+        const edges = graph.edges.filter((e) => e.hostId === hostId);
+        const positions = layoutHost(nodes, edges);
+        return {positions, box: hostBox(hostId, nodes, positions)!};
+    });
+    return {mode: "graph", ...packHosts(parts)};
 };

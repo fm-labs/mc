@@ -1,7 +1,7 @@
 import React from "react";
-import {Link} from "react-router";
+import {Link, useSearchParams} from "react-router";
 import {toast} from "react-toastify";
-import {RefreshCw, Search, X} from "lucide-react";
+import {Network, RefreshCw, Search, Workflow, X} from "lucide-react";
 import {Button} from "@/components/ui/button.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
 import {Input} from "@/components/ui/input.tsx";
@@ -18,7 +18,8 @@ import {
     NetworkNode,
     summarize,
 } from "@/app/containers/components/network/network-graph.ts";
-import {layoutGraph} from "@/app/containers/components/network/network-layout.ts";
+import {layoutGraph, LayoutMode} from "@/app/containers/components/network/network-layout.ts";
+import {layoutTree} from "@/app/containers/components/network/network-tree-layout.ts";
 import NetworkDiagram, {driverColor, projectColor, stateColor} from "@/app/containers/components/network/network-diagram.tsx";
 import {formatAge} from "@/app/containers/components/stats/format.ts";
 import {shortId} from "@/app/containers/components/stats/host-stats.ts";
@@ -235,6 +236,12 @@ const ContainerHostsNetwork = () => {
     const [filter, setFilter] = React.useState<GraphFilter>({showBuiltin: true, showUnused: false, showStopped: true});
     const [search, setSearch] = React.useState("");
     const [selectedId, setSelectedId] = React.useState<string>();
+    const [params, setParams] = useSearchParams();
+    const mode: LayoutMode = params.get("view") === "tree" ? "tree" : "graph";
+    const setMode = (m: LayoutMode) => setParams((p) => {
+        if (m === "tree") p.set("view", "tree"); else p.delete("view");
+        return p;
+    }, {replace: true});
 
     const visibleData = React.useMemo(
         () => (hostFilter === ALL ? data : data.filter((d) => d.hostId === hostFilter)),
@@ -244,7 +251,7 @@ const ContainerHostsNetwork = () => {
     const signature = graphSignature(graph);
     // only re-layout when the structure changes, not on every cache re-read
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    const layout = React.useMemo(() => layoutGraph(graph), [signature]);
+    const layout = React.useMemo(() => (mode === "tree" ? layoutTree(graph) : layoutGraph(graph)), [signature, mode]);
     const summary = React.useMemo(() => summarize(graph), [graph]);
     const selected = selectedId ? graph.nodes.find((n) => n.id === selectedId) : undefined;
     const oldest = Math.min(...data.map((d) => d.cachedAt ?? Infinity));
@@ -269,6 +276,15 @@ const ContainerHostsNetwork = () => {
     return (
         <div className="flex h-[calc(100svh-9rem)] min-h-[560px] flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
+                    <Toggle checked={mode === "graph"} onChange={() => setMode("graph")}>
+                        <span className="inline-flex items-center gap-1.5"><Network className="size-4"/>Graph</span>
+                    </Toggle>
+                    <Toggle checked={mode === "tree"} onChange={() => setMode("tree")}>
+                        <span className="inline-flex items-center gap-1.5"><Workflow className="size-4"/>Tree</span>
+                    </Toggle>
+                </div>
+
                 <Select value={hostFilter} onValueChange={(v) => { setHostFilter(v); setSelectedId(undefined); }}>
                     <SelectTrigger size="sm" className="w-44"><SelectValue/></SelectTrigger>
                     <SelectContent>

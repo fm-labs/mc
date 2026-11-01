@@ -9,7 +9,8 @@ import {
     NetworkNode,
     networkNodeWidth,
 } from "@/app/containers/components/network/network-graph.ts";
-import {hostBox, Layout, Point} from "@/app/containers/components/network/network-layout.ts";
+import {hostBox, Layout, nodeExtent, Point} from "@/app/containers/components/network/network-layout.ts";
+import {TREE, treeExtent} from "@/app/containers/components/network/network-tree-layout.ts";
 
 // ---- colors (hex, readable on light and dark backgrounds) ----
 
@@ -48,6 +49,64 @@ const haloProps = {stroke: "var(--background)", strokeWidth: 4, paintOrder: "str
 type View = { x: number, y: number, k: number }
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+
+// Polyline with rounded corners, for org-chart connectors
+const roundedPath = (pts: [number, number][], r = 8) => {
+    if (pts.length < 2) return "";
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+        const [px, py] = pts[i - 1], [cx, cy] = pts[i], [nx, ny] = pts[i + 1];
+        const inLen = Math.hypot(cx - px, cy - py), outLen = Math.hypot(nx - cx, ny - cy);
+        const k = Math.min(r, inLen / 2, outLen / 2);
+        if (k < 0.5) { d += ` L${cx},${cy}`; continue; }
+        const ax = cx - (cx - px) / inLen * k, ay = cy - (cy - py) / inLen * k;
+        const bx = cx + (nx - cx) / outLen * k, by = cy + (ny - cy) / outLen * k;
+        d += ` L${ax},${ay} Q${cx},${cy} ${bx},${by}`;
+    }
+    const [lx, ly] = pts[pts.length - 1];
+    return d + ` L${lx},${ly}`;
+};
+
+type EdgeGeometry = { d: string, label?: Point }
+
+// Edge path for the force graph: a slight curve so parallel edges stay distinguishable
+const graphEdge = (e: GraphEdge, a: Point, b: Point): EdgeGeometry => {
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const bend = e.kind === "host-network" ? 0 : 0.08;
+    const cx = mx - dy * bend, cy = my + dx * bend;
+    // IP label 65% of the way towards the container
+    const t = 0.65;
+    return {
+        d: `M${a.x},${a.y} Q${cx},${cy} ${b.x},${b.y}`,
+        label: {
+            x: (1 - t) * (1 - t) * a.x + 2 * (1 - t) * t * cx + t * t * b.x,
+            y: (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * cy + t * t * b.y,
+        },
+    };
+};
+
+// Edge path for the tree: elbow connectors for tree edges, a soft dashed curve for cross links
+const treeEdge = (e: GraphEdge, a: Point, b: Point, cross: boolean): EdgeGeometry => {
+    if (cross) {
+        // a = network (or the container whose stack is shared), b = container
+        const sy = e.kind === "network-container" ? a.y + 20 : a.y;
+        return {
+            d: `M${a.x},${sy} C${a.x},${sy + 90} ${b.x - 90},${b.y} ${b.x - 18},${b.y}`,
+            label: {x: b.x - 52, y: b.y - 9},
+        };
+    }
+    if (e.kind === "host-network") {
+        const mid = (a.y + 28 + b.y - 20) / 2;
+        return {d: roundedPath([[a.x, a.y + 28], [a.x, mid], [b.x, mid], [b.x, b.y - 20]], 10)};
+    }
+    if (e.kind === "network-container") {
+        const spine = b.x - (TREE.containerInset - TREE.spineInset);
+        return {d: roundedPath([[a.x, a.y + 20], [a.x, a.y + 40], [spine, a.y + 40], [spine, b.y], [b.x - 18, b.y]])};
+    }
+    // shared stack: a = child, b = parent above it
+    return {d: roundedPath([[b.x, b.y + 18], [b.x, a.y], [a.x - 18, a.y]])};
+};
 
 // ---- nodes ----
 
@@ -91,7 +150,9 @@ const NetworkShape = ({node, selected}: { node: NetworkNode, selected: boolean }
     );
 };
 
-const ContainerShape = ({node, selected}: { node: ContainerNode, selected: boolean }) => {
+const ContainerShape = ({node, selected, labelRight, sub}: {
+    node: ContainerNode, selected: boolean, labelRight?: boolean, sub?: string
+}) => {
     const fill = projectColor(node.project);
     const ring = stateColor(node);
     const active = node.state === "running" || node.state === "paused";
@@ -100,16 +161,33 @@ const ContainerShape = ({node, selected}: { node: ContainerNode, selected: boole
             {selected && <circle r={22} fill="none" stroke="var(--ring)" strokeWidth={3}/>}
             <circle r={16} fill={fill ?? "var(--muted)"} stroke={ring} strokeWidth={3}/>
             <Box x={-8} y={-8} width={16} height={16} color={fill ? "#fff" : "var(--muted-foreground)"} strokeWidth={2}/>
-            <text y={31} textAnchor="middle" fontSize={11.5} fontWeight={500} fill="var(--foreground)" {...haloProps}>
-                {truncate(node.label, 22)}
-            </text>
+            {labelRight ? (
+                <>
+                    <text x={26} y={sub ? -2 : 4} fontSize={12} fontWeight={500} fill="var(--foreground)" {...haloProps}>
+                        {truncate(node.label, 24)}
+                    </text>
+                    {sub && (
+                        <text x={26} y={12} fontSize={10} fontFamily="ui-monospace, monospace" fill="var(--muted-foreground)" {...haloProps}>
+                            {truncate(sub, 28)}
+                        </text>
+                    )}
+                </>
+            ) : (
+                <text y={31} textAnchor="middle" fontSize={11.5} fontWeight={500} fill="var(--foreground)" {...haloProps}>
+                    {truncate(node.label, 22)}
+                </text>
+            )}
         </g>
     );
 };
 
 // ---- edges ----
 
-const edgeStyle = (e: GraphEdge, nodes: Map<string, GraphNode>) => {
+const edgeStyle = (e: GraphEdge, nodes: Map<string, GraphNode>, cross: boolean) => {
+    if (cross) {
+        const net = e.kind === "network-container" ? nodes.get(e.source) as NetworkNode | undefined : undefined;
+        return {stroke: net ? driverColor(net.driver) : "var(--muted-foreground)", width: 1.5, dash: "4 4", opacity: 0.45};
+    }
     switch (e.kind) {
         case "host-network": {
             const net = nodes.get(e.target) as NetworkNode | undefined;
@@ -143,6 +221,7 @@ const NetworkDiagram = ({graph, layout, selectedId, onSelect, search, className}
     const [hoverId, setHoverId] = React.useState<string>();
     const drag = React.useRef<{ kind: "pan" | "node", id?: string, startX: number, startY: number, orig: Point, moved: boolean } | null>(null);
 
+    const tree = layout.mode === "tree";
     const nodeMap = React.useMemo(() => new Map(graph.nodes.map((n) => [n.id, n])), [graph.nodes]);
     const pos = React.useCallback((id: string): Point | undefined => overrides[id] ?? layout.positions[id], [overrides, layout]);
 
@@ -252,10 +331,22 @@ const NetworkDiagram = ({graph, layout, selectedId, onSelect, search, className}
     const boxes = React.useMemo(() => {
         const hostIds = graph.nodes.filter((n) => n.kind === "host").map((n) => n.hostId);
         const current: Record<string, Point> = {...layout.positions, ...overrides};
-        return hostIds.map((hostId) => hostBox(hostId, graph.nodes.filter((n) => n.hostId === hostId), current)).filter((b) => !!b);
-    }, [graph.nodes, layout, overrides]);
+        const extent = tree ? treeExtent : nodeExtent;
+        return hostIds.map((hostId) => hostBox(hostId, graph.nodes.filter((n) => n.hostId === hostId), current, extent)).filter((b) => !!b);
+    }, [graph.nodes, layout, overrides, tree]);
 
     const showIps = view.k >= 1.1;
+
+    // tree: the IP (or image) shown under each container name
+    const containerSub = React.useMemo(() => {
+        const m = new Map<string, string>();
+        if (!tree) return m;
+        graph.edges.forEach((e) => {
+            if (e.kind === "network-container" && e.ip && layout.edgeRoles?.[e.id] === "tree") m.set(e.target, e.ip);
+        });
+        graph.nodes.forEach((n) => { if (n.kind === "container" && !m.has(n.id) && n.image) m.set(n.id, n.image); });
+        return m;
+    }, [graph, layout, tree]);
 
     // draw order: host-network edges, other edges, then networks, containers and hosts on top
     const order = {network: 0, container: 1, host: 2};
@@ -290,25 +381,23 @@ const NetworkDiagram = ({graph, layout, selectedId, onSelect, search, className}
                     {graph.edges.map((e) => {
                         const a = pos(e.source), b = pos(e.target);
                         if (!a || !b) return null;
-                        const s = edgeStyle(e, nodeMap);
+                        const cross = tree && layout.edgeRoles?.[e.id] !== "tree";
+                        const s = edgeStyle(e, nodeMap, cross);
                         const hl = edgeHighlighted(e);
                         const dim = edgeDim(e);
-                        // slight curve so parallel edges stay distinguishable
-                        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-                        const dx = b.x - a.x, dy = b.y - a.y;
-                        const bend = e.kind === "host-network" ? 0 : 0.08;
-                        const cx = mx - dy * bend, cy = my + dx * bend;
-                        // IP label 65% of the way towards the container
-                        const t = 0.65;
-                        const lx = (1 - t) * (1 - t) * a.x + 2 * (1 - t) * t * cx + t * t * b.x;
-                        const ly = (1 - t) * (1 - t) * a.y + 2 * (1 - t) * t * cy + t * t * b.y;
+                        // shared-stack edges point child -> parent; draw cross links from the parent
+                        const g = tree
+                            ? (e.kind === "container-container" && cross ? treeEdge(e, b, a, true) : treeEdge(e, a, b, cross))
+                            : graphEdge(e, a, b);
+                        // tree edges carry the IP on the container label instead
+                        const label = e.ip && g.label && (hl || (!tree && showIps && !dim));
                         return (
                             <g key={e.id} opacity={dim ? 0.08 : 1} className="transition-opacity">
-                                <path d={`M${a.x},${a.y} Q${cx},${cy} ${b.x},${b.y}`} fill="none"
+                                <path d={g.d} fill="none"
                                       stroke={s.stroke} strokeWidth={hl ? s.width + 1.25 : s.width}
                                       strokeOpacity={hl ? 1 : s.opacity} strokeDasharray={s.dash}/>
-                                {e.ip && (hl || (showIps && !dim)) && (
-                                    <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle" fontSize={10}
+                                {label && (
+                                    <text x={g.label!.x} y={g.label!.y} textAnchor="middle" dominantBaseline="middle" fontSize={10}
                                           fontFamily="ui-monospace, monospace" fill="var(--foreground)" {...haloProps}>
                                         {e.ip}
                                     </text>
@@ -329,7 +418,7 @@ const NetworkDiagram = ({graph, layout, selectedId, onSelect, search, className}
                                onPointerLeave={() => !drag.current && setHoverId(undefined)}>
                                 {n.kind === "host" && <HostShape node={n} selected={selected}/>}
                                 {n.kind === "network" && <NetworkShape node={n} selected={selected}/>}
-                                {n.kind === "container" && <ContainerShape node={n} selected={selected}/>}
+                                {n.kind === "container" && <ContainerShape node={n} selected={selected} labelRight={tree} sub={containerSub.get(n.id)}/>}
                             </g>
                         );
                     })}
@@ -344,12 +433,12 @@ const NetworkDiagram = ({graph, layout, selectedId, onSelect, search, className}
                         disabled={Object.keys(overrides).length === 0} onClick={() => setOverrides({})}><RotateCcw/></Button>
             </div>
 
-            <Legend graph={graph}/>
+            <Legend graph={graph} tree={tree}/>
         </div>
     );
 };
 
-const Legend = ({graph}: { graph: Graph }) => {
+const Legend = ({graph, tree}: { graph: Graph, tree: boolean }) => {
     const drivers = [...new Set(graph.nodes.filter((n): n is NetworkNode => n.kind === "network").map((n) => n.driver ?? "unknown"))];
     const projects = [...new Set(graph.nodes.filter((n): n is ContainerNode => n.kind === "container").map((n) => n.project).filter((p): p is string => !!p))];
     return (
@@ -375,6 +464,11 @@ const Legend = ({graph}: { graph: Graph }) => {
                 <span className="inline-flex items-center gap-1.5">
                     <span className="w-4 border-t-2 border-dotted border-muted-foreground"/>shared network stack
                 </span>
+                {tree && (
+                    <span className="inline-flex items-center gap-1.5">
+                        <span className="w-4 border-t-2 border-dashed border-muted-foreground/60"/>also on network
+                    </span>
+                )}
             </div>
             {projects.length > 0 && (
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
