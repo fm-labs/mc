@@ -1,17 +1,14 @@
 import React from 'react';
-import ReactJson from "@microlink/react-json-view";
-import {AlertTriangle, Check, ChevronDown, Copy, Minus} from "lucide-react";
-import {toast} from "react-toastify";
+import {AlertTriangle, ChevronDown} from "lucide-react";
 import {useContainerHost} from "@/app/containers/components/container-host-provider.tsx";
 import DockerHostHeader from "@/app/containers/components/docker-host-header.tsx";
 import {DiskBar, diskConfig, diskKeys, StatsSection, StatTile} from "@/app/containers/components/stats/stats-ui.tsx";
 import {cleanupStats, DiskUsage, diskTotal, diskUsage} from "@/app/containers/components/stats/host-stats.ts";
 import {formatBytes} from "@/app/containers/components/stats/format.ts";
 import {Badge} from "@/components/ui/badge.tsx";
-import {Button} from "@/components/ui/button.tsx";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs.tsx";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible.tsx";
-import {useTheme} from "@/context/theme-provider.tsx";
+import {BadgeList, Bool, Mono, PropList, RawJson, Row} from "@/app/containers/components/docker-ui.tsx";
 import DockerHostPruneButton, {PRUNE_SCOPES} from "@/app/containers/components/docker-host-prune-button.tsx";
 import {DockerPruneScope} from "@/app/containers/components/container-host-provider.tsx";
 
@@ -34,84 +31,6 @@ const MaintenanceSection = () => (
         </div>
     </StatsSection>
 );
-
-type Row = [label: string, value: React.ReactNode]
-
-const isEmpty = (v: unknown) =>
-    v === undefined || v === null || v === "" || (Array.isArray(v) && v.length === 0);
-
-const Bool = ({value}: { value?: boolean }) => value === undefined ? null : value
-    ? <span className="inline-flex items-center gap-1 text-green-600"><Check className="size-3.5"/>Yes</span>
-    : <span className="inline-flex items-center gap-1 text-muted-foreground"><Minus className="size-3.5"/>No</span>;
-
-const Mono = ({children}: { children: React.ReactNode }) =>
-    <span className="font-mono text-xs break-all">{children}</span>;
-
-const BadgeList = ({items}: { items?: (string | null | undefined)[] | null }) => {
-    const list = (items ?? []).filter(Boolean) as string[];
-    if (list.length === 0) return null;
-    return (
-        <div className="flex flex-wrap justify-end gap-1">
-            {list.map((i) => <Badge key={i} variant="secondary" className="font-mono">{i}</Badge>)}
-        </div>
-    );
-};
-
-// Label / value list; rows with empty values are skipped
-const PropList = ({rows}: { rows: Row[] }) => {
-    const visible = rows.filter(([, v]) => !isEmpty(v));
-    if (visible.length === 0) return <p className="text-sm text-muted-foreground">No data.</p>;
-    return (
-        <dl className="divide-y text-sm">
-            {visible.map(([label, value]) => (
-                <div key={label} className="flex items-start justify-between gap-4 py-1.5">
-                    <dt className="shrink-0 text-muted-foreground">{label}</dt>
-                    <dd className="min-w-0 text-right font-medium">{value}</dd>
-                </div>
-            ))}
-        </dl>
-    );
-};
-
-const useIsDark = () => {
-    const {theme} = useTheme();
-    if (theme === "system") {
-        return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    }
-    return theme === "dark";
-};
-
-const RawJson = ({data, name}: { data: any, name: string }) => {
-    const isDark = useIsDark();
-    const copy = async () => {
-        try {
-            await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-            toast.success(`Copied ${name} JSON`);
-        } catch {
-            toast.error("Could not copy to clipboard");
-        }
-    };
-    if (!data) return <p className="text-sm text-muted-foreground">Not loaded yet.</p>;
-    return (
-        <div className="relative">
-            <Button variant="outline" size="sm" className="absolute right-2 top-2 z-10" onClick={copy}>
-                <Copy/> Copy
-            </Button>
-            <div className="max-h-[600px] overflow-auto rounded-md border p-3 text-xs">
-                <ReactJson
-                    src={data}
-                    name={false}
-                    collapsed={1}
-                    theme={isDark ? "ocean" : "rjv-default"}
-                    style={{backgroundColor: "transparent"}}
-                    enableClipboard={true}
-                    displayObjectSize={true}
-                    displayDataTypes={false}
-                    sortKeys={true}/>
-            </div>
-        </div>
-    );
-};
 
 const DockerHostEngine = () => {
     const {summary, info: rawInfo} = useContainerHost();
