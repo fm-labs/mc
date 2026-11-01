@@ -148,7 +148,7 @@ const DockerHostVolumes = () => {
 
     return (
         <div>
-            <DockerHostHeader title={"Volumes"} icon="container-volume" prune="volumes"/>
+            <DockerHostHeader title={"Volumes"} icon="container-volume"/>
 
             {volumes === undefined ? (
                 <p className="text-muted-foreground">Loading volumes ...</p>

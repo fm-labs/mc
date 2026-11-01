@@ -175,7 +175,7 @@ const DockerHostNetworks = () => {
 
     return (
         <div>
-            <DockerHostHeader title={"Networks"} icon="container-network" prune="networks" onPruned={() => loadNetworks(true)}/>
+            <DockerHostHeader title={"Networks"} icon="container-network"/>
 
             {networks === undefined ? (
                 <p className="text-muted-foreground">Loading networks ...</p>

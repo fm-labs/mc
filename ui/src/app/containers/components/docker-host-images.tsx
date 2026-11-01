@@ -193,8 +193,7 @@ const DockerHostImages = () => {
 
     return (
         <div>
-            <DockerHostHeader title={"Images"} icon="container-image" prune="images"
-                              onPruned={() => fetchImages(true).then(setImages)}>
+            <DockerHostHeader title={"Images"} icon="container-image">
                 <DockerHostImagePull/>
             </DockerHostHeader>
 

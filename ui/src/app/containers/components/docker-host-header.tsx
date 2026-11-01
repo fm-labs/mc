@@ -1,16 +1,11 @@
 import React, {PropsWithChildren} from "react";
-import {useContainerHost, DockerPruneScope} from "@/app/containers/components/container-host-provider.tsx";
-import DockerHostPruneButton from "@/app/containers/components/docker-host-prune-button.tsx";
+import {useContainerHost} from "@/app/containers/components/container-host-provider.tsx";
 import AppIcon from "@/components/app-icon.tsx";
 import {formatBytes} from "@/app/containers/components/stats/format.ts";
 
 type DockerHostHeaderProps = {
     title?: string
     icon?: string
-    /** Show prune button(s) for these resource scopes */
-    prune?: DockerPruneScope | DockerPruneScope[]
-    /** Called after a successful prune, so the view can reload its own data */
-    onPruned?: () => void
 }
 
 const Stat = ({icon, value, label, className}: { icon: string, value: React.ReactNode, label: string, className?: string }) => (
@@ -39,9 +34,8 @@ const ConnectionToggle = () => {
     );
 };
 
-const DockerHostHeader = ({title, icon, prune, onPruned, children}: PropsWithChildren<DockerHostHeaderProps>) => {
+const DockerHostHeader = ({title, icon, children}: PropsWithChildren<DockerHostHeaderProps>) => {
     const {config, host, info, summary, enabled} = useContainerHost();
-    const pruneScopes = prune ? (Array.isArray(prune) ? prune : [prune]) : [];
 
     const diskUsed = React.useMemo(() => {
         if (!summary) return undefined;
@@ -71,12 +65,9 @@ const DockerHostHeader = ({title, icon, prune, onPruned, children}: PropsWithChi
                         </h2>
                     </div>
                 </div>
-                {(children || pruneScopes.length > 0) && (
+                {children && (
                     <div className="flex flex-wrap items-center gap-2">
                         {children}
-                        {pruneScopes.map((scope) => (
-                            <DockerHostPruneButton key={scope} scope={scope} onPruned={onPruned}/>
-                        ))}
                     </div>
                 )}
             </div>

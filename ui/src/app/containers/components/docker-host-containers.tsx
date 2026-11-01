@@ -157,7 +157,7 @@ const DockerHostContainers = () => {
 
     return (
         <div>
-            <DockerHostHeader title={"Containers"} icon="container" prune="containers" onPruned={() => loadContainers(true)}/>
+            <DockerHostHeader title={"Containers"} icon="container"/>
             {containers === undefined && <div>Loading ...</div>}
             {containers?.length === 0 && <div>No containers running.</div>}
             {Object.entries(groupedData).map(([group, _containers]: [string, any]) => {

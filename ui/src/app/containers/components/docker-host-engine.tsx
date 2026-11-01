@@ -61,7 +61,7 @@ const DockerHostEngine = () => {
 
     return (
         <div className="space-y-4">
-            <DockerHostHeader title={"Engine"} icon="info" prune={["buildcache", "system"]}/>
+            <DockerHostHeader title={"Engine"} icon="info"/>
 
             {!rawInfo && !summary && <p className="text-sm text-muted-foreground">Loading engine info ...</p>}
 
