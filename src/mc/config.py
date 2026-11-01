@@ -36,6 +36,18 @@ def write_config(config: dict, filepath: str):
         print(f"Error writing mc.json: {e}")
 
 
+def merge_deep(config: dict, config2: dict) -> dict:
+    for k, v in config.items():
+        if k in config2:
+            config[k] = merge_deep(v, config2[k])
+        else:
+            config[k] = v
+    for k, v in config2.items():
+        if k not in config:
+            config[k] = v
+    return config
+
+
 def load_config():
     config_dirs = [
         "/etc/mc",
@@ -47,7 +59,7 @@ def load_config():
         if os.path.exists(filepath):
             conf = read_config(filepath)
             if conf is not None:
-                merged_config.update(conf)
+                merged_config = merge_deep(merged_config, conf)
     return merged_config
 
 CONFIG = load_config()
