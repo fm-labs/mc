@@ -121,6 +121,12 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                 <NavLink to={"/containers"}>All containers</NavLink>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton>
+                                <AppIcon icon={"report"}/>
+                                <NavLink to={"/containers/stats"}>Stats</NavLink>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarGroup>
                 <SidebarGroup>

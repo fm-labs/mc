@@ -1,6 +1,7 @@
 import {useSearchParams} from "react-router";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs.tsx";
 import {Button} from "@/components/ui/button.tsx";
+import {toast} from "react-toastify";
 import {useHostsStats} from "@/app/containers/components/stats/use-hosts-stats.ts";
 import {attentionItems} from "@/app/containers/components/stats/insights.ts";
 import OverviewTiles from "@/app/containers/components/stats/overview-tiles.tsx";
@@ -28,7 +29,7 @@ const TABS = ["overview", "health", "storage", "workloads", "hosts"] as const;
 
 // Container stats across all hosts, built only from data cached in this browser session
 const ContainerHostsStats = () => {
-    const {hosts, stats, missing, reload} = useHostsStats();
+    const {hosts, stats, missing, reload, fetchAll, fetching} = useHostsStats();
     const [params, setParams] = useSearchParams();
     const tab = TABS.includes(params.get("tab") as typeof TABS[number]) ? params.get("tab")! : "overview";
 
@@ -38,6 +39,17 @@ const ContainerHostsStats = () => {
 
     const attention = attentionItems(stats).length;
 
+    const onFetchAll = async () => {
+        const {ok, failed} = await fetchAll();
+        if (ok.length === 0 && failed.length === 0) {
+            toast.info("No connected hosts to fetch");
+        } else if (failed.length === 0) {
+            toast.success(`Fetched ${ok.length} host${ok.length > 1 ? "s" : ""}`);
+        } else {
+            toast.error(`Failed to fetch ${failed.map((f) => f.hostId).join(", ")}`);
+        }
+    };
+
     return (
         <div className="space-y-4 p-4">
             <div className="flex items-center justify-between gap-2">
@@ -45,7 +57,13 @@ const ContainerHostsStats = () => {
                     Data cached in this browser session for {stats.length} of {hosts.length} hosts.
                     Open a host to load or refresh its data.
                 </p>
-                <Button variant="outline" size="sm" onClick={reload}>Reload</Button>
+                <div className="flex shrink-0 gap-2">
+                    <Button variant="outline" size="sm" onClick={reload} title="Re-read the browser cache">Reload</Button>
+                    <Button size="sm" onClick={onFetchAll} disabled={fetching}
+                            title="Fetch info and disk usage of all connected hosts from the API">
+                        {fetching ? "Fetching…" : "Fetch all"}
+                    </Button>
+                </div>
             </div>
 
             {stats.length > 0 && (
