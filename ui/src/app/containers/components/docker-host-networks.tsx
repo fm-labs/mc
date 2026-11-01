@@ -59,14 +59,15 @@ const DockerHostNetworks = () => {
         },
     ], []);
 
+    const loadNetworks = React.useCallback(async (force?: boolean) => {
+        const data = await fetchContainerData("networks", force).catch(() => {
+            console.log("Failed to fetch networks")
+            return []
+        })
+        setNetworks(data)
+    }, [fetchContainerData])
+
     React.useEffect(() => {
-        const loadNetworks = async () => {
-            const data = await fetchContainerData("networks").catch(() => {
-                console.log("Failed to fetch networks")
-                return []
-            })
-            setNetworks(data)
-        }
         loadNetworks()
     }, [])
 
@@ -76,7 +77,7 @@ const DockerHostNetworks = () => {
 
     return (
         <div>
-            <DockerHostHeader title={"Networks"}/>
+            <DockerHostHeader title={"Networks"} icon="container-network" prune="networks" onPruned={() => loadNetworks(true)}/>
 
             {!networks || networks?.length === 0 ? (
                 <p>No networks found.</p>

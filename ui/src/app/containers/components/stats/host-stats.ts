@@ -73,7 +73,7 @@ export const sumDisk = (list: (DiskUsage | undefined)[]): DiskUsage =>
         buildCache: acc.buildCache + d.buildCache,
     } : acc, EMPTY_DISK);
 
-const diskUsage = (df: DockerDf): DiskUsage => ({
+export const diskUsage = (df: DockerDf): DiskUsage => ({
     // same as `docker system df`: layers are counted once
     images: size(df.LayersSize) || sum(df.Images, uniqueSize),
     containers: sum(df.Containers, (c) => size(c.SizeRw)),
@@ -81,7 +81,7 @@ const diskUsage = (df: DockerDf): DiskUsage => ({
     buildCache: sum(df.BuildCache?.filter((b) => !b.Shared), (b) => size(b.Size)),
 });
 
-const cleanupStats = (df: DockerDf): NonNullable<HostStats["cleanup"]> => {
+export const cleanupStats = (df: DockerDf): NonNullable<HostStats["cleanup"]> => {
     const unused = df.Images?.filter((i) => !i.Containers);
     return {
         danglingImages: countSize(unused?.filter(isDangling), uniqueSize),

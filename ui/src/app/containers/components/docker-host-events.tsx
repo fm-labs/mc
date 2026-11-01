@@ -12,7 +12,7 @@ const DockerHostEvents = () => {
 
     return (
         <div>
-            <DockerHostHeader title={"Events"}/>
+            <DockerHostHeader title={"Events"} icon="container-events"/>
             {eventStreamUrl && (<EventStreamReader url={eventStreamUrl}
                                                    headers={{"Authorization": "Bearer " + localStorage.getItem("authToken")!}}
                                                    logFormatter={undefined}/>)}

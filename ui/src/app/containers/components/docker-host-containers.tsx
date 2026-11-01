@@ -138,24 +138,23 @@ const DockerHostContainers = () => {
         );
     }, [containers]);
 
-    React.useEffect(() => {
-        setContainers(undefined);
-        fetchContainers().then(setContainers).catch(() => {
+    const loadContainers = React.useCallback((force?: boolean) => {
+        return fetchContainers(force).then(setContainers).catch(() => {
             console.warn("Error fetching containers");
             setContainers([]);
         });
-    }, [config])
+    }, [fetchContainers]);
 
-    if (containers === undefined) {
-        return <div>Loading ...</div>;
-    }
-    if (containers.length === 0) {
-        return <div>No containers running.</div>;
-    }
+    React.useEffect(() => {
+        setContainers(undefined);
+        loadContainers();
+    }, [config])
 
     return (
         <div>
-            <DockerHostHeader title={"Container"}/>
+            <DockerHostHeader title={"Containers"} icon="container" prune="containers" onPruned={() => loadContainers(true)}/>
+            {containers === undefined && <div>Loading ...</div>}
+            {containers?.length === 0 && <div>No containers running.</div>}
             {Object.entries(groupedData).map(([group, _containers]: [string, any]) => {
                 return (<div key={group} className={"mb-2"}>
                     <h3 className={"text-muted-foreground font-bold border-l-4 pl-1"}>

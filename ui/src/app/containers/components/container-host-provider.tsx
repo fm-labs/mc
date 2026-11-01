@@ -7,6 +7,9 @@ import {
     useContainerHosts
 } from "@/app/containers/components/container-hosts-provider.tsx";
 import { Button } from "@/components/ui/button";
+import DockerHostHeader from "@/app/containers/components/docker-host-header.tsx";
+
+export type DockerPruneScope = "system" | "containers" | "images" | "volumes" | "networks" | "buildcache";
 
 type ContainerHostContextConfig = {
     hostId: string,
@@ -23,13 +26,14 @@ type ContainerHostContextType = {
     //containers?: Record<string, any>,
     //images?: Record<string, any>,
     getHostApiEndpointUrl: (path: string) => string,
-    fetchContainerData: (path: string) => Promise<any>,
+    fetchContainerData: (path: string, force?: boolean, ttl?: number) => Promise<any>,
     fetchInfo: (force?: boolean) => Promise<any>,
     fetchSummary: (force?: boolean) => Promise<any>,
     fetchContainers: (force?: boolean) => Promise<any>,
     fetchImages: (force?: boolean) => Promise<any>,
     fetchVolumes: (force?: boolean) => Promise<any>,
     pullImage: (imageName: string) => Promise<void>,
+    pruneResources: (scope: DockerPruneScope) => Promise<Record<string, any>>,
     autorefreshInterval: number,
     setAutoRefreshInterval: (interval: number) => void,
     error?: string | null,
@@ -41,7 +45,11 @@ export const ContainerHostContext = React.createContext<ContainerHostContextType
 export const ContainerHostProvider: React.FC<{
     children: React.ReactNode,
     host: InventoryItem<ContainerHost>
-}> = ({children, host}) => {
+    /** Rendered instead of the default "Not connected" line when the host is disabled */
+    disabledFallback?: React.ReactNode
+    /** Hide the Disconnect button below the content (when the children offer their own toggle) */
+    hideDisconnectButton?: boolean
+}> = ({children, host, disabledFallback, hideDisconnectButton}) => {
     const {api, apiBaseUrl} = useApi()
     const {isHostEnabled, setHostEnabledState} = useContainerHosts()
     const enabled = isHostEnabled(host.name)
@@ -140,6 +148,16 @@ export const ContainerHostProvider: React.FC<{
         }
     }, [config, api, fetchImages, fetchSummary])
 
+    const pruneResources = React.useCallback(async (scope: DockerPruneScope) => {
+        if (!config || config.hostId === undefined || config.hostId === null) {
+            throw new Error("No hostId configured");
+        }
+        const response = await api.get(`/api/containers/${config.hostId}/prune/${scope}`);
+        // Refresh host data so counts and sizes reflect the prune
+        await Promise.allSettled([fetchInfo(true), fetchSummary(true)]);
+        return response;
+    }, [config, api, fetchInfo, fetchSummary])
+
     // const updateAll = React.useCallback(async (force?: boolean) => {
     //     await Promise.all([
     //         //fetchInfo(),
@@ -214,18 +232,20 @@ export const ContainerHostProvider: React.FC<{
             fetchImages,
             fetchVolumes,
             pullImage,
+            pruneResources,
             autorefreshInterval,
             setAutoRefreshInterval,
             error
         }}>
-            {enabled ?
+            {/*enabled ?
                 <>
                     {children}
-                    <div><Button onClick={() => setEnabled(false)}>Disconnect</Button></div>
+                    {!hideDisconnectButton && <div><Button onClick={() => setEnabled(false)}>Disconnect</Button></div>}
                 </>
-                : <div>
+                : disabledFallback ?? <div>
                     {config.hostId}: Not connected <Button onClick={() => setEnabled(true)}>Connect</Button>
-                </div>}
+                </div>*/}
+            {enabled ? children : <DockerHostHeader />}
         </ContainerHostContext.Provider>
     );
 }

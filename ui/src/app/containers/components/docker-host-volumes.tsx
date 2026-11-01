@@ -76,7 +76,7 @@ const DockerHostVolumes = () => {
 
     return (
         <div>
-            <DockerHostHeader title={"Volumes"}/>
+            <DockerHostHeader title={"Volumes"} icon="container-volume" prune="volumes"/>
 
             {!volumes || volumes?.length === 0 ? (
                 <p>No volumes found.</p>
