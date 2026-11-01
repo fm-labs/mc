@@ -12,6 +12,28 @@ import {Button} from "@/components/ui/button.tsx";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "@/components/ui/tabs.tsx";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible.tsx";
 import {useTheme} from "@/context/theme-provider.tsx";
+import DockerHostPruneButton, {PRUNE_SCOPES} from "@/app/containers/components/docker-host-prune-button.tsx";
+import {DockerPruneScope} from "@/app/containers/components/container-host-provider.tsx";
+
+const MAINTENANCE_SCOPES: DockerPruneScope[] = ["containers", "images", "volumes", "networks", "buildcache", "system"];
+
+const MaintenanceSection = () => (
+    <StatsSection title="Maintenance" description="Free up disk space by removing unused resources. Sizes are estimates.">
+        <div className="divide-y">
+            {MAINTENANCE_SCOPES.map((scope) => (
+                <div key={scope} className="flex flex-wrap items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <div className="min-w-0">
+                        <div className={`text-sm font-medium ${scope === "system" ? "text-destructive" : ""}`}>
+                            {PRUNE_SCOPES[scope].label}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{PRUNE_SCOPES[scope].description}</div>
+                    </div>
+                    <DockerHostPruneButton scope={scope}/>
+                </div>
+            ))}
+        </div>
+    </StatsSection>
+);
 
 type Row = [label: string, value: React.ReactNode]
 
@@ -240,6 +262,8 @@ const DockerHostEngine = () => {
                     </StatsSection>
                 </div>
             )}
+
+            {rawInfo && <MaintenanceSection/>}
 
             <Collapsible open={rawOpen} onOpenChange={setRawOpen} className="rounded-lg border bg-card">
                 <CollapsibleTrigger asChild>

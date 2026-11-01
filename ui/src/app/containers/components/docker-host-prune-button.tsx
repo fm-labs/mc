@@ -21,7 +21,7 @@ type PruneScopeMeta = {
     description: string
 }
 
-const PRUNE_SCOPES: Record<DockerPruneScope, PruneScopeMeta> = {
+export const PRUNE_SCOPES: Record<DockerPruneScope, PruneScopeMeta> = {
     containers: {label: "Prune containers", description: "Removes all stopped containers."},
     images: {label: "Prune images", description: "Removes all images not used by any container (like `docker image prune -a`)."},
     volumes: {label: "Prune volumes", description: "Removes all volumes not used by any container. Data in these volumes is lost."},
