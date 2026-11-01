@@ -16,6 +16,7 @@ from starlette.responses import StreamingResponse
 
 from mc import config
 from mc.cache import cached_fn, clear_cache
+from mc.docker.helper import docker_prune
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
 from mc.plugin.containers.manager import ContainerClientsManager
 
@@ -412,6 +413,16 @@ def list_docker_networks(alias: str, client: ContainerClientDep) -> list[dict]:
         return jsonable_encoder(networks)
 
     return cached_fn(f"containers_{alias}_networks", fetch_networks, ttl=CACHE_TTL)()
+
+
+@router.get("/containers/{alias}/prune/{scope}")
+def prune_docker_resources(alias: str,
+                           scope: Literal["system", "containers", "images", "volumes", "networks", "buildcache", "buildx"],
+                           client: ContainerClientDep) -> dict:
+    try:
+        return docker_prune(client, scope)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 _END_OF_STREAM = object()

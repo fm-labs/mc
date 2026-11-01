@@ -6,6 +6,7 @@ from collections.abc import Callable
 from tempfile import mkstemp
 from typing import Any, Literal
 
+from mc.docker.helper import docker_prune
 from mc.util.random_util import generate_random_secret
 
 
@@ -126,6 +127,24 @@ def rpc_self_update(**kwargs) -> dict:
         "status": "success",
         "message": f"Image '{image_name}' pulled successfully. Please restart the server to apply the update.",
     }
+
+
+def rpc_docker_prune(scope: Literal["system", "containers", "images", "volumes", "networks", "buildcache", "buildx"]) -> dict:
+    """
+    Prune a Docker container using the Docker SDK for Python.
+
+    :param scope: The scope of the Docker container to be pruned.
+                (system|containers|images|volumes|networks|buildcache|buildx).
+    :return:
+    """
+    import docker
+
+    client = docker.from_env()
+    try:
+        pruned = docker_prune(client, scope)
+    except Exception as e:
+        return {"error": str(e)}
+    return {"status": "success", "message": f"Docker resources pruned successfully for scope '{scope}'.", "data": pruned}
 
 
 def rpc_container_action(
@@ -270,6 +289,7 @@ RPC_HANDLERS = {
     # "config.get_env": rpc_get_env,
     # docker handlers
     "docker.info": rpc_docker_info,
+    "docker.prune": rpc_docker_prune,
     "docker.container.action": rpc_container_action,
     # swarm handlers
     "docker.swarm.info": rpc_docker_swarm_info,
