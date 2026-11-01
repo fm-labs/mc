@@ -9,7 +9,7 @@ load_dotenv(".env.local")
 
 # Zero-config settings
 API_NAME = "mission-control"
-API_VERSION = "2.2.1"
+API_VERSION = "2.3.0"
 API_PREFIX = "/api"
 DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
 
