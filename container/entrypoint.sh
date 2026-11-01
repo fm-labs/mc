@@ -100,7 +100,7 @@ case $CMD in
 
   #devserver)
   #  echo "Development mode is ON"
-  #  exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app --reload
+  #  exec python -m uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app --reload
   #  ;;
 
   api)
@@ -108,7 +108,7 @@ case $CMD in
     sleep 1 # wait for other services to be ready
     echo "Starting API server: Starting on 0.0.0.0:5000 ..."
     exec python -m uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
-    #exec uv run uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
+    #exec python -m uvicorn --app-dir /app/src --host "0.0.0.0" --port 5000 server:app
     #exec /usr/bin/mc-srv
     ;;
 
@@ -126,15 +126,15 @@ case $CMD in
 #  scan)
 #    echo "Running various inventory scans..."
 #    sleep 60 # wait for other services to be ready
-#    uv run /app/src/hostsping.py
-#    uv run /app/src/hostsfacts.py all
-#    uv run /app/src/hoststunnel.py
+#    python /app/src/hostsping.py
+#    python /app/src/hostsfacts.py all
+#    python /app/src/hoststunnel.py
 #
 #    # continuously run the scans every 5 minutes
 #    while true; do
-#    #  uv run /app/src/hostsping.py
-#    #  uv run /app/src/hostsfacts.py all
-#    #  uv run /app/src/hoststunnel.py
+#    #  python /app/src/hostsping.py
+#    #  python /app/src/hostsfacts.py all
+#    #  python /app/src/hoststunnel.py
 #      sleep 300
 #    done
 #    ;;
@@ -142,13 +142,13 @@ case $CMD in
   celery-worker)
     echo "Starting celery worker..."
     sleep 30 # wait for other services to be ready
-    exec uv run celery --workdir /app/src -A celery_worker.celery worker --loglevel=INFO -E
+    exec python -m celery --workdir /app/src -A celery_worker.celery worker --loglevel=INFO -E
     ;;
 
   celery-flower)
     echo "Starting celery flower..."
     sleep 30 # wait for other services to be ready
-    exec uv run celery --workdir /app/src -A celery_worker.celery flower --loglevel=INFO --basic-auth=${FLOWER_USER_NAME}:${FLOWER_USER_PASSWORD}
+    exec python -m celery --workdir /app/src -A celery_worker.celery flower --loglevel=INFO --basic-auth=${FLOWER_USER_NAME}:${FLOWER_USER_PASSWORD}
     ;;
 
   ssh-agent)
@@ -198,7 +198,7 @@ case $CMD in
     #    chmod 600 /home/app/.ssh/known_hosts
     #
     #    # load all keys from vault
-    #    if ! uv run /app/src/ssh_agent.py ; then
+    #    if ! python /app/src/ssh_agent.py ; then
     #      echo "WARNING! Failed to load SSH keys from vault"
     #      rm -f /tmp/ssh-load-keys-success
     #      touch /tmp/ssh-load-keys-failed
@@ -212,7 +212,7 @@ case $CMD in
 
     # start the hoststunnel process to maintain SSH tunnels
     #echo "Starting hoststunnel process..."
-    #uv run /app/src/hoststunnel.py
+    #python /app/src/hoststunnel.py
 
     # scan for keys and add to agent
     if ! ssh-add-all ; then
@@ -253,14 +253,14 @@ case $CMD in
 
   mcp-server-stdio)
     export MCP_TRANSPORT=stdio
-    exec uv run --directory /app src/mcp_server.py
+    exec python -m --directory /app src/mcp_server.py
     #exec /usr/bin/mc-mcp
     ;;
 
   mcp-server-http)
     export MCP_TRANSPORT=streamable-http
     export MCP_HOST=0.0.0.0
-    exec uv run --directory /app src/mcp_server.py
+    exec python -m --directory /app src/mcp_server.py
     #exec /usr/bin/mc-mcp
     ;;
 

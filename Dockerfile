@@ -1,5 +1,9 @@
+ARG MC_VERSION=v2.3.0
+ARG PYTHON_IMAGE=docker.io/library/python:3.14-alpine
+ARG NODEJS_IMAGE=docker.io/library/node:25-alpine
+
 ## UI Build stage
-FROM docker.io/library/node:25-alpine AS ui-builder
+FROM ${NODEJS_IMAGE} AS ui-builder
 RUN npm install -g pnpm
 WORKDIR /builder
 COPY ui/package.json ui/pnpm-lock.yaml ui/pnpm-workspace.yaml ./
@@ -32,15 +36,33 @@ RUN pnpm run build
 #    bash /builder/build_bin.sh
 
 
-FROM python:3.14-alpine
+FROM ${PYTHON_IMAGE} as app-builder
 
-# Set a non-root user
-RUN addgroup --gid 33333 -S app && \
-    adduser --uid 33333 -S app -G app && \
-    adduser app root # to allow docker socket access
+# Install python dependencies
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_NO_DEV=1
+
+WORKDIR /app
+COPY ./pyproject.toml ./uv.lock /app/
+RUN uv sync --no-cache-dir --no-dev --locked --no-install-project
+
+# Copy the rest of the files
+COPY ./src /app/src
+COPY ./resources /app/resources
+RUN uv sync --no-cache-dir --no-dev --locked --no-editable
 
 
-RUN apk update && apk add --no-cache \
+FROM ${PYTHON_IMAGE} as final
+
+RUN apk update  \
+ && apk upgrade --no-cache \
+ && python -m pip uninstall -y pip setuptools wheel py-urllib 2>/dev/null || true \
+ && rm -rf /usr/local/bin/pip* \
+           /usr/local/lib/python3.*/ensurepip \
+           /root/.cache \
+ && apk add --no-cache \
     file \
     bash \
     openssl \
@@ -56,8 +78,6 @@ RUN apk update && apk add --no-cache \
     docker-compose \
     aws-cli \
     openssh-client \
-    crane \
-    skopeo \
     && rm -rf /var/cache/apk/*
 
 
@@ -76,22 +96,11 @@ RUN apk update && apk add --no-cache \
 # Prepare /home/app/.ssh directory
 #RUN mkdir -p /home/app/.ssh && chown -R app:app /home/app/.ssh && chmod 700 /home/app/.ssh
 
-# Install python dependencies
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_NO_DEV=1
 
 WORKDIR /app
-COPY ./pyproject.toml ./uv.lock /app/
-RUN uv sync --no-cache-dir --no-dev --locked
-
-# Copy the rest of the files
-COPY ./src /app/src
-COPY ./resources /app/resources
+COPY --from=app-builder --chown=app:app /app /app
 
 # UI
-#COPY --from=ui-builder /builder/dist/ /var/www/html/
 COPY --from=ui-builder /builder/dist/ /app/ui
 
 # Binaries
@@ -105,6 +114,11 @@ COPY ./container/nginx/site.ssl.conf /etc/nginx/http.d/ssl.conf
 COPY ./container/supervisord.conf /etc/supervisord.conf
 COPY ./container/supervisor/* /etc/supervisor.d/
 
+# Set a non-root user
+RUN addgroup --gid 33333 -S app && \
+    adduser --uid 33333 -S app -G app && \
+    adduser app root # to allow docker socket access
+    
 # Set file and directory permissions
 RUN mkdir -p /app && \
     chown -R app:app /app && \
@@ -167,7 +181,7 @@ EXPOSE 3443
 LABEL org.opencontainers.image.vendor="fmlabs" \
     org.opencontainers.image.title="mission control 🚀" \
     org.opencontainers.image.description="Container orchestration tool" \
-    org.opencontainers.image.version="v2.3.0" \
+    org.opencontainers.image.version="${MC_VERSION}" \
     org.opencontainers.image.url="https://github.com/fm-labs/mc" \
     org.opencontainers.image.source="https://github.com/fm-labs/mc" \
     org.opencontainers.image.documentation="https://github.com/fm-labs/mc"
