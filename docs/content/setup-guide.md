@@ -51,7 +51,7 @@ Then, on the primary host:
     ```
 - Restart mc
 
-See [Container hosts](./container-hosts.md) for all options.
+See [Container hosts](./developer/container-hosts.md) for all options.
 
 
 
