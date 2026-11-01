@@ -56,6 +56,8 @@ RUN apk update && apk add --no-cache \
     docker-compose \
     aws-cli \
     openssh-client \
+    crane \
+    skopeo \
     && rm -rf /var/cache/apk/*
 
 
