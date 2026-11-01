@@ -51,3 +51,17 @@ export const cached = (key: string, fetchFunction: () => Promise<any>, ttl: numb
         return data;
     });
 };
+
+export type CachedItem<T = any> = {
+    timestamp: number
+    data: T
+}
+
+// Read a cache entry written by `cached()`, without fetching and ignoring the TTL.
+export const readCached = <T = any>(key: string): CachedItem<T> | null => {
+    const item = readDataFromLocalSessionStorage(key);
+    if (item && typeof item === "object" && "data" in item) {
+        return item as CachedItem<T>;
+    }
+    return null;
+};
