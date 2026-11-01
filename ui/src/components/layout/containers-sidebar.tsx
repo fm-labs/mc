@@ -1,5 +1,5 @@
 import * as React from "react"
-import {GalleryVerticalEnd, Minus, PlugIcon, PlugZap, PlugZapIcon, Plus} from "lucide-react"
+import {Minus, Plus} from "lucide-react"
 
 import {
     Collapsible,
@@ -19,7 +19,7 @@ import {
     SidebarRail,
 } from "@/components/ui/sidebar"
 import AppIcon from "@/components/app-icon.tsx";
-import {NavLink} from "react-router";
+import {NavLink, useNavigate} from "react-router";
 import {useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
 import {NavUser} from "@/components/layout/nav-user.tsx";
 import {navigationData} from "@/components/layout/data/app-navigation-data.ts";
@@ -37,8 +37,19 @@ type ContainerNavItem = NavItem & {
     isConnected?: boolean
 }
 
+// Icon color for connected hosts, per engine
+const ENGINE_COLORS: Record<string, string> = {
+    "docker": "text-[#2496ED]",
+    "container-host": "text-[#2496ED]",
+    "podman": "text-[#892CA0] dark:text-[#B36BD1]",
+    "node": "text-emerald-600 dark:text-emerald-400",
+}
+const engineColor = (icon?: React.ReactNode | string) =>
+    (typeof icon === "string" && ENGINE_COLORS[icon]) || "text-green-600 dark:text-green-400"
+
 export function ContainersSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     const {hosts, isHostEnabled} = useContainerHosts()
+    const navigate = useNavigate()
 
     const navContainers: ContainerNavItem[] = React.useMemo(() => {
 
@@ -146,13 +157,14 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                             >
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger asChild>
-                                        <SidebarMenuButton>
-                                            <div className={"flex items-center gap-2"}>
-                                                <AppIcon icon={item?.icon}/>
-                                                {item.title}{" "}
-                                                {item?.isConnected &&
-                                                    <span className={"text-green-500"} title={"Connected"}><PlugZapIcon
-                                                        size={"1em"}/></span>}
+                                        <SidebarMenuButton onClick={() => navigate(item.url + '/container')}>
+                                            <div className={`flex min-w-0 items-center gap-2 ${item.isConnected ? "" : "text-muted-foreground"}`}
+                                                 title={item.isConnected ? "Connected" : "Not connected"}>
+                                                <AppIcon icon={item?.icon}
+                                                         className={`shrink-0 ${item.isConnected ? engineColor(item.icon) : "opacity-60"}`}/>
+                                                <span className={`truncate ${item.isConnected ? "font-medium" : ""}`}>{item.title}</span>
+                                                {item.isConnected &&
+                                                    <span className="size-1.5 shrink-0 rounded-full bg-green-500" aria-label="Connected"/>}
                                             </div>
                                             <Plus className="ml-auto group-data-[state=open]/collapsible:hidden"/>
                                             <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden"/>
