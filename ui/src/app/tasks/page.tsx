@@ -37,7 +37,7 @@ const TasksPage = () => {
 
     const handleSubmitToolAction = (_options?: any) => async () => {
         try {
-            const response = await api.submitToolAction("ping", "_", { host: "localhost" });
+            const response = await api.execTool("ping", { host: "localhost" });
             console.log("Tool action submitted successfully:", response);
         } catch (error) {
             console.error("Error submitting tool action:", error);

@@ -155,14 +155,66 @@ export const buildApiClient = (baseURL: string) => {
 
 /////////// Tools //////////////
 
-    const getToolList = async (config?: AxiosRequestConfig): Promise<any> => {
-        const response = await apiHttpClient.get(`api/tools/`, config);
+    const getToolList = async (config?: AxiosRequestConfig): Promise<Tool[]> => {
+        const response = await apiHttpClient.get<ToolIndex>(`api/tools`, config);
+        return Object.values(response.data || {});
+    };
+
+    const getTool = async (tool_name: string, config?: AxiosRequestConfig): Promise<Tool> => {
+        const response = await apiHttpClient.get(`api/tools/${tool_name}`, config);
         return response.data;
     };
 
-    const submitToolAction = async (tool_name: string, command_name: string, command_args?: any, config?: AxiosRequestConfig): Promise<any> => {
-        const response = await apiHttpClient.post(`api/tools/${tool_name}/${command_name}`, command_args || {}, config);
+    const execTool = async (tool_name: string, params?: any, config?: AxiosRequestConfig): Promise<ToolExecResult> => {
+        const response = await apiHttpClient.post(`api/tools/${tool_name}`, params || {}, config);
         return response.data;
+    };
+
+    /**
+     * Run a tool and stream its output (ndjson). Resolves when the stream ends.
+     */
+    const execToolStream = async (
+        tool_name: string,
+        params: any,
+        onEvent: (event: ToolStreamEvent) => void,
+        signal?: AbortSignal,
+    ): Promise<void> => {
+        const token = localStorage.getItem("authToken");
+        const url = new URL(`api/tools/${tool_name}/stream?format=json`, new URL(baseURL, window.location.href));
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Accept": "application/x-ndjson",
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify(params || {}),
+            signal,
+        });
+        if (!response.ok || !response.body) {
+            throw new Error(`Stream failed: ${response.status} ${response.statusText}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+        const emit = (line: string) => {
+            if (!line.trim()) return;
+            try {
+                onEvent(JSON.parse(line));
+            } catch {
+                onEvent({ event: "STDOUT", data: line });
+            }
+        };
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            lines.forEach(emit);
+        }
+        emit(buffer + decoder.decode());
     };
 
     return {
@@ -193,7 +245,9 @@ export const buildApiClient = (baseURL: string) => {
         getCeleryTaskStatus,
         // Tools
         getToolList,
-        submitToolAction,
+        getTool,
+        execTool,
+        execToolStream,
     };
 
 

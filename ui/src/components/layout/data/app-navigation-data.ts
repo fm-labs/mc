@@ -110,11 +110,11 @@ export const navigationData: AppNavigationData = {
             //icon: IconDashboard,
             iconName: "xterm",
         },
-        // {
-        //     title: "Tools",
-        //     url: "/admin/tools",
-        //     //icon: IconTool,
-        //     iconName: "tool",
-        // },
+        {
+            title: "Tools",
+            url: "/admin/tools",
+            //icon: IconTool,
+            iconName: "tool",
+        },
     ],
 };

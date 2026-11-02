@@ -1,11 +1,15 @@
 import React, { useState } from "react";
 import { RJSFSchema } from "@rjsf/utils";
+import { IconLoader2, IconPlayerPlay, IconSend } from "@tabler/icons-react";
 import { useRpcCommand } from "@/app/rpc/components/rpc-command-provider.tsx";
-import Header from "@/components/header.tsx";
 import { toast } from "sonner";
 import ReactJson from "@microlink/react-json-view";
 import MyForm from "@/components/rjsf/my-form.tsx";
-import {useApi} from "@/context/api-context.tsx";
+import { useApi } from "@/context/api-context.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 
 const generateJsonRpcRequestId = () => {
     return (new Date().getTime() * 1000).toString();
@@ -30,43 +34,45 @@ type JsonRpcResponse = {
     id?: string;
 }
 
+const JsonBlock = ({ label, src }: { label: string, src: object }) => (
+    <div className="space-y-1">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+        <div className="max-h-[28rem] overflow-auto rounded-md bg-white p-3 text-xs">
+            <ReactJson src={src}
+                       name={false}
+                       enableClipboard={true}
+                       displayArrayKey={false} displayObjectSize={false} displayDataTypes={false} />
+        </div>
+    </div>
+);
 
 const RpcCommand = () => {
     const { command } = useRpcCommand();
     const { api } = useApi();
 
-    //const initialFormData = {}
-    //const [formData, setFormData] = useState<RJSFSchema>(initialFormData);
-
     const [jsonRpcRequest, setJsonRpcRequest] = useState<JsonRpcRequest>();
     const [jsonRpcResponse, setJsonRpcResponse] = useState<JsonRpcResponse>();
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-    const formId: string = React.useMemo(() => {
-        return `rpc-action-form-${command.method}`;
-    }, [command]);
+    const isNotification = command?.type === "notification";
+    const formId = `rpc-action-form-${command.method}`;
 
-    const jsonSchema: RJSFSchema = React.useMemo(() => {
-        return command?.inputSchema || {};
-    }, [command]);
-
-    const uiSchema: any = React.useMemo(() => {
-        return command?.uiSchema || {};
-    }, [command]);
+    const jsonSchema: RJSFSchema = React.useMemo(() => command?.inputSchema || {}, [command]);
+    const uiSchema: any = React.useMemo(() => command?.uiSchema || {}, [command]);
+    const hasParams = !!jsonSchema?.properties && Object.keys(jsonSchema.properties).length > 0;
 
     const handleSubmit = async (data: any): Promise<void> => {
-        console.log("handleSubmit", data.formData);
         const jsonRpcReq: JsonRpcRequest = {
             "jsonrpc": "2.0",
             "method": command.method,
             "params": data.formData,
-            "id": command?.type==="notification" ? undefined:generateJsonRpcRequestId(),
+            "id": isNotification ? undefined : generateJsonRpcRequestId(),
         };
         setJsonRpcRequest(jsonRpcReq);
-        setIsSubmitting(true)
+        setJsonRpcResponse(undefined);
+        setIsSubmitting(true);
         api.post("/api/rpc", jsonRpcReq, {timeout: 120000}).then((response: JsonRpcResponse) => {
-            console.log("JSON RPC RESPONSE", response);
-            if (command?.type==="notification") {
+            if (isNotification) {
                 toast.success("Notification successfully sent.");
             } else {
                 if (response?.error) {
@@ -80,59 +86,59 @@ const RpcCommand = () => {
             toast.error(error?.message || "Something went wrong");
         }).finally(() => {
             setIsSubmitting(false);
-        })
+        });
     };
 
-    // const handleChange = async ({ formData }: any): Promise<void> => {
-    //     console.log("handleChange", formData);
-    //     setFormData(formData)
-    // }
-
-    React.useEffect(() => {
-        setJsonRpcRequest(undefined);
-        setJsonRpcResponse(undefined);
-    }, [command]);
-
     return (
-        <div>
-            <Header title={command.method}
-                    subtitle={command?.description || "No description available"}>
-                {command?.type === "notification" && <span className={"badge badge-secondary"}>Notification</span>}
-            </Header>
-            <MyForm schema={jsonSchema}
-                    uiSchema={uiSchema}
-                    id={formId}
-                //validator={validator}
-                //onChange={handleChange}
-                    onSubmit={handleSubmit}
-                //showErrorList={"top"}
-                //formData={formData}
-                //noValidate={true}
-            ></MyForm>
-            {/*<div className={"my-4 flex justify-end"}>
-                <Button form={formId} type="submit">
-                    Submit
-                </Button>
-            </div>*/}
+        <div className="flex min-w-0 flex-col gap-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                        <span className="font-mono">{command.method}</span>
+                        <Badge variant="outline" className="text-xs">{isNotification ? "notification" : "action"}</Badge>
+                    </CardTitle>
+                    <CardDescription>{command?.description || "No description available"}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Separator />
+                    {!hasParams && (
+                        <p className="text-sm text-muted-foreground">This command takes no parameters.</p>
+                    )}
+                    <MyForm schema={jsonSchema}
+                            uiSchema={uiSchema}
+                            id={formId}
+                            onSubmit={handleSubmit}>
+                        <div className="flex flex-wrap gap-2 pt-2">
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting
+                                    ? <IconLoader2 size={16} className="animate-spin" />
+                                    : isNotification ? <IconSend size={16} /> : <IconPlayerPlay size={16} />}
+                                {isSubmitting ? "Executing..." : isNotification ? "Send" : "Execute"}
+                            </Button>
+                        </div>
+                    </MyForm>
+                </CardContent>
+            </Card>
 
-            {isSubmitting && <div className={"my-4"}>
-                <span className={"loading loading-spinner"}></span>
-                <span className={"ml-2"}>Executing command...</span>
-            </div>}
-            <div className={"bg-white flex flex-col gap-4 rounded-md"}>
-                {jsonRpcRequest && <div>
-                    <h3>JSON RPC Request</h3>
-                    <ReactJson src={jsonRpcRequest}
-                               enableClipboard={true}
-                               displayArrayKey={false} displayObjectSize={false} displayDataTypes={false} />
-                </div>}
-                {jsonRpcResponse && <div>
-                    <h3>JSON RPC Response</h3>
-                    <ReactJson src={jsonRpcResponse}
-                               enableClipboard={true}
-                               displayArrayKey={false} displayObjectSize={false} displayDataTypes={false} />
-                </div>}
-            </div>
+            {(jsonRpcRequest || jsonRpcResponse) && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            Result
+                            {jsonRpcResponse && (
+                                <Badge variant={jsonRpcResponse.error ? "destructive" : "default"}>
+                                    {jsonRpcResponse.error ? `error ${jsonRpcResponse.error.code}` : "ok"}
+                                </Badge>
+                            )}
+                            {isSubmitting && <Badge variant="outline" className="animate-pulse">running</Badge>}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {jsonRpcRequest && <JsonBlock label="Request" src={jsonRpcRequest} />}
+                        {jsonRpcResponse && <JsonBlock label="Response" src={jsonRpcResponse} />}
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 };

@@ -1,38 +1,29 @@
 import React from "react";
+import { IconBolt, IconBell, IconTerminal } from "@tabler/icons-react";
 import MainContent from "@/components/layout/main-content.tsx";
-import {useState} from "react";
-import {RpcCommandDef, RpcCommandProvider} from "@/app/rpc/components/rpc-command-provider.tsx";
-import {
-    Select,
-    SelectContent,
-    SelectGroup, SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select.tsx";
+import { DetailEmpty, ListDetailLayout, SearchableList } from "@/components/layout/list-detail-layout.tsx";
+import { RpcCommandDef, RpcCommandProvider } from "@/app/rpc/components/rpc-command-provider.tsx";
 import RpcCommand from "@/app/rpc/components/rpc-command.tsx";
-import {useApi} from "@/context/api-context.tsx";
+import { useApi } from "@/context/api-context.tsx";
+import { useSelectedSearchParam } from "@/hooks/use-selected-search-param.ts";
 import Header from "@/components/header.tsx";
-import SectionCard from "@/components/section-card.tsx";
 
 
 const RpcPage = () => {
-    const {api} = useApi();
+    const { api } = useApi();
 
-    //const commands = rpcCommands as RpcCommandDef[];
-    const [commands, setCommands] = useState<RpcCommandDef[]>([]);
-    const [rpcCommand, setRpcCommand] = useState<RpcCommandDef>()
+    const [commands, setCommands] = React.useState<RpcCommandDef[]>([]);
+    const [selectedMethod, setSelectedMethod] = useSelectedSearchParam("method");
 
-    const handleSelectChange = (selected: string) => {
-        const selectedCommand = commands.find((c) => c.method === selected);
-        setRpcCommand(selectedCommand);
-    }
+    const rpcCommand = React.useMemo(
+        () => commands.find((c) => c.method === selectedMethod),
+        [commands, selectedMethod],
+    );
 
     const fetchCommands = React.useCallback(async () => {
         try {
             const response = await api.get("/api/rpc");
-            console.log("Fetched RPC commands:", response);
-            setCommands(response);
+            setCommands(response || []);
         } catch (error) {
             console.error("Failed to fetch RPC commands:", error);
         }
@@ -42,42 +33,30 @@ const RpcPage = () => {
         fetchCommands();
     }, [fetchCommands]);
 
-    return (
-        <>
-            <MainContent>
-                <div>
-                    <Header title={"Admin RPC"} subtitle={'Run admin RPC commands against your server.'}/>
-                    <p className="mb-4 text-muted-foreground">
-                        Select a command from the dropdown.
-                    </p>
-                </div>
+    const items = React.useMemo(() => commands.map((command) => ({
+        id: command.method,
+        title: command.method,
+        subtitle: command.description,
+        icon: command.type === "notification" ? <IconBell size={16} /> : <IconBolt size={16} />,
+    })), [commands]);
 
-                <SectionCard title={"Execute RPC Command"}>
-                    <div>
-                        <Select onValueChange={handleSelectChange}>
-                            <SelectTrigger className="w-[180px]">
-                                <SelectValue placeholder="Select a command"/>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectGroup>
-                                    <SelectLabel>Available commands</SelectLabel>
-                                    {commands.map((command) => (
-                                        <SelectItem key={command.method}
-                                                    value={command.method}>{command.method}</SelectItem>
-                                    ))}
-                                </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div>
-                        {rpcCommand && <RpcCommandProvider command={rpcCommand}>
-                            <hr className={"my-4"}/>
-                            <RpcCommand/>
-                        </RpcCommandProvider>}
-                    </div>
-                </SectionCard>
-            </MainContent>
-        </>
+    return (
+        <MainContent>
+            <Header title={"Admin RPC"} subtitle={"Run admin RPC commands against your server."} />
+
+            <ListDetailLayout
+                list={<SearchableList items={items} selectedId={selectedMethod} onSelect={setSelectedMethod} noun="commands" />}
+            >
+                {rpcCommand
+                    // key resets form/result state when switching commands
+                    ? <RpcCommandProvider key={rpcCommand.method} command={rpcCommand}>
+                        <RpcCommand />
+                    </RpcCommandProvider>
+                    : <DetailEmpty icon={<IconTerminal size={32} stroke={1.5} />}>
+                        Select a command from the list to see its parameters and run it.
+                    </DetailEmpty>}
+            </ListDetailLayout>
+        </MainContent>
     );
 };
 
