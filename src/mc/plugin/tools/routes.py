@@ -1,42 +1,86 @@
-from typing import Annotated
+import json
+from typing import Annotated, Literal, AsyncGenerator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.params import Body
+from starlette.requests import Request
+from starlette.responses import StreamingResponse
 
-from mc.plugin.tools.tasks import task_tool_exec
-from mc.plugin.tools.toolindex import get_tool_def, get_tool_index
+from mc.plugin.tools.toolindex import get_tool_spec, enumerate_tools, ToolSpec, get_tool_instance, CmdTool
+from mc.server.stream_helper import starlette_subprocess_stream, sse_event, streaming_response
 
 router = APIRouter()
 
 
 @router.get("/tools")
-async def list_tools():
+async def tools_list():
     """
     List tools.
     """
-    return get_tool_index()
+    try:
+        return enumerate_tools()
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/tools/{tool_name}")
-async def get_tool(tool_name: str):
+async def tools_get_spec(tool_name: str) -> ToolSpec:
     """
     Get tool details with list of commands.
     """
-    tool = get_tool_def(tool_name)
+    tool_spec = get_tool_spec(tool_name)
+    if not tool_spec:
+        raise HTTPException(status_code=404, detail="Tool not found.")
+    return tool_spec
+
+
+@router.post("/tools/{tool_name}")
+async def tools_exec(tool_name: str, params: Annotated[dict, Body()]):
+    """
+    Execute command
+
+    :param tool_name: tool name
+    :param params: parameters for the tool
+    :return: result of the tool execution
+    """
+    tool = get_tool_instance(tool_name)
     if not tool:
-        return {"error": f"Tool '{tool_name}' not found."}
-    return tool
+        raise HTTPException(status_code=404, detail="Tool not found.")
+
+    try:
+        result = tool.execute(params=params)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.post("/tools/{tool_name}/{command_name}")
-async def submit_tool_command(tool_name: str, command_name: str, args: Annotated[dict, Body()] = None):
-    if args is None:
-        args = {}
-    tool = get_tool_def(tool_name)
+@router.post("/tools/{tool_name}/stream")
+async def stream_cmd(request: Request, tool_name: str, format: Literal["sse", "json"] = "json") -> StreamingResponse:
+    """
+    Stream command execution
+
+    :param request: the webserver request object
+    :param tool_name: tool name
+    :param format: format of the output (json or sse)
+    :return: streaming response
+    """
+    tool = get_tool_instance(tool_name)
     if not tool:
-        return {"error": f"Tool '{tool_name}' not found."}
-    if command_name not in tool.get("commands", {}):
-        return {"error": f"Command '{command_name}' not found in tool '{tool_name}'."}
+        raise HTTPException(status_code=404, detail="Tool not found.")
+    if not isinstance(tool, CmdTool):
+        raise HTTPException(status_code=400, detail="Invalid tool type.")
 
-    result = task_tool_exec(tool_name, command_name, **args)
-    return result
+    cmd = tool.cmd
+    env = tool.env
+
+    async def _stream_process_async() -> AsyncGenerator[str]:
+        async for line in starlette_subprocess_stream(cmd, env=env, request=request):
+            split = line.split(":", 1)
+            if len(split) < 2:
+                print("WARN: Unknown subprocess stream output: ", line)
+                continue
+            if format == "sse":
+                yield sse_event(event=split[0], data=split[1])
+            yield json.dumps({"event": split[0], "data": split[1]})
+
+    return streaming_response(generator=_stream_process_async(), format=format)
