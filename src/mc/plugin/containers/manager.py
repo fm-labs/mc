@@ -7,7 +7,9 @@ from typing import Any
 
 from docker import DockerClient
 from podman import PodmanClient
+from pydantic import BaseModel
 
+from mc import config
 from mc.plugin.containers.node_client import NodeConfig, NodeContainerClient, parse_node_configs
 
 ContainerClient = PodmanClient | DockerClient | NodeContainerClient
@@ -183,3 +185,77 @@ def bootstrap_ccm_from_config(ccm: ContainerClientsManager, mc_config: dict[str,
 
 # best-effort cleanup if the process exits without FastAPI shutdown
 # atexit.register(lambda: asyncio.run(init_container_connection_manager().close_all()))
+
+
+
+class ContainerHostProperties(BaseModel):
+    engine: str
+    url: str
+    autoconnect: bool
+
+
+class ContainerHost(BaseModel):
+    id: str
+    name: str
+    connected: bool
+    properties: ContainerHostProperties
+
+
+CONTAINER_HOSTS: list[ContainerHost] | None = None
+
+def enumerate_container_hosts():
+    global CONTAINER_HOSTS
+    if CONTAINER_HOSTS is None:
+        CONTAINER_HOSTS = parse_docker_hosts_config(config.CONFIG)
+    return CONTAINER_HOSTS
+
+
+def parse_docker_hosts_config(mc_config: dict) -> list[ContainerHost]:
+    """
+    List the hosts from the "docker_hosts" config section, plus the localhost fallback.
+    A host is "connected" if its client was created already (clients are created on first use, see deps.py).
+    """
+    docker_hosts = mc_config.get("docker_hosts") or {}
+    if not isinstance(docker_hosts, dict):
+        docker_hosts = {}
+
+    #def is_connected(name: str) -> bool:
+    #    return manager is not None and manager.get(name) is not None
+
+    hosts: list[ContainerHost] = []
+
+    # localhost fallback
+    if "localhost" not in docker_hosts:
+        hosts.append(
+            ContainerHost(
+                id="localhost",
+                name="localhost",
+                connected=True, # deprecated
+                properties=ContainerHostProperties(
+                    engine="docker", url="unix:///var/run/docker.sock", autoconnect=False
+                ),
+            )
+        )
+
+    for name, entry in docker_hosts.items():
+        if not isinstance(entry, dict) or not entry.get("url"):
+            logger.warning(f"Container host '{name}' has no URL, skipping")
+            continue
+        url = entry["url"]
+        engine = "docker"
+        if "+" in url:
+            engine, url = url.split("+", 1)
+
+        hosts.append(
+            ContainerHost(
+                id=name,
+                name=name,
+                connected=True, # deprecated
+                properties=ContainerHostProperties(
+                    engine=engine, url=url, autoconnect=bool(entry.get("autoconnect", False))
+                ),
+            )
+        )
+
+    return hosts
+

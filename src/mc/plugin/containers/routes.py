@@ -14,11 +14,10 @@ from starlette.concurrency import iterate_in_threadpool, run_in_threadpool
 from starlette.requests import ClientDisconnect, Request
 from starlette.responses import StreamingResponse
 
-from mc import config
 from mc.cache import cached_fn, clear_cache
 from mc.docker.helper import docker_prune
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
-from mc.plugin.containers.manager import ContainerClientsManager
+from mc.plugin.containers.manager import ContainerHost, enumerate_container_hosts
 from mc.rpc import PruneScopeLiteral
 
 router = APIRouter()
@@ -32,76 +31,13 @@ class CommandExecRequest(BaseModel):
     command: str
 
 
-class ContainerHostProperties(BaseModel):
-    engine: str
-    url: str
-    autoconnect: bool
-
-
-class ContainerHost(BaseModel):
-    id: str
-    name: str
-    connected: bool
-    properties: ContainerHostProperties
-
-
-def parse_docker_hosts_config(mc_config: dict, manager: ContainerClientsManager | None = None) -> list[ContainerHost]:
-    """
-    List the hosts from the "docker_hosts" config section, plus the localhost fallback.
-    A host is "connected" if its client was created already (clients are created on first use, see deps.py).
-    """
-    docker_hosts = mc_config.get("docker_hosts") or {}
-    if not isinstance(docker_hosts, dict):
-        docker_hosts = {}
-
-    def is_connected(name: str) -> bool:
-        return manager is not None and manager.get(name) is not None
-
-    hosts: list[ContainerHost] = []
-
-    # localhost fallback
-    if "localhost" not in docker_hosts:
-        hosts.append(
-            ContainerHost(
-                id="localhost",
-                name="localhost",
-                connected=is_connected("localhost"),
-                properties=ContainerHostProperties(
-                    engine="docker", url="unix:///var/run/docker.sock", autoconnect=False
-                ),
-            )
-        )
-
-    for name, entry in docker_hosts.items():
-        if not isinstance(entry, dict) or not entry.get("url"):
-            logger.warning(f"Container host '{name}' has no URL, skipping")
-            continue
-        url = entry["url"]
-        engine = "docker"
-        if "+" in url:
-            engine, url = url.split("+", 1)
-
-        hosts.append(
-            ContainerHost(
-                id=name,
-                name=name,
-                connected=is_connected(name),
-                properties=ContainerHostProperties(
-                    engine=engine, url=url, autoconnect=bool(entry.get("autoconnect", False))
-                ),
-            )
-        )
-
-    return hosts
-
-
 @router.get("/containers/hosts")
-def get_container_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
-    return parse_docker_hosts_config(config.CONFIG, manager)
+def get_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
+    return enumerate_container_hosts()
 
 
 @router.get("/containers/{alias}/version")
-def get_docker_version(alias: str, client: ContainerClientDep) -> dict:
+def get_engine_version(alias: str, client: ContainerClientDep) -> dict:
     def fetch_version():
         version_info = client.version()
         return jsonable_encoder(version_info)
@@ -113,7 +49,7 @@ def get_docker_version(alias: str, client: ContainerClientDep) -> dict:
 
 
 @router.get("/containers/{alias}/info")
-def get_docker_info(alias: str, client: ContainerClientDep) -> dict:
+def get_engine_info(alias: str, client: ContainerClientDep) -> dict:
     def fetch_info():
         _info = client.info()
         return jsonable_encoder(_info)
@@ -125,7 +61,7 @@ def get_docker_info(alias: str, client: ContainerClientDep) -> dict:
 
 
 @router.get("/containers/{alias}/df")
-def get_docker_df(alias: str, client: ContainerClientDep) -> dict:
+def get_engine_df(alias: str, client: ContainerClientDep) -> dict:
     def fetch_df():
         summary = client.df()
         return jsonable_encoder(summary)
@@ -137,7 +73,7 @@ def get_docker_df(alias: str, client: ContainerClientDep) -> dict:
 
 
 @router.get("/containers/{alias}/containers")
-def list_docker_containers(alias: str, client: ContainerClientDep) -> list[dict]:
+def list_containers(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_containers():
         collection = client.containers.list(all=True, filters={"status": ["running", "exited", "created", "paused"]})
         print("Containers", collection)
@@ -153,7 +89,7 @@ def list_docker_containers(alias: str, client: ContainerClientDep) -> list[dict]
 
 
 @router.get("/containers/{alias}/containers/{container_id}")
-def get_docker_container(alias: str, container_id: str, client: ContainerClientDep) -> dict:
+def get_container(alias: str, container_id: str, client: ContainerClientDep) -> dict:
     def fetch_container():
         _container: Container = client.containers.get(container_id)
         return jsonable_encoder(_container.attrs)
@@ -165,7 +101,7 @@ def get_docker_container(alias: str, container_id: str, client: ContainerClientD
 
 
 @router.post("/containers/{alias}/containers/{container_id}/actions/{action}")
-def post_docker_container_action(alias: str, container_id: str, action: str, client: ContainerClientDep) -> dict:
+def post_container_action(alias: str, container_id: str, action: str, client: ContainerClientDep) -> dict:
     container: Container = client.containers.get(container_id)
     try:
         if action == "start":
@@ -205,7 +141,7 @@ def post_docker_container_action(alias: str, container_id: str, action: str, cli
 
 
 @router.post("/containers/{alias}/containers/{container_id}/exec")
-def post_docker_container_exec(
+def post_container_exec(
     alias: str,
     container_id: Annotated[str, Path()],
     exec_req: CommandExecRequest,
@@ -229,7 +165,7 @@ def post_docker_container_exec(
 
 
 @router.get("/containers/{alias}/containers/{container_id}/top")
-def get_docker_container_top(
+def get_container_top(
     alias: str,
     container_id: str,
     client: ContainerClientDep,
@@ -251,36 +187,38 @@ def get_docker_container_top(
 
 
 @router.get("/containers/{alias}/containers/{container_id}/logs")
-def get_docker_container_logs(
+def get_container_logs(
     alias: str,
     container_id: str,
     client: ContainerClientDep,
-    since: Annotated[int, Query()] = None,
-    until: Annotated[int, Query()] = None,
-    tail: Annotated[int, Query()] = 1000,
+    since: Annotated[int, Query()] = 0,
+    until: Annotated[int, Query()] = 0,
+    tail: Annotated[int, Query()] = 100,
 ) -> dict:
     container: Container = client.containers.get(container_id)
 
     kwargs = {}
-    if since:
+    tail = min(tail, 1000)
+    kwargs["tail"] = tail
+
+    if since > 0:
         kwargs["since"] = since
-    if until:
+    if until > 0:
         kwargs["until"] = until
-    if tail:
-        kwargs["tail"] = tail
+
     logs = container.logs(**kwargs).decode("utf-8").splitlines()
     return {"container_id": container_id, "logs": logs}
 
 
 @router.get("/containers/{alias}/containers/{container_id}/logs/stream")
-def stream_docker_container_logs(
+def stream_container_logs(
     request: Request,
     alias: str,
     container_id: str,
     client: ContainerClientDep,
-    since: Annotated[int, Query()] = None,
-    until: Annotated[int, Query()] = None,
-    tail: Annotated[int, Query()] = 1000,
+    since: Annotated[int, Query()] = 0,
+    until: Annotated[int, Query()] = 0,
+    tail: Annotated[int, Query()] = 100,
     follow: Annotated[bool, Query()] = True,
     format: Annotated[Literal["sse", "json"], Query()] = "json",
 ) -> StreamingResponse:
@@ -295,12 +233,13 @@ def stream_docker_container_logs(
         "stream": True,
         "follow": follow,
     }
-    if since:
+    tail = min(tail, 1000)
+    kwargs["tail"] = tail
+
+    if since > 0:
         kwargs["since"] = since
-    if until:
+    if until > 0:
         kwargs["until"] = until
-    if tail:
-        kwargs["tail"] = tail
 
     # get log stream (blocking iterator)
     print(f"Opening log stream, container_id={container_id} follow={follow}")
@@ -366,7 +305,7 @@ def stream_docker_container_logs(
 
 
 @router.get("/containers/{alias}/images")
-def list_docker_images(alias: str, client: ContainerClientDep) -> list[dict]:
+def list_images(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_images():
         collection = client.images.list()
         print("Images", collection)
@@ -379,7 +318,7 @@ def list_docker_images(alias: str, client: ContainerClientDep) -> list[dict]:
 
 
 @router.get("/containers/{alias}/images/{image_id}")
-def get_docker_image(alias: str, image_id: str, client: ContainerClientDep) -> dict:
+def get_image(alias: str, image_id: str, client: ContainerClientDep) -> dict:
     def fetch_image_details():
         image = client.images.get(image_id)
         return jsonable_encoder(image.attrs)
@@ -392,7 +331,7 @@ class PullImageRequest(BaseModel):
 
 
 @router.post("/containers/{alias}/images/pull")
-def pull_docker_image(alias: str, body: PullImageRequest, client: ContainerClientDep) -> dict:
+def pull_image(alias: str, body: PullImageRequest, client: ContainerClientDep) -> dict:
     try:
         # todo - this can take a long time, make it async and stream progress
         pulled_image = client.images.pull(body.image)
@@ -404,7 +343,7 @@ def pull_docker_image(alias: str, body: PullImageRequest, client: ContainerClien
 
 
 @router.get("/containers/{alias}/volumes")
-def list_docker_volumes(alias: str, client: ContainerClientDep) -> list[dict]:
+def list_volumes(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_volumes():
         collection = client.volumes.list()
         print("Volumes", collection)
@@ -417,7 +356,7 @@ def list_docker_volumes(alias: str, client: ContainerClientDep) -> list[dict]:
 
 
 @router.get("/containers/{alias}/volumes/{volume_id}")
-def get_docker_volume(alias: str, volume_id: str, client: ContainerClientDep) -> dict:
+def get_volume(alias: str, volume_id: str, client: ContainerClientDep) -> dict:
     def fetch_volume_details():
         volume = client.volumes.get(volume_id)
         return jsonable_encoder(volume.attrs)
@@ -426,7 +365,7 @@ def get_docker_volume(alias: str, volume_id: str, client: ContainerClientDep) ->
 
 
 @router.get("/containers/{alias}/networks")
-def list_docker_networks(alias: str, client: ContainerClientDep) -> list[dict]:
+def list_networks(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_networks():
         collection = client.networks.list()
         print("Networks", collection)
@@ -451,7 +390,7 @@ _PRUNE_CACHE_KEYS: dict[str, list[str]] = {
 
 
 @router.get("/containers/{alias}/prune/{scope}")
-def prune_docker_resources(alias: str,
+def prune_resources(alias: str,
                            scope: PruneScopeLiteral,
                            client: ContainerClientDep) -> dict:
     try:
@@ -487,7 +426,7 @@ def _close_event_stream(event_stream: Any) -> None:
 
 
 @router.get("/containers/{alias}/events/stream")
-async def stream_docker_events(request: Request, alias: str, client: ContainerClientDep) -> StreamingResponse:
+async def stream_events(request: Request, alias: str, client: ContainerClientDep) -> StreamingResponse:
     # opening the stream is a blocking request to the host, so it must not run on the event loop:
     # that would stall every other request until the host answers or the connection times out
     event_stream = await run_in_threadpool(client.events, decode=True)
@@ -525,7 +464,7 @@ async def stream_docker_events(request: Request, alias: str, client: ContainerCl
 
 
 # @router.post("/containers/{alias}/compose/{project_name}/actions/{action}")
-# def post_docker_compose_action(alias: str, project_name: str, action: str,
+# def post_compose_action(alias: str, project_name: str, action: str,
 #                                  client: ContainerClientDep) -> dict:
 #     try:
 #         raise HTTPException(status_code=501, detail="Not implemented yet")
