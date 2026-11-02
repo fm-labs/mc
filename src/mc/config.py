@@ -28,7 +28,7 @@ def read_config(filepath: str) -> dict:
                 return config
         except Exception as e:
             print(f"Error reading mc.json: {e}")
-    return None
+    return {}
 
 
 def write_config(config: dict, filepath: str):
@@ -61,13 +61,13 @@ def load_config():
         filepath = os.path.join(d, "mc.conf.json")
         if os.path.exists(filepath):
             conf = read_config(filepath)
-            if conf is not None:
+            if conf:
                 merged_config = merge_deep(merged_config, conf)
     return merged_config
 
 CONFIG = load_config()
 
-def get_env_var(name: str, default=None):
+def get_env_var(name: str, default=None) -> str:
     if "environment" in CONFIG and name in CONFIG["environment"]:
         return CONFIG["environment"][name]
 
@@ -76,7 +76,7 @@ def get_env_var(name: str, default=None):
         print(f"Warning: Environment variable {name} is not set and no default value provided.")
     return value
 
-def generate_random_jwt_secret_key(length: int = 32) -> str:
+def generate_random_secret(length: int = 32) -> str:
     return secrets.token_urlsafe(length)
 
 
@@ -118,20 +118,22 @@ VAULT_FILE = get_env_var("VAULT_FILE", f"{CONFIG_DIR}/credentials.vault")
 VAULT_PASS_FILE = get_env_var("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vault.pass")
 
 # JWT settings
-
-
 JWT_ISSUER = "mc"
 JWT_AUDIENCE = "mc"
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES = 60  # 60 minutes
 JWT_REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
 JWT_ALGORITHM = "HS256"
 # should be kept secret:
-JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", default=generate_random_jwt_secret_key())
-JWT_REFRESH_SECRET_KEY = os.environ.get("JWT_REFRESH_SECRET_KEY", default=generate_random_jwt_secret_key())
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", default=generate_random_secret(32))
+JWT_REFRESH_SECRET_KEY = os.environ.get("JWT_REFRESH_SECRET_KEY", default=generate_random_secret(32))
 
+# CORS
+MC_CORS_ENABLED = get_env_var("MC_CORS_ENABLED", "true").lower() == "true"
+MC_CORS_ALLOWED_ORIGINS = get_env_var("MC_CORS_ALLOWED_ORIGINS", "*")
 
-
-
+# MCP
+MC_MCP_ENABLED = get_env_var("MC_MCP_ENABLED", "true").lower() == "true"
+MC_MCP_TOKEN = get_env_var("MC_MCP_TOKEN", default=generate_random_secret(32))
 
 # Github personal access token
 # GITHUB_TOKEN = get_env_var("GITHUB_TOKEN", "")

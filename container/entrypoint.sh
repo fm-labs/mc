@@ -253,19 +253,17 @@ case $CMD in
 
   mcp-server-stdio)
     export MCP_TRANSPORT=stdio
-    exec python -m --directory /app src/mcp_server.py
-    #exec /usr/bin/mc-mcp
+    exec python /app/src/mcp_server.py
     ;;
 
   mcp-server-http)
     export MCP_TRANSPORT=streamable-http
     export MCP_HOST=0.0.0.0
-    exec python -m --directory /app src/mcp_server.py
-    #exec /usr/bin/mc-mcp
+    exec python /app/src/mcp_server.py
     ;;
 
   help)
-    echo "Usage: $0 {api|celery-worker|supervisor|help}"
+    echo "Usage: $0 {api|celery-worker|supervisor|mcp-server-stdio|mcp-server-http|help}"
     exit 0
     ;;
 esac

@@ -10,7 +10,7 @@ from mc.config import RESOURCES_DIR, CONFIG
 
 type ToolSpec = Union[CmdToolSpec, HttpToolSpec]
 
-TOOLS_CACHE: dict[str, ToolSpec] = {}
+TOOLS_CACHE: dict[str, ToolSpec] | None = None
 TOOLS_DIR = Path(RESOURCES_DIR) / "tools"
 
 _registry_lock = threading.Lock()
@@ -87,7 +87,7 @@ def tool_dirs() -> list[str]:
 
 def load_tool_index():
     global TOOLS_CACHE
-    TOOLS_CACHE.clear()
+    TOOLS_CACHE = TOOLS_CACHE or {}
 
     def _add_tool(name: str, tool: dict):
         tool["name"] = name
@@ -119,6 +119,7 @@ def load_tool_index():
 
 def load_builtin_tools():
     global TOOLS_CACHE
+    TOOLS_CACHE = TOOLS_CACHE or {}
     TOOLS_CACHE["mc-traefik-start"] = CmdToolSpec(
         name="mc-traefik-start",
         cmd="/opt/mc/mc-traefik-start.sh"
@@ -138,6 +139,7 @@ def enumerate_tools():
     if not TOOLS_CACHE:
         with _registry_lock:
             print("Init tool cache")
+            TOOLS_CACHE = {}
             load_builtin_tools()
             load_tool_index()
     return TOOLS_CACHE
@@ -145,8 +147,9 @@ def enumerate_tools():
 
 def get_tool_spec(tool_name) -> ToolSpec | None:
     tools = enumerate_tools()
-    if tool_name in tools:
-        return tools[tool_name]
+    if tools:
+        if tool_name in tools:
+            return tools[tool_name]
     return None
 
 

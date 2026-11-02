@@ -1,52 +1,37 @@
 from fastmcp import FastMCP
+from fastmcp.server.auth import StaticTokenVerifier, DebugTokenVerifier, TokenVerifier
 
-mcp = FastMCP("MissionControl MCP", version="1.0.0")
+from mc.config import API_VERSION, DEV_MODE, MC_MCP_TOKEN, MC_MCP_ENABLED
+from mc.plugin.containers.mcp import ContainersFastMcpProvider
+from mc.plugin.tools.mcp import ToolsFastMcpProvider
 
 
-# @mcp.tool
-# def add_inventory_json_schema(item_type: str, schema: dict) -> dict:
-#     """
-#     Add a JSON schema for a specific inventory item type.
-#
-#     Args:
-#         item_type (str): The type of inventory item (e.g., "server", "network", "application").
-#         schema (dict): The JSON schema that defines the structure of the inventory item.
-#     """
-#     existing = read_inventory_json_schema(item_type)
-#     if existing:
-#         raise Exception(f"Item type '{item_type}' already exists")
-#
-#
-# @mcp.tool
-# def get_inventory_json_schema(item_type: str) -> dict:
-#     """
-#     Retrieve the JSON schema for a specific inventory item type.
-#
-#     Args:
-#         item_type (str): The type of inventory item (e.g., "server", "network", "application").
-#
-#     Returns:
-#         dict: The JSON schema if found, otherwise raises an exception.
-#     """
-#     schema = read_inventory_json_schema(item_type)
-#     if not schema:
-#         raise Exception(f"Item type '{item_type}' does not exist")
-#     return schema
-#
-#
-# @mcp.tool
-# def update_inventory_json_schema(item_type: str, schema: dict) -> dict:
-#     """
-#     Update the JSON schema for a specific inventory item type.
-#
-#     Args:
-#         item_type (str): The type of inventory item (e.g., "server", "network", "application").
-#         schema (dict): The updated JSON schema that defines the structure of the inventory item.
-#     """
-#     existing = read_inventory_json_schema(item_type)
-#     if not existing:
-#         raise Exception(f"Item type '{item_type}' does not exist")
-#
-#     # todo validate schema changes (e.g., prevent removing required fields)
-#     store_inventory_json_schema(item_type, schema)
-#     return {"status": "success", "item_type": item_type}
+class DenyAllTokenVerifier(TokenVerifier):
+    def verify_token(self, token):
+        return None
+
+
+if MC_MCP_ENABLED and DEV_MODE:
+    verifier = DebugTokenVerifier(
+        validate=lambda token: token.startswith("dev-"),
+        client_id="development-client",
+        scopes=["test:read", "test:write"],
+        required_scopes=["test:read"]
+    )
+elif MC_MCP_ENABLED:
+    verifier = StaticTokenVerifier(
+        required_scopes=["read"],
+        tokens={
+            MC_MCP_TOKEN: {
+                "client_id": "mcp-client",
+                "scopes": ["read",]
+            },
+        },
+    )
+else:
+    verifier = DenyAllTokenVerifier()
+
+
+mcp = FastMCP("Mission Control MCP", version=API_VERSION, auth=verifier)
+mcp.add_provider(ToolsFastMcpProvider())
+mcp.add_provider(ContainersFastMcpProvider())

@@ -20,8 +20,8 @@ from inventorydb.registry import get_inventory_registry
 from inventorydb.storage import get_inventory_storage_instance
 from mc import config
 from mc.inventory import setup_inventory
-from mc.mcp.app import mcp as mcp_app
-from mc.mcp.fastmcp_helper import init_mcp_http_app
+# from mc.mcp.app import mcp as mcp_app
+# from mc.mcp.fastmcp_helper import init_mcp_http_app
 from mc.plugin.containers.manager import bootstrap_container_connection_manager
 from mc.server.models import Problem
 from mc.server.router import app_router
@@ -34,10 +34,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 # Load MCP server app with specified transport
-mcp_enabled = os.getenv("MCP_ENABLED", "false").lower() == "true"
-if mcp_enabled:
-    mcp_transport = os.getenv("MCP_TRANSPORT", "streamable-http")
-    mcp_http_app = init_mcp_http_app(mcp_app, transport=mcp_transport)
+# mcp_enabled = os.getenv("MCP_ENABLED", "false").lower() == "true"
+# if mcp_enabled:
+#     mcp_transport = os.getenv("MCP_TRANSPORT", "streamable-http")
+#     mcp_http_app = init_mcp_http_app(mcp_app, transport=mcp_transport)
 
 
 @asynccontextmanager
@@ -56,10 +56,10 @@ async def lifespan(main_app: FastAPI):
         # client = redis.asyncio.Redis(host="localhost", port=6379)
         # app.state.storage = AsyncRedisStorage(redis_client=client)
 
-        if mcp_enabled:
-            # also enter the mounted app's lifespan:
-            # this guarantees startup/shutdown even if the sub-app runs standalone elsewhere.
-            await stack.enter_async_context(mcp_http_app.router.lifespan_context(mcp_http_app))
+        # if mcp_enabled:
+        #     # also enter the mounted app's lifespan:
+        #     # this guarantees startup/shutdown even if the sub-app runs standalone elsewhere.
+        #     await stack.enter_async_context(mcp_http_app.router.lifespan_context(mcp_http_app))
 
         try:
             yield
@@ -82,20 +82,26 @@ app = FastAPI(
 # app.mount("/mcp", mcp_http_app)
 
 # Middleware configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_credentials=True,
-)
+if config.MC_CORS_ENABLED:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.MC_CORS_ALLOWED_ORIGINS.split(","),  # Allows all origins
+        allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+        allow_headers=["*"],
+        allow_credentials=False,
+    )
 
 # Global exception handlers that emit Problem JSON responses
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_: Request, exc: HTTPException):
-    problem = Problem(error=exc.detail or exc.status_code, status=exc.status_code, detail=str(exc.detail))
+    error = exc.detail if exc.detail else f"HTTP Error: {exc.status_code}"
+    problem = Problem(error=error, status=exc.status_code, detail=str(exc.detail))
     return JSONResponse(status_code=exc.status_code, content=problem.model_dump(), media_type="application/json")
 
+@app.exception_handler(Exception)
+async def exception_handler(_: Request, exc: Exception):
+    problem = Problem(error=str(exc), status=500)
+    return JSONResponse(status_code=500, content=problem.model_dump(), media_type="application/json")
 
 # class NotFoundError(Exception):
 #     def __init__(self, detail: str):

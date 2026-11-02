@@ -44,8 +44,8 @@ async def init_mcp() -> "FastMCP":
 async def main():
     transport = get_env_var("MCP_TRANSPORT", "stdio")
     host = get_env_var("MCP_HOST", "127.0.0.1")
-    port = int(get_env_var("MCP_PORT", "5000"))
-    path = get_env_var("MCP_PATH", None)
+    port = int(get_env_var("MCP_PORT", "5001"))
+    path = get_env_var("MCP_PATH", "/mcp")
     log_level = get_env_var("MCP_LOG_LEVEL", "info")
 
     available_transports = ["streamable-http", "sse", "http", "stdio"]
