@@ -2,13 +2,13 @@ import json
 import logging
 import os
 
-from mc.config import DATA_DIR
+from mc.config import MC_DATA_DIR
 
 logger = logging.getLogger(__name__)
 
 # Placeholder vault implementation using a JSON file to store secrets.
 # todo enable encryption
-VAULT_FILE = f"{DATA_DIR}/etc/secrets.json"
+VAULT_FILE = f"{MC_DATA_DIR}/etc/secrets.json"
 
 
 def vault_set_value(item_id: str, value: str):

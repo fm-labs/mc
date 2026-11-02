@@ -6,6 +6,7 @@ from fastapi.params import Body
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
+from mc.config import expand_list_vars, expand_dict_vars
 from mc.plugin.tools.toolindex import get_tool_spec, enumerate_tools, ToolSpec, get_tool_instance, CmdTool
 from mc.server.stream_helper import starlette_subprocess_stream, sse_event, streaming_response
 
@@ -35,7 +36,7 @@ async def tools_get_spec(tool_name: str) -> ToolSpec:
 
 
 @router.post("/tools/{tool_name}")
-async def tools_exec(tool_name: str, params: Annotated[dict, Body()]):
+async def tools_exec(tool_name: str, params: Annotated[dict|None, Body()]):
     """
     Execute command
 
@@ -55,12 +56,15 @@ async def tools_exec(tool_name: str, params: Annotated[dict, Body()]):
 
 
 @router.post("/tools/{tool_name}/stream")
-async def stream_cmd(request: Request, tool_name: str, format: Literal["sse", "json"] = "json") -> StreamingResponse:
+async def stream_cmd(request: Request, tool_name: str,
+                     params: Annotated[dict|None, Body()] = None,
+                     format: Literal["sse", "json"] = "json") -> StreamingResponse:
     """
     Stream command execution
 
     :param request: the webserver request object
     :param tool_name: tool name
+    :param params: parameters for the tool
     :param format: format of the output (json or sse)
     :return: streaming response
     """
@@ -70,8 +74,8 @@ async def stream_cmd(request: Request, tool_name: str, format: Literal["sse", "j
     if not isinstance(tool, CmdTool):
         raise HTTPException(status_code=400, detail="Invalid tool type.")
 
-    cmd = tool.cmd
-    env = tool.env
+    cmd = expand_list_vars(tool.cmd, params or {})
+    env = expand_dict_vars(tool.env, params or {})
 
     async def _stream_process_async() -> AsyncGenerator[str]:
         async for line in starlette_subprocess_stream(cmd, env=env, request=request):
@@ -81,6 +85,7 @@ async def stream_cmd(request: Request, tool_name: str, format: Literal["sse", "j
                 continue
             if format == "sse":
                 yield sse_event(event=split[0], data=split[1])
-            yield json.dumps({"event": split[0], "data": split[1]})
+            else:
+                yield json.dumps({"event": split[0], "data": split[1]}) + "\n"
 
     return streaming_response(generator=_stream_process_async(), format=format)

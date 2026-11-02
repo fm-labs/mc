@@ -1,6 +1,7 @@
 import json
 import os
 import secrets
+import re
 
 from dotenv import load_dotenv
 
@@ -11,12 +12,49 @@ load_dotenv(".env.local")
 API_NAME = "mission-control"
 API_VERSION = "2.3.1"
 API_PREFIX = "/api"
-DATA_DIR = os.getenv("DATA_DIR", "/opt/mc")
 
+MC_DATA_DIR = os.getenv("MC_DATA_DIR", os.getenv("DATA_DIR", "/opt/mc"))
 MC_BACKUP_DIR = os.getenv("MC_BACKUP_DIR", "/tmp/backup") # in docker environments, this is on the host!
 
 #load_dotenv(f"{DATA_DIR}/.env")
 #load_dotenv(f"{DATA_DIR}/.env.local")
+
+
+
+_VARS_PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
+
+def _expand(value: str, vars: dict[str, str], missing: set[str]) -> str:
+    def replace(match: re.Match) -> str:
+        name = match.group(1)
+        if name not in vars:
+            missing.add(name)
+            return match.group(0)
+        return str(vars[name])
+    return _VARS_PLACEHOLDER.sub(replace, value)
+
+
+def expand_dict_vars(source: dict[str, str], vars: dict[str, str]) -> dict[str, str]:
+    """
+    Replace all placeholders in dict values with params. Placeholders use '{{var_name}}' pattern.
+    :raises KeyError: if a placeholder has no matching param
+    """
+    missing: set[str] = set()
+    result = {key: _expand(value, vars, missing) for key, value in source.items()}
+    if missing:
+        raise KeyError(f"Missing params for placeholders: {', '.join(sorted(missing))}")
+    return result
+
+
+def expand_list_vars(source: list[str], vars: dict[str, str]) -> list[str]:
+    """
+    Replace all placeholders in list items with vars. Placeholders use '{{var_name}}' pattern.
+    :raises KeyError: if a placeholder has no matching var
+    """
+    missing: set[str] = set()
+    result = [_expand(item, vars, missing) for item in source]
+    if missing:
+        raise KeyError(f"Missing params for placeholders: {', '.join(sorted(missing))}")
+    return result
 
 
 def read_config(filepath: str) -> dict:
@@ -54,7 +92,7 @@ def merge_deep(config: dict, config2: dict) -> dict:
 def load_config():
     config_dirs = [
         "/etc/mc",
-        os.path.join(DATA_DIR, "etc"),
+        os.path.join(MC_DATA_DIR, "etc"),
     ]
     merged_config = {}
     for d in config_dirs:
@@ -68,6 +106,7 @@ def load_config():
 CONFIG = load_config()
 
 def get_env_var(name: str, default=None) -> str:
+    global CONFIG
     if "environment" in CONFIG and name in CONFIG["environment"]:
         return CONFIG["environment"][name]
 
@@ -84,8 +123,9 @@ def generate_random_secret(length: int = 32) -> str:
 DEV_MODE = get_env_var("DEV_MODE", "false").lower() == "true"
 
 # Additional paths
-CONFIG_DIR = get_env_var("CONFIG_DIR", f"{DATA_DIR}/etc")
-RESOURCES_DIR = get_env_var("RESOURCES_DIR", f"{DATA_DIR}/resources")
+CONFIG_DIR = get_env_var("CONFIG_DIR", f"{MC_DATA_DIR}/etc")
+#RESOURCES_DIR = get_env_var("RESOURCES_DIR", f"{MC_DATA_DIR}/resources")
+
 # Inventory storage: directory (one JSON file per item), file (one JSON file per type) or sqlite
 INVENTORY_STORAGE = get_env_var("INVENTORY_STORAGE", "directory")
 # Inventory: load the Python modules of user item types in $CONFIG_DIR/inventory (schema-only types always load)
@@ -134,6 +174,9 @@ MC_CORS_ALLOWED_ORIGINS = get_env_var("MC_CORS_ALLOWED_ORIGINS", "*")
 # MCP
 MC_MCP_ENABLED = get_env_var("MC_MCP_ENABLED", "true").lower() == "true"
 MC_MCP_TOKEN = get_env_var("MC_MCP_TOKEN", default=generate_random_secret(32))
+
+# SCRIPTS
+MC_BIN_DIR = get_env_var("MC_BIN_DIR", f"/opt/mc/bin")
 
 # Github personal access token
 # GITHUB_TOKEN = get_env_var("GITHUB_TOKEN", "")

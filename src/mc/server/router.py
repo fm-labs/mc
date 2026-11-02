@@ -10,6 +10,7 @@ from mc.server.auth_helper import create_jwt_access_token
 from mc.server.deps import dep_auth_user
 from mc.server.routes_config import router as config_router
 from mc.server.routes_rpc import router as rpc_router
+from mc.plugin.tools.routes import router as tools_router
 from mc.users import authenticate_user
 
 # Enabled plugins and integrations
@@ -27,6 +28,8 @@ app_router.include_router(rpc_router, prefix="/api", tags=["rpc"],
 app_router.include_router(containers_router, prefix="/api", tags=["container"],
                           dependencies=[Security(dep_auth_user)])
 app_router.include_router(config_router, prefix="/api", tags=["config"],
+                          dependencies=[Security(dep_auth_user)])
+app_router.include_router(tools_router, prefix="/api", tags=["tools"],
                           dependencies=[Security(dep_auth_user)])
 
 # for plugin_name in PLUGINS_ENABLED:

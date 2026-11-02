@@ -11,7 +11,7 @@ import yaml
 
 from inventorydb.storage import get_inventory_storage_instance
 from mc import logs
-from mc.config import DATA_DIR
+from mc.config import MC_DATA_DIR
 from mc.tasks import clone_or_update_git_repo, task_deploy_compose_project, task_destroy_compose_project
 
 logger = logging.getLogger(__name__)
@@ -128,14 +128,14 @@ class AppStackItem:
 
 
 def _build_app_dir_path(app_name: str) -> Path:
-    base_dir = Path(f"{DATA_DIR}/apps")
+    base_dir = Path(f"{MC_DATA_DIR}/apps")
     app_dir = base_dir / app_name
     return app_dir
 
 
 def _build_repo_cache_path(repository_url: str) -> Path:
     repo_key = repository_url.replace("://", "-").replace("/", "-").replace(".", "-")
-    base_dir = Path(f"{DATA_DIR}/cache/repos")
+    base_dir = Path(f"{MC_DATA_DIR}/cache/repos")
     repo_dir = base_dir / repo_key
     return repo_dir
 
@@ -288,7 +288,7 @@ def handle_app_stack_action_sync(item: dict, action_params: dict) -> dict:
             elif is_private and sschema == "ssh":
                 repo_ssh_key_id = app.repository.get("ssh_key_id", "")
                 if repo_ssh_key_id:
-                    repo_ssh_key_file = f"{DATA_DIR}/etc/ssh_keys/{repo_ssh_key_id}.pem"
+                    repo_ssh_key_file = f"{MC_DATA_DIR}/etc/ssh_keys/{repo_ssh_key_id}.pem"
                     if not os.path.exists(repo_ssh_key_file):
                         raise FileNotFoundError(
                             f"SSH key file '{repo_ssh_key_file}' for repo SSH key ID '{repo_ssh_key_id}' not found"

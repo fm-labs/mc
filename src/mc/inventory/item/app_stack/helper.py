@@ -7,11 +7,11 @@ from pathlib import Path
 import git  # Requires GitPython package
 import requests
 
-from mc.config import DATA_DIR
+from mc.config import MC_DATA_DIR
 
 
 def get_app_stack_dir(stack_name: str) -> str:
-    return str(DATA_DIR / "apps" / stack_name)
+    return str(MC_DATA_DIR / "apps" / stack_name)
 
 
 def create_app_stack(stack_name: str, src: str, stackfile: str, **kwargs) -> dict:

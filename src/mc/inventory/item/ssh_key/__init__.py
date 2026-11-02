@@ -1,6 +1,6 @@
 import os
 
-from mc.config import DATA_DIR
+from mc.config import MC_DATA_DIR
 
 
 def handle_ssh_key_action_set_content(item: dict, action_params: dict) -> dict:
@@ -19,7 +19,7 @@ def handle_ssh_key_action_set_content(item: dict, action_params: dict) -> dict:
     if content is None:
         raise ValueError("Missing 'content' parameter for 'set_content' action")
 
-    target_file_path = f"{DATA_DIR}/etc/ssh_keys/{item['id']}.pem"
+    target_file_path = f"{MC_DATA_DIR}/etc/ssh_keys/{item['id']}.pem"
     os.makedirs(os.path.dirname(target_file_path), exist_ok=True)
     with open(target_file_path, "w") as f:
         f.write(content)
@@ -41,7 +41,7 @@ def handle_ssh_key_action_clear_content(item: dict, action_params: dict) -> dict
     Returns:
         dict: An empty dictionary indicating successful deletion.
     """
-    target_file_path = f"{DATA_DIR}/etc/ssh_keys/{item['id']}.pem"
+    target_file_path = f"{MC_DATA_DIR}/etc/ssh_keys/{item['id']}.pem"
     if os.path.exists(target_file_path):
         os.remove(target_file_path)
 

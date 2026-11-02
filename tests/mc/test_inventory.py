@@ -14,7 +14,7 @@ from mc.inventory import inventory_settings
 def test_settings():
     assert inventory_settings() == InventorySettings(
         storage_type="directory",
-        storage_dir=f"{config.DATA_DIR}/inventory",
+        storage_dir=f"{config.MC_DATA_DIR}/inventory",
         item_packages=("mc.inventory.item",),
         plugin_packages=("mc.plugin",),
         plugin_subpackage="inventory",
@@ -43,7 +43,7 @@ def test_shared_storage_is_in_data_dir():
     storage = get_inventory_storage_instance()
     storage.write("variable", {"id": "v1"})
     try:
-        assert (Path(config.DATA_DIR) / "inventory" / "variable" / "v1.json").exists()
+        assert (Path(config.MC_DATA_DIR) / "inventory" / "variable" / "v1.json").exists()
     finally:
         storage.delete("variable", "v1")
 
