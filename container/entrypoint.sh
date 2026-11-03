@@ -2,7 +2,7 @@
 
 set -eua
 
-PATH=/app/.venv/bin:/app/bin:/var/lib/mc/bin:$PATH
+PATH=/app/.venv/bin:/app/bin:$PATH
 export PATH
 PYTHONPATH="/app/src:${PYTHONPATH:-}"
 export PYTHONPATH
@@ -23,6 +23,16 @@ FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-}
 
 REDIS_DATA_DIR=${REDIS_DATA_DIR:-/redis}
 export REDIS_DATA_DIR
+
+MC_DATA_VOLUME=${MC_DATA_VOLUME:-mc_data}
+#docker volume inspect "$MC_DATA_VOLUME" || true
+#docker volume inspect -f '{{ .Mountpoint }}' "$MC_DATA_VOLUME" || true
+
+DOCKER_HOME=${DOCKER_HOME:-/var/lib/docker} # on the host
+#DOCKER_HOME=$(docker info -f '{{ .DockerRootDir }}')
+MC_HOST_HOME=${MC_HOST_HOME:-${DOCKER_HOME}/volumes/${MC_DATA_VOLUME}/_data} # on the host
+MC_HOME=${MC_HOME:-/mc} # on the container
+MC_CONFIG_DIR=${MC_CONFIG_DIR:-${MC_HOME}/etc}
 
 #VAULT_ENABLED=${VAULT_ENABLED:-true}
 #VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
@@ -103,6 +113,12 @@ case $CMD in
   #  ;;
 
   api)
+    echo "Starting MC API"
+    echo "DOCKER_HOME=${DOCKER_HOME}"
+    echo "MC_DATA_VOLUME=${MC_DATA_VOLUME}"
+    echo "MC_HOME=${MC_HOME}"
+    echo "MC_HOST_HOME=${MC_HOST_HOME}"
+    echo "MC_CONFIG_DIR=${MC_CONFIG_DIR}"
     echo "Starting API server: Waiting for other services ..."
     sleep 1 # wait for other services to be ready
     echo "Starting API server: Starting on 0.0.0.0:5000 ..."
@@ -257,7 +273,7 @@ case $CMD in
 
   mcp-server-http)
     export MCP_TRANSPORT=streamable-http
-    export MCP_HOST=0.0.0.0
+    export MCP_HOST=${MCP_HOST:-0.0.0.0}
     exec python /app/src/mcp_server.py
     ;;
 

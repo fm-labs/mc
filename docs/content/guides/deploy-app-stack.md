@@ -31,7 +31,7 @@ services:
 3. Save.
 
 Private repo? Tick **private** and either add a username/password (HTTPS) or an `ssh_key_id` (SSH).
-For SSH, the key must be at `/var/lib/mc/etc/ssh_keys/<ssh_key_id>.pem` inside the mc container.
+For SSH, the key must be at `/mc/etc/ssh_keys/<ssh_key_id>.pem` inside the mc container.
 
 ## 3. Sync, configure, deploy
 
@@ -57,7 +57,7 @@ Traefik needs `web`/`websecure` entrypoints and a cert resolver named `le`.
 
 ## Local changes
 
-Put a `mc.override.yaml` in the stack's working dir (`/var/lib/mc/apps/<id>`) for changes that shouldn't go into git.
+Put a `mc.override.yaml` in the stack's working dir (`/mc/apps/<id>`) for changes that shouldn't go into git.
 It's applied on top of the compose file and survives a sync.
 
 ## Limits

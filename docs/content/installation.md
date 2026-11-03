@@ -18,6 +18,14 @@ or using wget
 wget -qO- https://raw.githubusercontent.com/fm-labs/mc/main/install.sh | bash
 ```
 
+## Upgrading from v2.3.x and older
+
+The data directory moved from `/var/lib/mc` to `/mc`. Remount your existing volume at the new path,
+e.g. `-v mc-data:/mc` instead of `-v mc-data:/var/lib/mc`.
+
+If the volume isn't named `mc_data`, set `MC_DATA_VOLUME=<name>` (named volume) or
+`MC_HOST_HOME=<host path>` (bind mount), so mc can find its data on the host.
+
 ## Manual installation
 
 ```bash
@@ -26,7 +34,7 @@ docker container run -d \
   -p 3080:3080 \
   -p 3443:3443 \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  -v mc_data:/app/data \
+  -v mc_data:/mc \
   --restart unless-stopped \
   fmlabs/mc:latest
 ```
@@ -56,21 +64,36 @@ docker container run -d \
   -p 3080:3080 \
   -p 3443:3443 \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  -v /var/lib/mc:/var/lib/mc \
+  -v mc_data:/mc \
+  --restart unless-stopped \
+  --group-add $(stat -c '%g' /var/run/docker.sock) \
+  fmlabs/mc:latest
+```
+
+## Using a local bind mount volume
+
+```bash
+docker container run -d \
+  --name mc \
+  -p 3080:3080 \
+  -p 3443:3443 \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v /srv/custom/path/to/mc:/mc \
+  -e "MC_HOST_HOME=/srv/custom/path/to/mc" \
   --restart unless-stopped \
   --group-add $(stat -c '%g' /var/run/docker.sock) \
   fmlabs/mc:latest
 ```
 
 
-## Data directory permission issues
+### Data directory permission issues
 
 The container user/group IDs are set to `33333:33333` by default.
 
 If you encounter permission issues with the data directory, you can change the ownership of the directory to match the container's user/group IDs.
 
 ```bash
-sudo chown -R 33333:33333 /var/lib/mc
+sudo chown -R 33333:33333 /srv/custom/path/to/mc
 ```
 
 
@@ -82,4 +105,37 @@ This is how nginx is configured:
 ```text
 ssl_certificate /etc/nginx/ssl/cert.pem;
 ssl_certificate_key /etc/nginx/ssl/key.pem;
+```
+
+### Mount cert and key
+
+```bash
+docker container run -d \
+  --name mc \
+  -p 3080:3080 \
+  -p 3443:3443 \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v mc_data:/mc \
+  -v /path/to/my/certs/mycert.pem:/etc/nginx/ssl/cert.pem:ro \
+  -v /path/to/my/keys/mykey.pem:/etc/nginx/ssl/key.pem:ro \
+  --restart unless-stopped \
+  --group-add $(stat -c '%g' /var/run/docker.sock) \
+  fmlabs/mc:latest
+```
+
+### Custom SSL cert location
+
+```bash
+docker container run -d \
+  --name mc \
+  -p 3080:3080 \
+  -p 3443:3443 \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  -v mc_data:/mc \
+  -v /path/to/my/ssl:/etc/my/ssl:ro \
+  -e MC_SSL_CERT_FILE=/etc/my/ssl/server.crt \
+  -e MC_SSL_KEY_FILE=/etc/my/ssl/server.key \
+  --restart unless-stopped \
+  --group-add $(stat -c '%g' /var/run/docker.sock) \
+  fmlabs/mc:latest
 ```

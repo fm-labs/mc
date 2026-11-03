@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Unreleased
+
+- **Breaking:** data dir moved from `/var/lib/mc` to `/mc`; remount the data volume
+- Added `MC_HOST_HOME`, `MC_DATA_VOLUME`, `DOCKER_HOME` to resolve the data dir on the host
+- `install.sh` passes `MC_DATA_VOLUME` and `MC_HOST_HOME` to the container
+- `mc-traefik-start.sh` uses the generated config files from `$MC_HOME/etc/traefik`
+- Helper scripts moved to `/app/bin` (outside the data volume)
+- UI uses a monospace font
+
 ## v2.3.1
 
 - Added volume backup/restore helpers and RPC methods

@@ -14,7 +14,7 @@
  *      {
  *        "Type": "volume",
  *        "Source": "kontainer-core_kontainer_agent_data",
- *        "Target": "/app/data",
+ *        "Target": "/mc",
  *        "VolumeOptions": {}
  *      }
  *    ],

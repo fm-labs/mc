@@ -14,7 +14,7 @@
 set -e
 # local docker settings
 DOCKER=$(which docker)
-DOCKER_HOME=${DOCKER_HOME:-/var/lib/docker}
+#DOCKER_HOME=${DOCKER_HOME:-/var/lib/docker}
 DOCKER_SOCKET=${DOCKER_SOCKET:-/var/run/docker.sock}
 
 # default config
@@ -46,7 +46,7 @@ fi
 
 echo "Installing MissionControl with the following configuration:"
 echo "DOCKER=${DOCKER}"
-echo "DOCKER_HOME=${DOCKER_HOME}"
+#echo "DOCKER_HOME=${DOCKER_HOME}"
 echo "DOCKER_SOCKET=${DOCKER_SOCKET}"
 echo "MC_IMAGE=${MC_IMAGE}"
 echo "MC_CONTAINER_NAME=${MC_CONTAINER_NAME}"
@@ -65,6 +65,17 @@ if [ -n "${MC_PRE_INSTALL_HOOK}" ]; then
   fi
 fi
 
+# where the data lives on the host (mc needs it for bind mounts it starts, e.g. traefik)
+if [[ "${MC_DATA_VOLUME}" == /* ]]; then
+  # bind mount: the path itself
+  MC_HOST_HOME=${MC_DATA_VOLUME}
+else
+  # named volume: ask docker for its mountpoint
+  $DOCKER volume create ${MC_DATA_VOLUME} >/dev/null
+  MC_HOST_HOME=$($DOCKER volume inspect -f '{{ .Mountpoint }}' ${MC_DATA_VOLUME})
+fi
+echo "MC_HOST_HOME=${MC_HOST_HOME}"
+
 $DOCKER stop ${MC_CONTAINER_NAME} && $DOCKER rm ${MC_CONTAINER_NAME}
 $DOCKER pull ${MC_IMAGE} && \
 exec $DOCKER run -d \
@@ -73,6 +84,8 @@ exec $DOCKER run -d \
   --group-add $(stat -c '%g' ${DOCKER_SOCKET}) \
   -p ${MC_PORT}:3080 \
   -p ${MC_PORT_SSL}:3443 \
-  -v ${MC_DATA_VOLUME}:/var/lib/mc \
+  -v ${MC_DATA_VOLUME}:/mc \
+  -e MC_DATA_VOLUME=${MC_DATA_VOLUME} \
+  -e MC_HOST_HOME=${MC_HOST_HOME} \
   -v ${DOCKER_SOCKET}:/var/run/docker.sock:ro \
   ${MC_DOCKER_EXTRA_VOLUMES} ${MC_DOCKER_EXTRA_ARGS} ${MC_IMAGE}

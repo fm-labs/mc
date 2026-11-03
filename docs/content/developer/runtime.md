@@ -41,8 +41,9 @@ The healthcheck calls `GET /api/health` on port 3080.
 
 | Path | Env var | Default (image) | Contents |
 |---|---|---|---|
-| Data | `MC_HOME` | `/var/lib/mc` | Everything persistent (mounted as the `mc-data` volume) |
-| Config | `MC_CONFIG_DIR` | `/var/lib/mc/etc` | `mc.conf.json`, `users.json`, `ssh_config`, `ssl/`, `ssh_keys/`, `inventory/` (user types), `inventory.toml` |
+| Data | `MC_HOME` | `/mc` | Everything persistent (mounted as a volume, `mc_data` by default) |
+| Data on host | `MC_HOST_HOME` | `$DOCKER_HOME/volumes/$MC_DATA_VOLUME/_data` | Where `MC_HOME` lives **on the host**. Needed for bind mounts mc starts (e.g. `mc-traefik-start.sh`). `DOCKER_HOME` defaults to `/var/lib/docker`, `MC_DATA_VOLUME` to `mc_data`. Set it when the data is a bind mount or the volume has another name |
+| Config | `MC_CONFIG_DIR` | `/mc/etc` | `mc.conf.json`, `users.json`, `ssh_config`, `ssl/`, `ssh_keys/`, `inventory/` (user types), `inventory.toml` |
 | Inventory | | `$MC_HOME/inventory` | Stored items |
 | Apps | | `$MC_HOME/apps/<stack id>` | Working dir of each app stack |
 | Repo cache | | `$MC_HOME/cache/repos` | Git checkouts of stack repositories |
@@ -51,8 +52,11 @@ The healthcheck calls `GET /api/health` on port 3080.
 | Backups | `MC_BACKUP_DIR` | `/tmp/backup` | Volume backup target. It's passed to docker, so it's a path **on the host** |
 | UI | `MC_UI_HTML_DIR` | `/app/ui` | Built UI |
 
-Running locally without the env vars, `MC_HOME` defaults to `/var/lib/mc` too, so set `MC_HOME` in `.env.local`
+Running locally without the env vars, `MC_HOME` defaults to `/mc` too, so set `MC_HOME` in `.env.local`
 for development.
+
+`mc.config.get_mc_real_path(path)` maps a path under `MC_HOME` to its host path under `MC_HOST_HOME`
+(and raises `ValueError` for paths outside `MC_HOME`).
 
 ## Config file
 

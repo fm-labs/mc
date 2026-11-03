@@ -123,11 +123,12 @@ RUN addgroup --gid 33333 -S app && \
 # Set file and directory permissions
 RUN mkdir -p /app && \
     chown -R app:app /app && \
-    mkdir -p /etc/mc && \
-    chown -R app:app /etc/mc && \
-    mkdir -p /var/lib/mc && \
-    mkdir -p /var/lib/mc/etc && \
-    chown -R app:app /var/lib/mc && \
+    chmod +x /app/bin/* && \
+    mkdir -p /mc && \
+    mkdir -p /mc/etc && \
+    mkdir -p /mc/stacks && \
+    mkdir -p /mc/var && \
+    chown -R app:app /mc && \
     mkdir -p /var/log/supervisor && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
@@ -141,7 +142,6 @@ RUN mkdir -p /app && \
     chown -R app:app /var/lib/nginx/logs/error.log && \
     chown -R app:app /var/lib/nginx/logs/access.log && \
     chown -R app:app /var/lib/nginx /var/lib/nginx/logs /run/nginx /etc/nginx/ssl && \
-    chmod +x /app/bin/* && \
     mkdir -p /ssh-agent && \
     chown app:app /ssh-agent
 
@@ -159,12 +159,12 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
 # Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
-ENV PATH=/app/.venv/bin:/app/bin:/var/lib/mc/bin:$PATH
+ENV PATH=/app/.venv/bin:/app/bin:$PATH
 
 ENV MC_ALPINE=1
 ENV MC_DOCKER=1
-ENV MC_HOME=/var/lib/mc
-ENV MC_CONFIG_DIR=/var/lib/mc/etc
+ENV MC_HOME=/mc
+ENV MC_CONFIG_DIR=/mc/etc
 ENV MC_BIN_DIR=/app/bin
 ENV MC_UI_HTML_DIR=/app/ui
 

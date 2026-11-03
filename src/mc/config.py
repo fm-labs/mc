@@ -15,11 +15,24 @@ load_dotenv(".env")
 load_dotenv(".env.local")
 
 MC_DEV_MODE = os.getenv("MC_DEV_MODE", "false").lower() == "true"
-MC_HOME = str(Path(os.getenv("MC_HOME", "/var/lib/mc")).resolve())
+MC_HOME = str(Path(os.getenv("MC_HOME", "/mc")).resolve())
 MC_CONFIG_DIR = str(Path(os.getenv("MC_CONFIG_DIR", f"{MC_HOME}/etc")).resolve())
 MC_BIN_DIR = str(Path(os.getenv("MC_BIN_DIR", "./scripts")).resolve())
 MC_BACKUP_DIR = os.getenv("MC_BACKUP_DIR", "/tmp/backup") # in docker environments, this is on the host!
 
+# the real path to MC_HOME on a docker host
+DOCKER_HOME = os.getenv("DOCKER_HOME", "/var/lib/docker")
+
+MC_DATA_VOLUME = os.getenv("MC_DATA_VOLUME", "mc_data")
+MC_HOST_HOME = os.getenv("MC_HOST_HOME", os.path.join(DOCKER_HOME, "volumes", MC_DATA_VOLUME, "_data"))
+
+def get_mc_real_path(mc_path: str | Path) -> Path:
+    # replace MC_HOME with MC_HOST_HOME
+    # paths outside MC_HOME get rejected
+    mc_path = Path(mc_path).resolve()
+    if not str(mc_path).startswith(MC_HOME):
+        raise ValueError(f"Path {mc_path} is outside of MC_HOME {MC_HOME}")
+    return Path(str(mc_path).replace(MC_HOME, MC_HOST_HOME, 1))
 
 _VARS_PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
 
@@ -127,8 +140,8 @@ INVENTORY_STORAGE = get_env_var("INVENTORY_STORAGE", "directory")
 # Inventory: load the Python modules of user item types in $MC_CONFIG_DIR/inventory (schema-only types always load)
 INVENTORY_USER_CODE = get_env_var("INVENTORY_USER_CODE", "false").lower() == "true"
 # SSH_CONFIG = get_env_var("SSH_CONFIG", f"{MC_HOME}/etc/ssh_config")
-# HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/var/lib/mc") # deprecated
-# HOST_MC_CONFIG_DIR = get_env_var("HOST_MC_CONFIG_DIR", "/var/lib/mc/etc") # deprecated
+# HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/mc") # deprecated
+# HOST_MC_CONFIG_DIR = get_env_var("HOST_MC_CONFIG_DIR", "/mc/etc") # deprecated
 
 # Admin credentials
 USERS_FILE = f"{MC_CONFIG_DIR}/users.json"

@@ -47,7 +47,7 @@ so your browser will warn once). Log in as `operator`.
 |---|---|
 | `MC_PORT` / `MC_PORT_SSL` | `3080` / `3443` |
 | `MC_CONTAINER_NAME` | `mc` |
-| `MC_DATA_VOLUME` | `mc-data` |
+| `MC_DATA_VOLUME` | `mc-data`: volume name or absolute host path, mounted at `/mc`. The script passes its host path as `MC_HOST_HOME` |
 | `MC_IMAGE` | `fmlabs/mc:latest` |
 | `MC_EXTRA_VOLUMES` | extra `-v` options (set in `install.env`) |
 

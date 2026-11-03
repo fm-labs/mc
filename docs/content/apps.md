@@ -55,7 +55,7 @@
   "volumes": [
     {
       "name": "wp-data",
-      "bind": "/var/lib/mc/volumes/my-wordpress-stack-wp-data",
+      "bind": "/mc/volumes/my-wordpress-stack-wp-data",
       "persistent": true
     },
     {
@@ -147,7 +147,7 @@ mc app create my-wordpress-stack --template "http://url-to-template.json"
 # configure
 mc app configure my-wordpress-stack --env WP_ADMIN_USER=admin --env WP_ADMIN_PASSWORD=supersecretpassword
 mc app configure my-wordpress-stack --port 8080:8080/tcp
-mc app configure my-wordpress-stack --volume wp-data:/var/lib/mc/volumes/my-wordpress-stack-wp-data --persistent
+mc app configure my-wordpress-stack --volume wp-data:/mc/volumes/my-wordpress-stack-wp-data --persistent
 mc app configure my-wordpress-stack --volume db-data --persistent
 mc app configure my-wordpress-stack --network default
 mc app configure my-wordpress-stack --domain my-wordpress-stack.local

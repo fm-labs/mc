@@ -25,7 +25,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 
-ENV MC_HOME=/var/lib/mc
+ENV MC_HOME=/mc
 
 # Ref: https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
 #ENV UV_COMPILE_BYTECODE=1
@@ -94,13 +94,13 @@ RUN groupadd --gid 33333 app && useradd --uid 33333 -g app app && \
     mkdir -p /app && \
     mkdir -p /home/app && \
     mkdir -p /var/log/supervisor && \
-    mkdir -p /var/lib/mc && \
+    mkdir -p /mc && \
     chown -R app:app /app && \
     chown -R app:app /home/app && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
     chown -R app:app /run && \
-    chown app:app /var/lib/mc
+    chown app:app /mc
 
 # SSH - Prepare /etc/ssh/ssh_config
 #RUN echo "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" >> /etc/ssh/ssh_config && \

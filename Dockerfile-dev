@@ -32,7 +32,7 @@ ENV MC_ALPINE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
 
-ENV MC_HOME=/var/lib/mc
+ENV MC_HOME=/mc
 
 
 CMD ["uv", "run", "--app-dir", "/app/src", "--host", "0.0.0.0", "--port", "3080", "server:app"]

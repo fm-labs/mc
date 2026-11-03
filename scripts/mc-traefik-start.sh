@@ -2,9 +2,13 @@
 
 set -euax
 
-MC_HOME=$(realpath "${MC_HOME:?MC_HOME is required}")
 if [ ! -d "${MC_HOME}" ]; then
    echo "MC_HOME directory does not exist: ${MC_HOME}"
+   exit 1
+fi
+
+if [ -z "${MC_HOST_HOME}" ]; then
+   echo "MC_HOST_HOME is not set"
    exit 1
 fi
 
@@ -26,7 +30,7 @@ api:
 
 providers:
   docker:
-    endpoint: "tcp://socket-proxy:2375"
+    endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: traefik
   file:
@@ -108,58 +112,60 @@ docker container rm mc-traefik || true
 docker network create traefik 2>/dev/null || true
 docker volume create mc_traefik_letsencrypt
 
-#exec docker container run -d \
-#  --name mc-traefik \
-#  --restart unless-stopped \
-#  --network traefik \
-#  -p 80:80 \
-#  -p 443:443 \
-#  -v mc_traefik_letsencrypt:/letsencrypt \
-#  -v "${TRAEFIK_DIR}/traefik.yml:/etc/traefik/traefik.yml:ro" \
-#  -v "${TRAEFIK_DIR}/dynamic:/etc/traefik/dynamic:ro" \
-#  -v "${TRAEFIK_DIR}/users.htpasswd:/etc/traefik/users.htpasswd:ro" \
-#  traefik:v3.6.2
-
-
-exec docker run -d \
+TRAEFIK_HOST_DIR="${MC_HOST_HOME}/etc/traefik"
+exec docker container run -d \
   --name mc-traefik \
   --restart unless-stopped \
   --network traefik \
   -p 80:80 \
   -p 443:443 \
-  -p 8080:8080 \
   -v mc_traefik_letsencrypt:/letsencrypt \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
-  -l traefik.enable=true \
-  -l traefik.docker.network=traefik \
-  -l "traefik.http.middlewares.admin-auth.basicauth.users=${TRAEFIK_DASHBOARD_ADMIN_USER:?Variable not set}:${TRAEFIK_DASHBOARD_ADMIN_PASSWORD:?Variable not set}" \
-  -l "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000" \
-  -l "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true" \
-  -l "traefik.http.middlewares.security-headers.headers.stsPreload=true" \
-  -l "traefik.http.middlewares.security-headers.headers.frameDeny=true" \
-  -l "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true" \
-  -l "traefik.http.middlewares.security-headers.headers.referrerPolicy=no-referrer" \
-  -l "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Server=" \
-  -l "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Powered-By=" \
-  "traefik:${TRAEFIK_VERSION:-v3.6.2}" \
-  --api \
-  --api.dashboard="${TRAEFIK_DASHBOARD_ENABLED:-false}" \
-  --api.insecure="${TRAEFIK_DASHBOARD_INSECURE:-false}" \
-  --providers.docker \
-  --providers.docker.exposedbydefault=false \
-  --providers.docker.endpoint=${DOCKER_HOST:-unix:///var/run/docker.sock} \
-  --entrypoints.web.address=:80 \
-  --entrypoints.web.http.redirections.entryPoint.to=websecure \
-  --entrypoints.web.http.redirections.entryPoint.scheme=https \
-  --entrypoints.web.http.redirections.entryPoint.permanent=true \
-  --entrypoints.websecure.address=:443 \
-  --entrypoints.websecure.http.middlewares=security-headers@docker \
-  --certificatesresolvers.le.acme.email="${TRAEFIK_LETSENCRYPT_EMAIL:-acme@example.org}" \
-  --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json \
-  --certificatesresolvers.le.acme.httpchallenge.entrypoint=web \
-  --accesslog=true \
-  --accesslog.format=common \
-  --log \
-  --log.level="${TRAEFIK_LOG_LEVEL:-INFO}" \
-  --log.format=common \
-  --log.nocolor=true
+  -v "${TRAEFIK_HOST_DIR}/traefik.yml:/etc/traefik/traefik.yml:ro" \
+  -v "${TRAEFIK_HOST_DIR}/dynamic:/etc/traefik/dynamic:ro" \
+  -v "${TRAEFIK_HOST_DIR}/users.htpasswd:/etc/traefik/users.htpasswd:ro" \
+  traefik:v3.6.2
+
+
+#exec docker run -d \
+#  --name mc-traefik \
+#  --restart unless-stopped \
+#  --network traefik \
+#  -p 80:80 \
+#  -p 443:443 \
+#  -p 8080:8080 \
+#  -v mc_traefik_letsencrypt:/letsencrypt \
+#  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+#  -l traefik.enable=true \
+#  -l traefik.docker.network=traefik \
+#  -l "traefik.http.middlewares.admin-auth.basicauth.users=${TRAEFIK_DASHBOARD_ADMIN_USER:?Variable not set}:${TRAEFIK_DASHBOARD_ADMIN_PASSWORD:?Variable not set}" \
+#  -l "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000" \
+#  -l "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true" \
+#  -l "traefik.http.middlewares.security-headers.headers.stsPreload=true" \
+#  -l "traefik.http.middlewares.security-headers.headers.frameDeny=true" \
+#  -l "traefik.http.middlewares.security-headers.headers.contentTypeNosniff=true" \
+#  -l "traefik.http.middlewares.security-headers.headers.referrerPolicy=no-referrer" \
+#  -l "traefik.http.middlewares.security-headers.headers.customResponseHeaders.Server=" \
+#  -l "traefik.http.middlewares.security-headers.headers.customResponseHeaders.X-Powered-By=" \
+#  "traefik:${TRAEFIK_VERSION:-v3.6.2}" \
+#  --api \
+#  --api.dashboard="${TRAEFIK_DASHBOARD_ENABLED:-false}" \
+#  --api.insecure="${TRAEFIK_DASHBOARD_INSECURE:-false}" \
+#  --providers.docker \
+#  --providers.docker.exposedbydefault=false \
+#  --providers.docker.endpoint=${DOCKER_HOST:-unix:///var/run/docker.sock} \
+#  --entrypoints.web.address=:80 \
+#  --entrypoints.web.http.redirections.entryPoint.to=websecure \
+#  --entrypoints.web.http.redirections.entryPoint.scheme=https \
+#  --entrypoints.web.http.redirections.entryPoint.permanent=true \
+#  --entrypoints.websecure.address=:443 \
+#  --entrypoints.websecure.http.middlewares=security-headers@docker \
+#  --certificatesresolvers.le.acme.email="${TRAEFIK_LETSENCRYPT_EMAIL:-acme@example.org}" \
+#  --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json \
+#  --certificatesresolvers.le.acme.httpchallenge.entrypoint=web \
+#  --accesslog=true \
+#  --accesslog.format=common \
+#  --log \
+#  --log.level="${TRAEFIK_LOG_LEVEL:-INFO}" \
+#  --log.format=common \
+#  --log.nocolor=true

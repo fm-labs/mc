@@ -16,10 +16,13 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${PWD}/data/local:/var/lib/mc
+      - ${PWD}/data/local:/mc
       - ${HOME}/.ssh:/home/app/.ssh:ro
       - ${HOME}/.sshpass:/home/app/.sshpass:ro
       #- ${PWD}/data/local/etc:/etc/mc
+    environment:
+      - MC_HOST_HOME=${PWD}/data/local
+      #- MC_HOST_HOME=/var/lib/docker/volumes/mc_data/_data
     # environment:
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro
       #- REDIS_HOST=redis
@@ -68,7 +71,7 @@ services:
       - mc-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      #- ${PWD}/data/node01:/var/lib/mc
+      #- ${PWD}/data/node01:/mc
     environment:
       - MC_API_KEY=supersecretkey1
     profiles:
@@ -85,7 +88,7 @@ services:
       - mc-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      #- ${PWD}/data/node02:/var/lib/mc
+      #- ${PWD}/data/node02:/mc
     environment:
       - MC_API_KEY=supersecretkey2
     profiles:
@@ -124,6 +127,9 @@ volumes:
     driver: local
   mongo-data:
     driver: local
+  mc-data:
+    driver: local
+    name: mc_data
 
 networks:
   mc-net:

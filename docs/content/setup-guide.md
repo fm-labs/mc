@@ -67,9 +67,10 @@ services:
     image: fmlabs/mc:latest
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "mc-data:/var/lib/mc"
+      - "mc-data:/mc"
 
 volumes:
   mc-data:
+    name: mc_data   # fixed name, so mc finds it on the host (see MC_HOST_HOME)
 
 ```
