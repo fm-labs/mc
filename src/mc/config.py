@@ -6,9 +6,11 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from mc.util.pkg_util import get_pkg_version
+
 # Zero-config settings
 API_NAME = "mission-control"
-API_VERSION = "2.3.1"
+API_VERSION = get_pkg_version("mc")
 API_PREFIX = "/api"
 
 load_dotenv(".env")
