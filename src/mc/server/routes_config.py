@@ -5,7 +5,7 @@ import tempfile
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from mc.config import CONFIG_DIR
+from mc.config import MC_CONFIG_DIR
 
 router = APIRouter()
 
@@ -13,12 +13,12 @@ router = APIRouter()
 # Write access is off by default and enabled per file with an env var set to "1".
 KNOWN_CONFIGS = {
     "mc": {
-        "path": os.path.join(CONFIG_DIR, "mc.conf.json"),
+        "path": os.path.join(MC_CONFIG_DIR, "mc.conf.json"),
         "format": "json",
         "writable_env": "MC_API_CONF_MC_WRITABLE",
     },
     "ssh": {
-        "path": os.path.join(CONFIG_DIR, "ssh_config"),
+        "path": os.path.join(MC_CONFIG_DIR, "ssh_config"),
         "format": "text",
         "writable_env": "MC_API_CONF_SSH_WRITABLE",
     },

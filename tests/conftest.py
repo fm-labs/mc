@@ -13,7 +13,6 @@ _TEST_DATA_DIR = tempfile.mkdtemp(prefix="mc-test-")
 atexit.register(shutil.rmtree, _TEST_DATA_DIR, ignore_errors=True)
 os.environ["DATA_DIR"] = _TEST_DATA_DIR
 os.environ["CONFIG_DIR"] = f"{_TEST_DATA_DIR}/etc"
-os.environ["RESOURCES_DIR"] = str(Path(__file__).resolve().parent.parent / "resources")
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-" + "x" * 64)
 
 # ruff: noqa: E402 (the imports below depend on the environment set above)

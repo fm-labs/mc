@@ -262,8 +262,8 @@ def default_cache_key(func, args, kwargs) -> str:
 
 def default_cache_store() -> CacheStoreProtocol:
     try:
-        os.makedirs(f"{config.MC_DATA_DIR}/cache", exist_ok=True)
-        return SqliteCacheStore(f"{config.MC_DATA_DIR}/cache/cached.sqlite")
+        os.makedirs(f"{config.MC_HOME}/cache", exist_ok=True)
+        return SqliteCacheStore(f"{config.MC_HOME}/cache/cached.sqlite")
     except Exception as e:
         print(f"Error initializing SqliteCacheStore: {e}. Falling back to InMemoryStore.")
         return InMemoryCacheStore()

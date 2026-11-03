@@ -23,12 +23,12 @@ MC_CONTAINER_NAME=${MC_CONTAINER_NAME:-mc}
 MC_PORT=${MC_PORT:-3080}
 MC_PORT_SSL=${MC_PORT_SSL:-3443}
 MC_DATA_VOLUME=${MC_DATA_VOLUME:-mc-data}
-MC_EXTRA_VOLUMES=""
-MC_EXTRA_ARGS=""
+MC_DOCKER_EXTRA_VOLUMES=""
+MC_DOCKER_EXTRA_ARGS=""
 
 # if file /etc/mc/docker.env exists, add it to the extra args
 if [ -f /etc/mc/docker.env ]; then
-  MC_EXTRA_ARGS="--env-file /etc/mc/docker.env"
+  MC_DOCKER_EXTRA_ARGS="--env-file /etc/mc/docker.env"
 fi
 
 MC_PRE_INSTALL_HOOK=""
@@ -53,8 +53,8 @@ echo "MC_CONTAINER_NAME=${MC_CONTAINER_NAME}"
 echo "MC_PORT=${MC_PORT}"
 echo "MC_PORT_SSL=${MC_PORT_SSL}"
 echo "MC_DATA_VOLUME=${MC_DATA_VOLUME}"
-echo "MC_EXTRA_VOLUMES=${MC_EXTRA_VOLUMES}"
-echo "MC_EXTRA_ARGS=${MC_EXTRA_ARGS}"
+echo "MC_DOCKER_EXTRA_VOLUMES=${MC_DOCKER_EXTRA_VOLUMES}"
+echo "MC_DOCKER_EXTRA_ARGS=${MC_DOCKER_EXTRA_ARGS}"
 
 # run the pre-install-hook, if any
 if [ -n "${MC_PRE_INSTALL_HOOK}" ]; then
@@ -73,6 +73,6 @@ exec $DOCKER run -d \
   --group-add $(stat -c '%g' ${DOCKER_SOCKET}) \
   -p ${MC_PORT}:3080 \
   -p ${MC_PORT_SSL}:3443 \
-  -v ${MC_DATA_VOLUME}:/opt/mc \
+  -v ${MC_DATA_VOLUME}:/var/lib/mc \
   -v ${DOCKER_SOCKET}:/var/run/docker.sock:ro \
-  ${MC_EXTRA_VOLUMES} ${MC_EXTRA_ARGS} ${MC_IMAGE}
+  ${MC_DOCKER_EXTRA_VOLUMES} ${MC_DOCKER_EXTRA_ARGS} ${MC_IMAGE}

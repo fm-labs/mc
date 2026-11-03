@@ -2,7 +2,7 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-from mc.config import MC_DATA_DIR
+from mc.config import MC_HOME
 
 LOG_FORMAT1 = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 LOG_FORMAT2 = "%(asctime)s - %(levelname)s - %(message)s"
@@ -17,16 +17,16 @@ def get_console_log_handler():
 
 
 def get_file_log_handler(name):
-    os.makedirs(f"{MC_DATA_DIR}/logs", exist_ok=True)
-    file_handler = logging.FileHandler(f"{MC_DATA_DIR}/logs/{name}.log")
+    os.makedirs(f"{MC_HOME}/logs", exist_ok=True)
+    file_handler = logging.FileHandler(f"{MC_HOME}/logs/{name}.log")
     file_handler.setFormatter(formatter)
     return file_handler
 
 
 def get_rotating_file_log_handler(name):
-    os.makedirs(f"{MC_DATA_DIR}/logs", exist_ok=True)
+    os.makedirs(f"{MC_HOME}/logs", exist_ok=True)
     rotating_file_handler = RotatingFileHandler(
-        f"{MC_DATA_DIR}/logs/{name}.log",
+        f"{MC_HOME}/logs/{name}.log",
         maxBytes=10_000_000,  # 10 MB
         backupCount=10,  # keep 10 old files
     )

@@ -16,7 +16,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${PWD}/data/local:/opt/mc
+      - ${PWD}/data/local:/var/lib/mc
       - ${HOME}/.ssh:/home/app/.ssh:ro
       - ${HOME}/.sshpass:/home/app/.sshpass:ro
       #- ${PWD}/data/local/etc:/etc/mc
@@ -47,15 +47,10 @@ services:
             - "x*.py"
           exec:
             command: ["supervisorctl", "restart", "all"]
-        - action: sync
-          path: ./resources
-          target: /app/resources
         - action: rebuild
           path: ./container
         - action: rebuild
           path: ./uv.lock
-        #- action: rebuild
-        #  path: ./ui
         - action: rebuild
           path: Dockerfile
         - action: restart
@@ -73,7 +68,7 @@ services:
       - mc-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      #- ${PWD}/data/node01:/opt/mc
+      #- ${PWD}/data/node01:/var/lib/mc
     environment:
       - MC_API_KEY=supersecretkey1
     profiles:
@@ -90,7 +85,7 @@ services:
       - mc-net
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      #- ${PWD}/data/node02:/opt/mc
+      #- ${PWD}/data/node02:/var/lib/mc
     environment:
       - MC_API_KEY=supersecretkey2
     profiles:

@@ -13,6 +13,7 @@ _*.json
 
 /data/
 /templates/
+/www/
 
 ### Python template
 # Byte-compiled / optimized / DLL files

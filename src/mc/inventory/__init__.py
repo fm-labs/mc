@@ -22,14 +22,14 @@ USER_MODULE_PACKAGE = "mc_user_inventory"
 def inventory_settings() -> InventorySettings:
     return InventorySettings(
         storage_type=config.INVENTORY_STORAGE,
-        storage_dir=os.path.join(config.MC_DATA_DIR, "inventory"),
+        storage_dir=os.path.join(config.MC_HOME, "inventory"),
         item_packages=(ITEM_PACKAGE,),
         plugin_packages=(PLUGIN_PACKAGE,),
         entry_point_group=ENTRY_POINT_GROUP,
-        user_dir=os.path.join(config.CONFIG_DIR, "inventory"),
+        user_dir=os.path.join(config.MC_CONFIG_DIR, "inventory"),
         user_code=config.INVENTORY_USER_CODE,
         user_module_package=USER_MODULE_PACKAGE,
-        overrides_file=os.path.join(config.CONFIG_DIR, "inventory.toml"),
+        overrides_file=os.path.join(config.MC_CONFIG_DIR, "inventory.toml"),
     )
 
 

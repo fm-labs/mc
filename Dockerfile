@@ -50,7 +50,6 @@ RUN uv sync --no-cache-dir --no-dev --locked --no-install-project
 
 # Copy the rest of the files
 COPY ./src /app/src
-COPY ./resources /app/resources
 RUN uv sync --no-cache-dir --no-dev --locked --no-editable
 
 
@@ -104,7 +103,8 @@ COPY --from=app-builder --chown=app:app /app /app
 COPY --from=ui-builder /builder/dist/ /app/ui
 
 # Binaries
-COPY ./container/bin/* /usr/local/bin/
+COPY ./container/bin/* /var/lib/mc/bin
+COPY ./scripts/* /var/lib/mc/bin
 
 # Nginx configuration
 COPY ./container/nginx/site.default.conf /etc/nginx/http.d/default.conf
@@ -124,9 +124,9 @@ RUN mkdir -p /app && \
     chown -R app:app /app && \
     mkdir -p /etc/mc && \
     chown -R app:app /etc/mc && \
-    mkdir -p /opt/mc && \
-    mkdir -p /opt/mc/etc && \
-    chown -R app:app /opt/mc && \
+    mkdir -p /var/lib/mc && \
+    mkdir -p /var/lib/mc/etc && \
+    chown -R app:app /var/lib/mc && \
     mkdir -p /var/log/supervisor && \
     chown -R app:app /var/log/supervisor && \
     chmod -R 755 /var/log/supervisor && \
@@ -157,15 +157,14 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
   CMD ["/usr/local/bin/healthcheck"]
 
 # Environment variables
-ENV MC_ALPINE=1
-ENV MC_DOCKER=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
+ENV PATH=/app/.venv/bin:/var/lib/mc/bin:$PATH
 
-ENV RESOURCES_DIR=/app/resources
-ENV MC_DATA_DIR=/opt/mc
-ENV CONFIG_DIR=/opt/mc/etc
-ENV STATIC_UI_DIR=/app/ui
+ENV MC_ALPINE=1
+ENV MC_DOCKER=1
+ENV MC_HOME=/var/lib/mc
+ENV MC_UI_HTML_DIR=/app/ui
 
 CMD ["supervisor"]
 USER app

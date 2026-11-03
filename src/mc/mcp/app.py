@@ -1,7 +1,7 @@
 from fastmcp import FastMCP
 from fastmcp.server.auth import StaticTokenVerifier, DebugTokenVerifier, TokenVerifier
 
-from mc.config import API_VERSION, DEV_MODE, MC_MCP_TOKEN, MC_MCP_ENABLED
+from mc.config import API_VERSION, MC_DEV_MODE, MC_MCP_TOKEN, MC_MCP_ENABLED
 from mc.plugin.containers.mcp import ContainersFastMcpProvider
 from mc.plugin.tools.mcp import ToolsFastMcpProvider
 
@@ -11,7 +11,7 @@ class DenyAllTokenVerifier(TokenVerifier):
         return None
 
 
-if MC_MCP_ENABLED and DEV_MODE:
+if MC_MCP_ENABLED and MC_DEV_MODE:
     verifier = DebugTokenVerifier(
         validate=lambda token: token.startswith("dev-"),
         client_id="development-client",

@@ -71,9 +71,9 @@ async def lifespan(main_app: FastAPI):
 app = FastAPI(
     title=config.API_NAME,
     version=config.API_VERSION,
-    openapi_url=f"{config.API_PREFIX}/openapi.json" if config.DEV_MODE else None,
-    docs_url="/docs" if config.DEV_MODE else None,
-    redoc_url="/redoc" if config.DEV_MODE else None,
+    openapi_url=f"{config.API_PREFIX}/openapi.json" if config.MC_DEV_MODE else None,
+    docs_url="/docs" if config.MC_DEV_MODE else None,
+    redoc_url="/redoc" if config.MC_DEV_MODE else None,
     # generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
@@ -144,10 +144,10 @@ default_error_responses = {
 app.include_router(app_router, responses=default_error_responses)
 
 #STATIC_FILES_DIR=os.environ.get("STATIC_FILES_DIR", default="static")
-STATIC_UI_DIR=os.environ.get("STATIC_UI_DIR", default="ui/dist")
+MC_UI_HTML_DIR=os.environ.get("MC_UI_HTML_DIR", default="ui/dist")
 
 #app.mount("/static/", StaticFiles(directory=STATIC_FILES_DIR), name="static")
-app.mount("/", StaticFiles(directory=STATIC_UI_DIR, html=True), name="ui")
+app.mount("/", StaticFiles(directory=MC_UI_HTML_DIR, html=True), name="ui")
 
 
 # Proxy Middleware for Anthropic API

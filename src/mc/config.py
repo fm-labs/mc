@@ -2,23 +2,23 @@ import json
 import os
 import secrets
 import re
+from pathlib import Path
 
 from dotenv import load_dotenv
-
-load_dotenv(".env")
-load_dotenv(".env.local")
 
 # Zero-config settings
 API_NAME = "mission-control"
 API_VERSION = "2.3.1"
 API_PREFIX = "/api"
 
-MC_DATA_DIR = os.getenv("MC_DATA_DIR", os.getenv("DATA_DIR", "/opt/mc"))
+load_dotenv(".env")
+load_dotenv(".env.local")
+
+MC_DEV_MODE = os.getenv("MC_DEV_MODE", "false").lower() == "true"
+MC_HOME = str(Path(os.getenv("MC_HOME", "/var/lib/mc")).resolve())
+MC_CONFIG_DIR = str(Path(os.getenv("MC_CONFIG_DIR", f"{MC_HOME}/etc")).resolve())
+MC_BIN_DIR = str(Path(os.getenv("MC_BIN_DIR", f"{MC_HOME}/bin")).resolve())
 MC_BACKUP_DIR = os.getenv("MC_BACKUP_DIR", "/tmp/backup") # in docker environments, this is on the host!
-
-#load_dotenv(f"{DATA_DIR}/.env")
-#load_dotenv(f"{DATA_DIR}/.env.local")
-
 
 
 _VARS_PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\}")
@@ -92,7 +92,7 @@ def merge_deep(config: dict, config2: dict) -> dict:
 def load_config():
     config_dirs = [
         "/etc/mc",
-        os.path.join(MC_DATA_DIR, "etc"),
+        os.path.join(MC_HOME, "etc"),
     ]
     merged_config = {}
     for d in config_dirs:
@@ -120,22 +120,18 @@ def generate_random_secret(length: int = 32) -> str:
 
 
 
-DEV_MODE = get_env_var("DEV_MODE", "false").lower() == "true"
-
 # Additional paths
-CONFIG_DIR = get_env_var("CONFIG_DIR", f"{MC_DATA_DIR}/etc")
-#RESOURCES_DIR = get_env_var("RESOURCES_DIR", f"{MC_DATA_DIR}/resources")
 
 # Inventory storage: directory (one JSON file per item), file (one JSON file per type) or sqlite
 INVENTORY_STORAGE = get_env_var("INVENTORY_STORAGE", "directory")
-# Inventory: load the Python modules of user item types in $CONFIG_DIR/inventory (schema-only types always load)
+# Inventory: load the Python modules of user item types in $MC_CONFIG_DIR/inventory (schema-only types always load)
 INVENTORY_USER_CODE = get_env_var("INVENTORY_USER_CODE", "false").lower() == "true"
-# SSH_CONFIG = get_env_var("SSH_CONFIG", f"{DATA_DIR}/etc/ssh_config")
-# HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/opt/mc") # deprecated
-# HOST_CONFIG_DIR = get_env_var("HOST_CONFIG_DIR", "/opt/mc/etc") # deprecated
+# SSH_CONFIG = get_env_var("SSH_CONFIG", f"{MC_HOME}/etc/ssh_config")
+# HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/var/lib/mc") # deprecated
+# HOST_MC_CONFIG_DIR = get_env_var("HOST_MC_CONFIG_DIR", "/var/lib/mc/etc") # deprecated
 
 # Admin credentials
-USERS_FILE = f"{CONFIG_DIR}/users.json"
+USERS_FILE = f"{MC_CONFIG_DIR}/users.json"
 
 # Api Key auth
 MC_API_KEY = get_env_var("MC_API_KEY", None)
@@ -154,8 +150,8 @@ REDIS_PASSWORD = get_env_var("REDIS_PASSWORD", "")
 
 # Vault settings
 VAULT_ENABLED = get_env_var("VAULT_ENABLED", "false").lower() == "true"
-VAULT_FILE = get_env_var("VAULT_FILE", f"{CONFIG_DIR}/credentials.vault")
-VAULT_PASS_FILE = get_env_var("VAULT_PASS_FILE", f"{CONFIG_DIR}/credentials.vault.pass")
+VAULT_FILE = get_env_var("VAULT_FILE", f"{MC_CONFIG_DIR}/credentials.vault")
+VAULT_PASS_FILE = get_env_var("VAULT_PASS_FILE", f"{MC_CONFIG_DIR}/credentials.vault.pass")
 
 # JWT settings
 JWT_ISSUER = "mc"
@@ -175,8 +171,6 @@ MC_CORS_ALLOWED_ORIGINS = get_env_var("MC_CORS_ALLOWED_ORIGINS", "*")
 MC_MCP_ENABLED = get_env_var("MC_MCP_ENABLED", "true").lower() == "true"
 MC_MCP_TOKEN = get_env_var("MC_MCP_TOKEN", default=generate_random_secret(32))
 
-# SCRIPTS
-MC_BIN_DIR = get_env_var("MC_BIN_DIR", f"/opt/mc/bin")
 
 # Github personal access token
 # GITHUB_TOKEN = get_env_var("GITHUB_TOKEN", "")
@@ -188,7 +182,7 @@ MC_BIN_DIR = get_env_var("MC_BIN_DIR", f"/opt/mc/bin")
 
 
 # def set_dotenv_var(key: str, value: str):
-#     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.local")
+#     env_path = os.getenv("MC_ENV", f"{MC_HOME}/.env.local")
 #     lines = []
 #     if os.path.exists(env_path):
 #         with open(env_path) as f:
@@ -211,7 +205,7 @@ MC_BIN_DIR = get_env_var("MC_BIN_DIR", f"/opt/mc/bin")
 
 
 # def write_dotenv(config: dict):
-#     env_path = os.getenv("MC_ENV", f"{DATA_DIR}/.env.development")
+#     env_path = os.getenv("MC_ENV", f"{MC_HOME}/.env.development")
 #     try:
 #         with open(env_path, "w") as f:
 #             for key, value in config.items():

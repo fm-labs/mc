@@ -2,12 +2,11 @@ import json
 import os
 import subprocess
 import threading
-from dataclasses import dataclass
 from typing import Protocol, Any, Union
 
 import pydantic
 
-from mc.config import CONFIG, MC_BIN_DIR, MC_DATA_DIR, expand_list_vars, expand_dict_vars
+from mc.config import CONFIG, MC_HOME, expand_list_vars, expand_dict_vars, MC_BIN_DIR
 
 type ToolSpec = Union[CmdToolSpec, HttpToolSpec]
 
@@ -15,7 +14,6 @@ TOOLS_CACHE: dict[str, ToolSpec] | None = None
 
 _registry_lock = threading.Lock()
 
-#@dataclass
 class CmdToolSpec(pydantic.BaseModel):
     name: str
     cmd: str
@@ -26,7 +24,6 @@ class CmdToolSpec(pydantic.BaseModel):
     input_schema: dict | None = None
     output_schema: dict | None = None
 
-#@dataclass
 class HttpToolSpec(pydantic.BaseModel):
     name: str
     url: str
@@ -91,7 +88,7 @@ class HttpTool(Tool):
 def tool_dirs() -> list[str]:
     return [
         "/etc/mc/tools",
-        os.path.join(MC_DATA_DIR, "tools"),
+        os.path.join(MC_HOME, "tools"),
     ]
 
 def load_tool_index():
@@ -139,23 +136,79 @@ def load_builtin_tools():
     TOOLS_CACHE = TOOLS_CACHE or {}
     TOOLS_CACHE["mc-docker-volume-backup"] = CmdToolSpec(
         name="mc-docker-volume-backup",
-        cmd=f"{MC_BIN_DIR}/docker-volume-backup.sh"
+        cmd=f"{MC_BIN_DIR}/docker-volume-backup.sh",
+        description="Backup Docker volume to tar archive",
+        args=["{{source_volume}}", "{{backup_dir"],
+        input_schema={
+            "type": "object",
+            "properties": {
+                "source_volume": {"type": "string"},
+                "backup_dir": {"type": "string"},
+            },
+            "required": ["source_volume", "backup_dir"],
+        }
     )
     TOOLS_CACHE["mc-docker-volume-restore"] = CmdToolSpec(
         name="mc-docker-volume-restore",
-        cmd=f"{MC_BIN_DIR}/docker-volume-restore.sh"
+        description="Restore Docker volume from tar archive",
+        cmd=f"{MC_BIN_DIR}/docker-volume-restore.sh",
+        args=["{{target_volume}}", "{{restore_file}}"],
+        input_schema={
+            "type": "object",
+            "properties": {
+                "target_volume": {"type": "string"},
+                "restore_file": {"type": "string"},
+            },
+            "required": ["target_volume", "restore_file"],
+        }
     )
     TOOLS_CACHE["mc-traefik-start"] = CmdToolSpec(
         name="mc-traefik-start",
-        cmd=f"{MC_BIN_DIR}/mc-traefik-start.sh"
+        description="Start Traefik proxy",
+        cmd=f"{MC_BIN_DIR}/mc-traefik-start.sh",
+        # args=["{{traefik_dir}}"],
+        # input_schema={
+        #     "type": "object",
+        #     "properties": {
+        #         "traefik_dir": {"type": "string"},
+        #     },
+        #     "required": ["traefik_dir"],
+        # }
     )
     TOOLS_CACHE["mc-traefik-stop"] = CmdToolSpec(
         name="mc-traefik-stop",
+        description="Stop Traefik proxy",
         cmd=f"{MC_BIN_DIR}/mc-traefik-stop.sh"
     )
     TOOLS_CACHE["mc-traefik-destroy"] = CmdToolSpec(
         name="mc-traefik-destroy",
+        description="Destroy Traefik proxy",
         cmd=f"{MC_BIN_DIR}/mc-traefik-destroy.sh"
+    )
+    TOOLS_CACHE["mc-update-image"] = CmdToolSpec(
+        name="mc-update-image",
+        description="Pull latest mc docker image",
+        cmd="docker",
+        args=["image", "pull", "fmlabs/mc:latest"]
+    )
+    TOOLS_CACHE["docker-prune-buildcache"] = CmdToolSpec(
+        name="docker-prune-buildcache",
+        description="Prune docker build cache",
+        cmd="docker",
+        args=["builder", "prune", "-f"]
+    )
+    TOOLS_CACHE["gen-secret"] = CmdToolSpec(
+        name="gen-secret",
+        description="Generate a secret",
+        cmd="openssl",
+        args=["rand", "-hex", "{{secret_length}}"],
+        input_schema={
+            "type": "object",
+            "properties": {
+                "secret_length": {"type": "integer", "default": 32},
+            },
+            "required": ["secret_length"]
+        }
     )
 
 
