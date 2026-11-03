@@ -272,7 +272,11 @@ def test_bootstrap_registers_nodes(monkeypatch):
 def test_local_routes_use_node(remote_app, monkeypatch):
     """The local container routes work for a node like for a docker connection."""
     from mc import config
+    from mc.plugin.containers import manager as manager_module
     from mc.plugin.containers.routes import router
+
+    # the host list is cached on first use; start fresh so this test's config is used
+    monkeypatch.setattr(manager_module, "CONTAINER_HOSTS", None)
 
     monkeypatch.setattr(
         config,
@@ -292,11 +296,12 @@ def test_local_routes_use_node(remote_app, monkeypatch):
     app.include_router(router, prefix="/api")
     local = TestClient(app)
 
+    # "connected" is deprecated and always true; the UI tracks connections itself
     hosts = {h["id"]: h for h in local.get("/api/containers/hosts").json()}
-    assert hosts["node1"]["connected"] is True
+    assert set(hosts) == {"localhost", "node1", "node2"}
     assert hosts["node1"]["properties"] == {"engine": "node", "url": NODE_URL, "autoconnect": True}
-    assert hosts["node2"]["connected"] is False
-    assert hosts["localhost"]["connected"] is False
+    assert hosts["node2"]["properties"] == {"engine": "node", "url": "http://node2:3080", "autoconnect": False}
+    assert hosts["localhost"]["properties"]["engine"] == "docker"
 
     assert [c["Id"] for c in local.get("/api/containers/node1/containers").json()] == ["c1"]
     r = local.post("/api/containers/node1/containers/c1/actions/start")

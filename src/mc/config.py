@@ -17,7 +17,7 @@ load_dotenv(".env.local")
 MC_DEV_MODE = os.getenv("MC_DEV_MODE", "false").lower() == "true"
 MC_HOME = str(Path(os.getenv("MC_HOME", "/var/lib/mc")).resolve())
 MC_CONFIG_DIR = str(Path(os.getenv("MC_CONFIG_DIR", f"{MC_HOME}/etc")).resolve())
-MC_BIN_DIR = str(Path(os.getenv("MC_BIN_DIR", f"{MC_HOME}/bin")).resolve())
+MC_BIN_DIR = str(Path(os.getenv("MC_BIN_DIR", "./scripts")).resolve())
 MC_BACKUP_DIR = os.getenv("MC_BACKUP_DIR", "/tmp/backup") # in docker environments, this is on the host!
 
 

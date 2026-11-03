@@ -21,7 +21,7 @@ Missing or invalid credentials return `401`.
 
 Tokens are HS256, signed with `JWT_SECRET_KEY`, and expire after 60 minutes. Claims: `sub` (username),
 `iss` (`mc`), `iat`, `nbf`, `exp`, `jti`. The header has a `kid` (first 16 hex chars of the key's MD5), so tokens
-signed with an older key can be told apart. Verification pins the algorithm and checks the issuer.
+signed with an older key can be told apart. Verification pins the algorithm and checks the issuer and audience (`mc`).
 
 ```bash
 TOKEN=$(curl -s -X POST localhost:3080/api/auth/login -d 'username=operator&password=...' | jq -r .access_token)
@@ -39,6 +39,7 @@ curl -H "Authorization: Bearer $TOKEN" localhost:3080/api/containers/hosts
 | `/api/containers/{alias}/containers/{id}/...` | same | `actions/{action}`, `exec`, `top` (`?ps_args=aux`), `logs`, `logs/stream` |
 | `/api/inventory/...` | `inventorydb/routes.py` | Item types, schema/meta, CRUD, actions, views (see [inventorydb](inventorydb.md#api)) |
 | `/api/rpc` | `server/routes_rpc.py` | JSON-RPC (below) |
+| `/api/tools`, `/api/tools/{name}` | `plugin/tools/routes.py` | List, describe, run (`POST`) and stream (`POST .../stream`) tools (below) |
 | `/api/config?conf=mc\|ssh` | `server/routes_config.py` | Read and (if enabled) write config files |
 
 ## Errors
@@ -76,6 +77,7 @@ the event loop. The generator stops when the client disconnects.
 | `test.ping`, `test.echo` | Connectivity test |
 | `system.update` | Pulls `fmlabs/mc:latest` (restart needed) |
 | `docker.info`, `docker.prune` | Local docker info, prune by scope |
+| `docker.volume.backup`, `.restore`, `.clone` | Back up a volume to a tar file, restore it, or copy it to a new volume |
 | `docker.container.action` | Start/stop/restart/pause/unpause a local container |
 | `docker.swarm.info`, `.init`, `.join_token`, `.leave` | Swarm management |
 | `user.change_password`, `user.reset_password` | Users (reset prints the new password to the log) |
@@ -85,3 +87,24 @@ RPC handlers use `docker.from_env()`, so they act on the local docker engine, no
 
 To add a method, write `rpc_<name>(..., **kwargs) -> dict` in `src/mc/rpc.py` and register it in `RPC_HANDLERS`.
 The UI's RPC page builds its form from the generated schema.
+
+## Tools
+
+Tools are commands mc can run for you, defined by a `cmd` (or `url`, not implemented yet), `args`, `env` and an
+optional `input_schema` (`plugin/tools/toolindex.py`). They come from:
+
+- built-ins: volume backup/restore, Traefik start/stop/destroy, image update, build cache prune, `gen-secret`,
+- the `tools` and `commands` blocks in `mc.conf.json`,
+- `*.json` files in `/etc/mc/tools` and `$MC_HOME/tools`.
+
+`{{name}}` placeholders in `args` and `env` are filled from the request params; a missing one is an error.
+
+- `POST /api/tools/{name}` with params as JSON body returns `[returncode, stdout, stderr]`.
+- `POST /api/tools/{name}/stream?format=json|sse` streams the output line by line.
+
+The UI's Tools page (`/admin/tools`) lists them and builds a form from `input_schema`.
+
+## MCP
+
+The MCP server (`src/mcp_server.py`, port 5001, `/mcp` via nginx) is a separate process and doesn't use the API's
+auth. Clients send `Authorization: Bearer $MC_MCP_TOKEN`. Tools: `list_docker_hosts`, `list_tools`, `exec_tool`.

@@ -65,6 +65,7 @@ RUN apk update  \
     file \
     bash \
     openssl \
+    apache2-utils \
     supervisor \
     git \
     curl \
@@ -103,8 +104,8 @@ COPY --from=app-builder --chown=app:app /app /app
 COPY --from=ui-builder /builder/dist/ /app/ui
 
 # Binaries
-COPY ./container/bin/* /var/lib/mc/bin
-COPY ./scripts/* /var/lib/mc/bin
+COPY ./container/bin/* /app/bin/
+COPY ./scripts/* /app/bin/
 
 # Nginx configuration
 COPY ./container/nginx/site.default.conf /etc/nginx/http.d/default.conf
@@ -140,8 +141,7 @@ RUN mkdir -p /app && \
     chown -R app:app /var/lib/nginx/logs/error.log && \
     chown -R app:app /var/lib/nginx/logs/access.log && \
     chown -R app:app /var/lib/nginx /var/lib/nginx/logs /run/nginx /etc/nginx/ssl && \
-    chmod +x /usr/local/bin/ssh-add-all && \
-    chmod +x /usr/local/bin/ssh-add-enc && \
+    chmod +x /app/bin/* && \
     mkdir -p /ssh-agent && \
     chown app:app /ssh-agent
 
@@ -159,11 +159,13 @@ HEALTHCHECK --interval=60s --timeout=3s --retries=3 \
 # Environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
-ENV PATH=/app/.venv/bin:/var/lib/mc/bin:$PATH
+ENV PATH=/app/.venv/bin:/app/bin:/var/lib/mc/bin:$PATH
 
 ENV MC_ALPINE=1
 ENV MC_DOCKER=1
 ENV MC_HOME=/var/lib/mc
+ENV MC_CONFIG_DIR=/var/lib/mc/etc
+ENV MC_BIN_DIR=/app/bin
 ENV MC_UI_HTML_DIR=/app/ui
 
 CMD ["supervisor"]

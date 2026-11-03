@@ -2,11 +2,13 @@
 
 ## Container image
 
-`Dockerfile` builds in two stages:
+`Dockerfile` builds in three stages:
 
 1. **ui-builder** (node alpine): `pnpm install` and `pnpm run build` in `ui/`.
-2. **runtime** (python alpine): installs docker-cli, compose, buildx, git, openssh, nginx, supervisor, aws-cli;
-   installs Python deps with `uv sync --no-dev --locked`; copies `src/`, `resources/` and the built UI to `/app/ui`.
+2. **app-builder** (python alpine): installs Python deps with `uv sync --no-dev --locked` and copies `src/`.
+3. **final** (python alpine): installs docker-cli, compose, buildx, git, openssh, nginx, supervisor, aws-cli;
+   copies `/app` from app-builder, the built UI to `/app/ui`, and `container/bin/*` and `scripts/*` to
+   `/app/bin` (on `PATH`). Scripts stay outside the data volume, so image updates replace them.
 
 The container runs as user `app` (uid/gid 33333). `install.sh` adds the docker socket's group with `--group-add`
 so `app` can use the mounted socket.
@@ -16,6 +18,7 @@ so `app` can use the mounted socket.
 | 3080 | nginx, HTTP |
 | 3443 | nginx, HTTPS (self-signed cert unless you mount one) |
 | 5000 | uvicorn, internal only |
+| 5001 | MCP server, internal only (nginx proxies `/mcp` to it) |
 
 ## Processes
 
@@ -26,6 +29,7 @@ so `app` can use the mounted socket.
 | `api` | yes | `uvicorn server:app` on `0.0.0.0:5000` |
 | `nginx` | yes | Creates a self-signed cert and dhparam in `$MC_CONFIG_DIR/ssl` on first start, then nginx |
 | `ssh-agent` | yes | ssh-agent at `/ssh-agent/agent.sock`, loads keys with `ssh-add-all`, then keeps it alive |
+| `mcp-server` | yes | `src/mcp_server.py` with streamable HTTP on `0.0.0.0:5001`, path `/mcp` (experimental) |
 | `redis`, `celery-worker`, `celery-flower`, `scan` | no | Not used by default |
 
 The healthcheck calls `GET /api/health` on port 3080.
@@ -37,11 +41,14 @@ The healthcheck calls `GET /api/health` on port 3080.
 
 | Path | Env var | Default (image) | Contents |
 |---|---|---|---|
-| Data | `DATA_DIR` | `/var/lib/mc` | Everything persistent (mounted as the `mc-data` volume) |
+| Data | `MC_HOME` | `/var/lib/mc` | Everything persistent (mounted as the `mc-data` volume) |
 | Config | `MC_CONFIG_DIR` | `/var/lib/mc/etc` | `mc.conf.json`, `users.json`, `ssh_config`, `ssl/`, `ssh_keys/`, `inventory/` (user types), `inventory.toml` |
 | Inventory | | `$MC_HOME/inventory` | Stored items |
 | Apps | | `$MC_HOME/apps/<stack id>` | Working dir of each app stack |
 | Repo cache | | `$MC_HOME/cache/repos` | Git checkouts of stack repositories |
+| Bin | `MC_BIN_DIR` | `/app/bin` (local: `./scripts`) | Helper scripts used by tools (`mc-docker-volume-*.sh`, `mc-traefik-*.sh`) |
+| Tools | | `/etc/mc/tools`, `$MC_HOME/tools` | Tool definitions (`*.json`), see [API](api.md#tools) |
+| Backups | `MC_BACKUP_DIR` | `/tmp/backup` | Volume backup target. It's passed to docker, so it's a path **on the host** |
 | UI | `MC_UI_HTML_DIR` | `/app/ui` | Built UI |
 
 Running locally without the env vars, `MC_HOME` defaults to `/var/lib/mc` too, so set `MC_HOME` in `.env.local`
@@ -75,7 +82,10 @@ for development.
 | `INVENTORY_USER_CODE` | `false` | Load Python modules of user item types |
 | `MC_API_CONF_MC_WRITABLE` | unset | `1` allows editing `mc.conf.json` from the Settings page |
 | `MC_API_CONF_SSH_WRITABLE` | unset | `1` allows editing `ssh_config` from the Settings page |
-| `MCP_ENABLED` / `MCP_TRANSPORT` | `false` / `streamable-http` | MCP server (not mounted, see [Architecture](architecture.md#not-wired-up-yet)) |
+| `MC_CORS_ENABLED` / `MC_CORS_ALLOWED_ORIGINS` | `true` / `*` | CORS middleware on the API |
+| `MC_MCP_ENABLED` | `true` | MCP server accepts tokens. `false` denies every request |
+| `MC_MCP_TOKEN` | random per start | Bearer token for the MCP server. With `MC_DEV_MODE`, any token starting with `dev-` works |
+| `MCP_TRANSPORT`, `MCP_HOST`, `MCP_PORT`, `MCP_PATH` | `stdio`, `127.0.0.1`, `5001`, `/mcp` | MCP server; the entrypoint's `mcp-server-http` sets `streamable-http` on `0.0.0.0` |
 | `DOCKER_HOST` | `unix:///var/run/docker.sock` | Target of app stack deploys |
 
 The `*_WRITABLE` flags are read from the real process env only, so `mc.conf.json` can't grant itself write access.

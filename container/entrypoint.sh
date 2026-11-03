@@ -1,13 +1,11 @@
 #!/bin/bash
 
-set -e
+set -eua
 
-PATH=/app/.venv/bin:$PATH
-PYTHON_PATH="/app/src:$PYTHON_PATH"
+PATH=/app/.venv/bin:/app/bin:/var/lib/mc/bin:$PATH
+export PATH
+PYTHONPATH="/app/src:${PYTHONPATH:-}"
 export PYTHONPATH
-
-FLOWER_USER_NAME=${FLOWER_USER_NAME:-}
-FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-}
 
 # Not recommended to change the socket path, but provided for flexibility.
 SSH_AUTH_SOCK=/ssh-agent/agent.sock
@@ -20,6 +18,11 @@ export GIT_SSH_COMMAND
 DOCKER_SSH_COMMAND="ssh -F $SSH_CONFIG"
 export DOCKER_SSH_COMMAND
 
+FLOWER_USER_NAME=${FLOWER_USER_NAME:-}
+FLOWER_USER_PASSWORD=${FLOWER_USER_PASSWORD:-}
+
+REDIS_DATA_DIR=${REDIS_DATA_DIR:-/redis}
+export REDIS_DATA_DIR
 
 #VAULT_ENABLED=${VAULT_ENABLED:-true}
 #VAULT_FILE=${VAULT_FILE:-/data/credentials.vault}
@@ -34,19 +37,15 @@ export DOCKER_SSH_COMMAND
 #export VAULT_FILE
 #export VAULT_PASS_FILE
 
-REDIS_DATA_DIR=${REDIS_DATA_DIR:-/redis}
-export REDIS_DATA_DIR
-
-
 
 init_ssl() {
   echo "Initializing SSL configuration ..."
-  mkdir -p ${CONFIG_DIR}/ssl
+  mkdir -p ${MC_CONFIG_DIR}/ssl
 
   # Generate custom self-signed certificate
-  if [[ ! -f ${CONFIG_DIR}/ssl/self-signed.crt ]]; then
+  if [[ ! -f ${MC_CONFIG_DIR}/ssl/self-signed.crt ]]; then
     echo "Generating self-signed certificate ..."
-    openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ${CONFIG_DIR}/ssl/self-signed.key -out ${CONFIG_DIR}/ssl/self-signed.crt -subj '/CN=localhost'
+    openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ${MC_CONFIG_DIR}/ssl/self-signed.key -out ${MC_CONFIG_DIR}/ssl/self-signed.crt -subj '/CN=localhost'
     RC=$?
     if [[ $RC != 0 ]]; then
       echo "ERROR: Failed to generate self-signed certificate"
@@ -55,9 +54,9 @@ init_ssl() {
   fi
 
   # Generate custom dhparam.pem
-  if [[ ! -f ${CONFIG_DIR}/ssl/dhparam.pem ]]; then
+  if [[ ! -f ${MC_CONFIG_DIR}/ssl/dhparam.pem ]]; then
     echo "Generating dhparam.pem ..."
-    openssl dhparam -out ${CONFIG_DIR}/ssl/dhparam.pem 2048
+    openssl dhparam -out ${MC_CONFIG_DIR}/ssl/dhparam.pem 2048
     RC=$?
     if [[ $RC != 0 ]]; then
       echo "ERROR: Failed to generate dhparam.pem"
@@ -68,14 +67,14 @@ init_ssl() {
   # Use self signed cert, if no other cert is available
   if [[ ! -f /etc/nginx/ssl/cert.pem ]]; then
     echo "Using self signed cert ..."
-    ln -sf ${CONFIG_DIR}/ssl/self-signed.crt /etc/nginx/ssl/cert.pem
-    ln -sf ${CONFIG_DIR}/ssl/self-signed.key /etc/nginx/ssl/key.pem
+    ln -sf ${MC_CONFIG_DIR}/ssl/self-signed.crt /etc/nginx/ssl/cert.pem
+    ln -sf ${MC_CONFIG_DIR}/ssl/self-signed.key /etc/nginx/ssl/key.pem
   fi
 
   # Use custom dhparam.pem, if no other dhparam.pem is available
   if [[ ! -f /etc/nginx/ssl/dhparam.pem ]]; then
     echo "Using self signed cert ..."
-    ln -sf ${CONFIG_DIR}/ssl/dhparam.pem /etc/nginx/ssl/dhparam.pem
+    ln -sf ${MC_CONFIG_DIR}/ssl/dhparam.pem /etc/nginx/ssl/dhparam.pem
   fi
 
   # alpine-specific adjustments
@@ -123,21 +122,21 @@ case $CMD in
     exec redis-server /etc/redis/redis.conf --protected-mode no --dir /redis
     ;;
 
-#  scan)
-#    echo "Running various inventory scans..."
-#    sleep 60 # wait for other services to be ready
-#    python /app/src/hostsping.py
-#    python /app/src/hostsfacts.py all
-#    python /app/src/hoststunnel.py
-#
-#    # continuously run the scans every 5 minutes
-#    while true; do
-#    #  python /app/src/hostsping.py
-#    #  python /app/src/hostsfacts.py all
-#    #  python /app/src/hoststunnel.py
-#      sleep 300
-#    done
-#    ;;
+  #  scan)
+  #    echo "Running various inventory scans..."
+  #    sleep 60 # wait for other services to be ready
+  #    python /app/src/hostsping.py
+  #    python /app/src/hostsfacts.py all
+  #    python /app/src/hoststunnel.py
+  #
+  #    # continuously run the scans every 5 minutes
+  #    while true; do
+  #    #  python /app/src/hostsping.py
+  #    #  python /app/src/hostsfacts.py all
+  #    #  python /app/src/hoststunnel.py
+  #      sleep 300
+  #    done
+  #    ;;
 
   celery-worker)
     echo "Starting celery worker..."
@@ -148,7 +147,7 @@ case $CMD in
   celery-flower)
     echo "Starting celery flower..."
     sleep 30 # wait for other services to be ready
-    exec python -m celery --workdir /app/src -A celery_worker.celery flower --loglevel=INFO --basic-auth=${FLOWER_USER_NAME}:${FLOWER_USER_PASSWORD}
+    exec python -m celery --workdir /app/src -A celery_worker.celery flower --loglevel=INFO --basic-auth=${FLOWER_USER_NAME:-}:${FLOWER_USER_PASSWORD:-}
     ;;
 
   ssh-agent)

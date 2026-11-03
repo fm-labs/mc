@@ -22,6 +22,7 @@ It runs as one container next to Docker.
 - List and inspect images, volumes and networks per host. Pull images.
 - **Prune** unused containers, images, volumes, networks or build cache.
 - Live Docker **events** per host.
+- **Back up, restore and clone** volumes (RPC console or Tools).
 
 ## App stacks
 
@@ -40,5 +41,7 @@ It runs as one container next to Docker.
 
 - **Settings**: view (and optionally edit) `mc.conf.json` and the SSH config.
 - **RPC console**: run admin commands like changing your password, Docker info, prune, and Swarm init/join/leave.
+- **Tools**: run built-in and your own commands (volume backup, Traefik start/stop, secret generator) with a form.
 - API with token login or API key, for scripts and node-to-node access.
+- **MCP server** (experimental) at `/mcp` for AI assistants, with a bearer token.
 - HTTPS on port 3443 with a self-signed certificate out of the box, or your own.

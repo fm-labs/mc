@@ -117,11 +117,12 @@ def load_tool_index():
     for path in tool_dirs():
         print("Scanning for tools", path)
         if os.path.exists(path):
-            tool_names = [f for f in os.listdir(path) if f.endswith(".json")]
-            for tool_name in tool_names:
-                if tool_name.startswith(".") or tool_name.startswith("_"):
+            tool_files = [f for f in os.listdir(path) if f.endswith(".json")]
+            for tool_filename in tool_files:
+                if tool_filename.startswith(".") or tool_filename.startswith("_"):
                     continue
-                tool_file = os.path.join(path, f"{tool_name}.json")
+                tool_name = tool_filename.removesuffix(".json")
+                tool_file = os.path.join(path, tool_filename)
                 try:
                     with open(tool_file) as f:
                         tool_data = json.load(f)
@@ -136,9 +137,9 @@ def load_builtin_tools():
     TOOLS_CACHE = TOOLS_CACHE or {}
     TOOLS_CACHE["mc-docker-volume-backup"] = CmdToolSpec(
         name="mc-docker-volume-backup",
-        cmd=f"{MC_BIN_DIR}/docker-volume-backup.sh",
+        cmd=f"{MC_BIN_DIR}/mc-docker-volume-backup.sh",
         description="Backup Docker volume to tar archive",
-        args=["{{source_volume}}", "{{backup_dir"],
+        args=["{{source_volume}}", "{{backup_dir}}"],
         input_schema={
             "type": "object",
             "properties": {
@@ -151,7 +152,7 @@ def load_builtin_tools():
     TOOLS_CACHE["mc-docker-volume-restore"] = CmdToolSpec(
         name="mc-docker-volume-restore",
         description="Restore Docker volume from tar archive",
-        cmd=f"{MC_BIN_DIR}/docker-volume-restore.sh",
+        cmd=f"{MC_BIN_DIR}/mc-docker-volume-restore.sh",
         args=["{{target_volume}}", "{{restore_file}}"],
         input_schema={
             "type": "object",

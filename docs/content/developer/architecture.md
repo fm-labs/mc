@@ -11,8 +11,10 @@ browser ──► nginx :3080 / :3443 (TLS)
                     │    │              └─► NodeContainerClient ──► other mc instance (/api/containers)
                     │    ├─ inventory   ──► inventorydb ──► $MC_HOME/inventory (JSON files)
                     │    ├─ rpc         ──► mc.rpc handlers (docker, swarm, users, ssh)
+                    │    ├─ tools       ──► tool index ──► subprocess (scripts in $MC_BIN_DIR)
                     │    └─ config      ──► $MC_CONFIG_DIR/mc.conf.json, ssh_config
                     └─ /              static UI (ui/dist, hash router)
+            └─► /mcp ──► MCP server :5001 (FastMCP, src/mcp_server.py)
 ```
 
 ## Repo layout
@@ -20,19 +22,22 @@ browser ──► nginx :3080 / :3443 (TLS)
 | Path | Contents |
 |---|---|
 | `src/server.py` | FastAPI app: lifespan, exception handler, router, static UI mount |
+| `src/mcp_server.py` | Standalone MCP server (separate process) |
 | `src/cli.py` | Click CLI (`version`, `apps inspect/update/deploy`) |
 | `src/mc/config.py` | Config file loading and env settings |
 | `src/mc/server/` | Routers (`router.py` wires them), auth (`deps.py`, `auth_helper.py`), config and RPC routes |
 | `src/mc/db.py` | Redis client (unused by default) |
 | `src/mc/plugin/containers/` | Container host clients, manager and `/api/containers` routes |
+| `src/mc/plugin/tools/` | Tool index (built-in and JSON-defined commands) and `/api/tools` routes |
 | `src/mc/inventory/` | mc's inventory setup and core item types (`app_stack`, `secret`, `ssh_key`, ...) |
 | `src/inventorydb/` | Standalone schema-driven item store (no mc imports) |
 | `src/mc/docker/` | Compose runners (local and over SSH), metrics, helpers |
 | `src/mc/tasks.py` | Git clone/update and compose deploy/destroy functions |
 | `src/mc/rpc.py` | JSON-RPC handlers and schema generation |
-| `src/mc/mcp/` | MCP server (FastMCP), optional |
+| `src/mc/mcp/` | MCP app: token auth and providers from the containers and tools plugins |
 | `src/mc/util/` | Subprocess, SSH, git, YAML, MongoDB helpers |
 | `ui/` | React 19 + Vite + Tailwind + shadcn/ui |
+| `scripts/` | Helper scripts copied to `$MC_BIN_DIR` (volume backup/restore, Traefik) |
 | `container/` | Entrypoint, supervisor, nginx, redis configs for the image |
 | `tests/` | pytest (`inventorydb`, `mc`) |
 
@@ -53,8 +58,7 @@ On import, `server.py` calls `setup_inventory()`. The lifespan then:
 
 - creates the `operator` admin user with a random password if `users.json` has none (`mc.setup`),
 - creates the container clients manager (`app.state.ccm`),
-- creates the inventory storage (`app.state.storage`) and loads all item types, so schema errors show at startup,
-- enters the MCP app's lifespan if `MCP_ENABLED=true`.
+- creates the inventory storage (`app.state.storage`) and loads all item types, so schema errors show at startup.
 
 On shutdown, all container clients are closed.
 
@@ -62,8 +66,9 @@ On shutdown, all container clients are closed.
 
 Some code exists but is not mounted or not enabled by default:
 
-- Routers in `routes_infra.py`, `routes_stream.py` and `plugin/tools/routes.py` are not included in `app_router`.
-- The MCP app is initialized with `MCP_ENABLED=true`, but its `app.mount("/mcp", ...)` is commented out.
+- Routers in `routes_infra.py` and `routes_stream.py` are not included in `app_router`.
+- The MCP server runs as its own supervisor program, not mounted in the API app. It only offers
+  `list_docker_hosts`, `list_tools` and `exec_tool` so far.
 - Celery worker, Flower and redis have supervisor programs with `autostart=false`. Deploys run synchronously
   in the request.
 - App stack `target_node` is ignored; deploys use `DOCKER_HOST` (see [App stacks](app-stacks.md)).

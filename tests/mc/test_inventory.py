@@ -19,10 +19,10 @@ def test_settings():
         plugin_packages=("mc.plugin",),
         plugin_subpackage="inventory",
         entry_point_group="mc.inventory_types",
-        user_dir=f"{config.CONFIG_DIR}/inventory",
+        user_dir=f"{config.MC_CONFIG_DIR}/inventory",
         user_code=False,
         user_module_package="mc_user_inventory",
-        overrides_file=f"{config.CONFIG_DIR}/inventory.toml",
+        overrides_file=f"{config.MC_CONFIG_DIR}/inventory.toml",
     )
 
 
