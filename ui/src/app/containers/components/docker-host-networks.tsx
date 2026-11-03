@@ -1,6 +1,7 @@
 import React from 'react';
 import {ColumnDef} from "@tanstack/react-table";
-import {Info} from "lucide-react";
+import {Info, Network} from "lucide-react";
+import {Link} from "react-router";
 import {useContainerHost} from "@/app/containers/components/container-host-provider.tsx";
 import {DataTableGeneric} from "@/components/data-table/data-table-generic.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
@@ -175,7 +176,13 @@ const DockerHostNetworks = () => {
 
     return (
         <div>
-            <DockerHostHeader title={"Networks"} icon="container-network"/>
+            <DockerHostHeader title={"Networks"} icon="container-network">
+                <Button asChild variant="outline" size="sm">
+                    <Link to={`/containers/network?host=${encodeURIComponent(config.hostId)}`}>
+                        <Network className="size-4"/>View Network diagram
+                    </Link>
+                </Button>
+            </DockerHostHeader>
 
             {networks === undefined ? (
                 <p className="text-muted-foreground">Loading networks ...</p>

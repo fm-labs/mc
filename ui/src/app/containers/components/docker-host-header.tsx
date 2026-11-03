@@ -1,4 +1,5 @@
 import React, {PropsWithChildren} from "react";
+import {Link} from "react-router";
 import {useContainerHost} from "@/app/containers/components/container-host-provider.tsx";
 import AppIcon from "@/components/app-icon.tsx";
 import {formatBytes} from "@/app/containers/components/stats/format.ts";
@@ -8,12 +9,12 @@ type DockerHostHeaderProps = {
     icon?: string
 }
 
-const Stat = ({icon, value, label, className}: { icon: string, value: React.ReactNode, label: string, className?: string }) => (
-    <div className="flex items-center gap-1.5">
+const Stat = ({icon, value, label, to, className}: { icon: string, value: React.ReactNode, label: string, to: string, className?: string }) => (
+    <Link to={to} className="flex items-center gap-1.5 hover:text-foreground hover:underline">
         <AppIcon icon={icon} size={14}/>
         <span className={`font-medium tabular-nums text-foreground ${className ?? ""}`}>{value}</span>
         <span>{label}</span>
-    </div>
+    </Link>
 );
 
 // Status dot that doubles as a subtle connect/disconnect toggle
@@ -43,6 +44,7 @@ const DockerHostHeader = ({title, icon, children}: PropsWithChildren<DockerHostH
     }, [summary]);
 
     const engine = host?.properties?.engine || "container-host";
+    const base = `/containers/${encodeURIComponent(config.hostId)}`;
 
     return (
         <div className="mb-4 rounded-lg border bg-card px-4 py-3 shadow-sm">
@@ -74,15 +76,15 @@ const DockerHostHeader = ({title, icon, children}: PropsWithChildren<DockerHostH
 
             {enabled && info && (
                 <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 border-t pt-2 text-sm text-muted-foreground">
-                    <Stat icon="container" value={info.Containers ?? 0} label="containers"/>
+                    <Stat icon="container" value={info.Containers ?? 0} label="containers" to={`${base}/container`}/>
                     <span className="flex items-center gap-3">
                         <span><span className="font-medium tabular-nums text-green-600">{info.ContainersRunning ?? 0}</span> running</span>
                         <span><span className="font-medium tabular-nums text-amber-600">{info.ContainersPaused ?? 0}</span> paused</span>
                         <span><span className="font-medium tabular-nums">{info.ContainersStopped ?? 0}</span> stopped</span>
                     </span>
                     <span className="hidden h-4 w-px bg-border sm:block"/>
-                    <Stat icon="container-image" value={info.Images ?? 0} label="images"/>
-                    {summary?.Volumes && <Stat icon="container-volume" value={summary.Volumes.length} label="volumes"/>}
+                    <Stat icon="container-image" value={info.Images ?? 0} label="images" to={`${base}/images`}/>
+                    {summary?.Volumes && <Stat icon="container-volume" value={summary.Volumes.length} label="volumes" to={`${base}/volumes`}/>}
                     {diskUsed !== undefined && <span><span className="font-medium tabular-nums text-foreground">{formatBytes(diskUsed)}</span> image disk</span>}
                 </div>
             )}

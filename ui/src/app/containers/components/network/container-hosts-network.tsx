@@ -232,12 +232,17 @@ const DetailsPanel = ({node, graph, onSelect, onClose}: {
 // Docker network topology of all enabled hosts, built from data cached in this browser session
 const ContainerHostsNetwork = () => {
     const {hosts, hostIds, data, missing, fetching, refresh} = useHostsNetwork();
-    const [hostFilter, setHostFilter] = React.useState<string>(ALL);
     const [filter, setFilter] = React.useState<GraphFilter>({showBuiltin: true, showUnused: false, showStopped: true});
     const [search, setSearch] = React.useState("");
     const [selectedId, setSelectedId] = React.useState<string>();
     const [params, setParams] = useSearchParams();
     const mode: LayoutMode = params.get("view") === "graph" ? "graph" : "tree";
+    // host filter comes from ?host=<hostId>, so other pages can link to one host
+    const hostFilter = params.get("host") || ALL;
+    const setHostFilter = (h: string) => setParams((p) => {
+        if (h === ALL) p.delete("host"); else p.set("host", h);
+        return p;
+    }, {replace: true});
     const setMode = (m: LayoutMode) => setParams((p) => {
         if (m === "tree") p.set("view", "tree"); else p.set("view", "graph");
         return p;
