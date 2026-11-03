@@ -3,7 +3,7 @@
 An app stack is an inventory item (`app_stack`) that points to a compose project in a git repository.
 mc copies the project into a working dir, adds its own overrides and runs `docker compose`.
 
-Code: `src/mc/inventory/item/app_stack/` · Compose runners: `src/mc/docker/compose_runner.py` ·
+Code: `../../../src/mc/plugin/apps/inventory/app_stack` · Compose runners: `src/mc/docker/compose_runner.py` ·
 Deploy/destroy: `src/mc/tasks.py`
 
 ## Item
