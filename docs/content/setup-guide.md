@@ -67,7 +67,7 @@ services:
     image: fmlabs/mc:latest
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "mc-data:/opt/mc"
+      - "mc-data:/var/lib/mc"
 
 volumes:
   mc-data:

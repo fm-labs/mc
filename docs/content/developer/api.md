@@ -1,6 +1,6 @@
 # API
 
-All routes are under `/api`. With `DEV_MODE=true`, the OpenAPI docs are at `/docs` and `/redoc`.
+All routes are under `/api`. With `MC_DEV_MODE=true`, the OpenAPI docs are at `/docs` and `/redoc`.
 
 ## Auth
 

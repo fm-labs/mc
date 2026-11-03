@@ -23,15 +23,15 @@ configure_inventory(InventorySettings(storage_dir="/var/lib/myapp/inventory", it
 | Setting | Default | mc |
 |---|---|---|
 | `storage_type` | `directory` | `INVENTORY_STORAGE` (default `directory`) |
-| `storage_dir` | `inventory` (relative to the working dir) | `$DATA_DIR/inventory` |
+| `storage_dir` | `inventory` (relative to the working dir) | `$MC_HOME/inventory` |
 | `item_packages` | none | `mc.inventory.item` |
 | `plugin_packages` | none | `mc.plugin` |
 | `plugin_subpackage` | `inventory` | `inventory` |
 | `entry_point_group` | `inventorydb.item_types` (`None` disables entry points) | `mc.inventory_types` |
-| `user_dir` | none | `$CONFIG_DIR/inventory` |
+| `user_dir` | none | `$MC_CONFIG_DIR/inventory` |
 | `user_code` | `False` | `INVENTORY_USER_CODE` (default `false`) |
 | `user_module_package` | `inventorydb_user_types` | `mc_user_inventory` |
-| `overrides_file` | none | `$CONFIG_DIR/inventory.toml` |
+| `overrides_file` | none | `$MC_CONFIG_DIR/inventory.toml` |
 
 With the defaults, inventorydb only loads item types from installed packages that register under the
 `inventorydb.item_types` entry point group.
@@ -75,7 +75,7 @@ The registry loads types from three sources, in order of precedence:
 |---|---|---|---|
 | 1 | Item packages | `item_packages` | packages in `mc.inventory.item` (see above) |
 | 2 | Plugin types | `plugin_packages`, `plugin_subpackage`, `entry_point_group` | `mc.plugin.<plugin>.inventory` packages, and installed packages registered under the `mc.inventory_types` entry point group |
-| 3 | User types | `user_dir`, `user_code`, `user_module_package` | folders in `$CONFIG_DIR/inventory/` |
+| 3 | User types | `user_dir`, `user_code`, `user_module_package` | folders in `$MC_CONFIG_DIR/inventory/` |
 
 All sources use the same layout: one folder per type with `schema.json`, an optional `meta.json` and an
 optional `__init__.py` with the handlers. If several sources define the same type, the first one wins and the
@@ -98,11 +98,11 @@ my_plugin = "my_plugin.inventory"
 
 #### User types
 
-User types live outside the code in `$CONFIG_DIR/inventory/<type>/`. Folder names must be lowercase letters,
+User types live outside the code in `$MC_CONFIG_DIR/inventory/<type>/`. Folder names must be lowercase letters,
 digits and `-`. Folders starting with `.` or `_` are ignored.
 
 ```
-$CONFIG_DIR/inventory/backup-target/
+$MC_CONFIG_DIR/inventory/backup-target/
     schema.json
     meta.json       # optional
     __init__.py     # optional, only loaded with INVENTORY_USER_CODE=true
@@ -121,7 +121,7 @@ User types can't replace built-in or plugin types. To customise those, use `inve
 
 #### Overrides: `inventory.toml`
 
-`$CONFIG_DIR/inventory.toml` is optional and can disable or adjust any item type:
+`$MC_CONFIG_DIR/inventory.toml` is optional and can disable or adjust any item type:
 
 ```toml
 [types.app-template]
@@ -152,7 +152,7 @@ When the registry loads, it logs a warning (`Inventory: ...`) for each of these:
 ## Storage
 
 Items are plain JSON objects with a required string `id`, stored via [objbase](https://pypi.org/project/objbase/)
-in `storage_dir` (in mc: `$DATA_DIR/inventory`). The backend is selected with `storage_type` (in mc:
+in `storage_dir` (in mc: `$MC_HOME/inventory`). The backend is selected with `storage_type` (in mc:
 `INVENTORY_STORAGE`):
 
 | Value | Layout |

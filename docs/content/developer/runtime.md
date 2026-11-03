@@ -24,7 +24,7 @@ so `app` can use the mounted socket.
 | Program | Autostart | What it runs |
 |---|---|---|
 | `api` | yes | `uvicorn server:app` on `0.0.0.0:5000` |
-| `nginx` | yes | Creates a self-signed cert and dhparam in `$CONFIG_DIR/ssl` on first start, then nginx |
+| `nginx` | yes | Creates a self-signed cert and dhparam in `$MC_CONFIG_DIR/ssl` on first start, then nginx |
 | `ssh-agent` | yes | ssh-agent at `/ssh-agent/agent.sock`, loads keys with `ssh-add-all`, then keeps it alive |
 | `redis`, `celery-worker`, `celery-flower`, `scan` | no | Not used by default |
 
@@ -37,20 +37,19 @@ The healthcheck calls `GET /api/health` on port 3080.
 
 | Path | Env var | Default (image) | Contents |
 |---|---|---|---|
-| Data | `DATA_DIR` | `/opt/mc` | Everything persistent (mounted as the `mc-data` volume) |
-| Config | `CONFIG_DIR` | `/opt/mc/etc` | `mc.conf.json`, `users.json`, `ssh_config`, `ssl/`, `ssh_keys/`, `inventory/` (user types), `inventory.toml` |
-| Inventory | | `$DATA_DIR/inventory` | Stored items |
-| Apps | | `$DATA_DIR/apps/<stack id>` | Working dir of each app stack |
-| Repo cache | | `$DATA_DIR/cache/repos` | Git checkouts of stack repositories |
-| UI | `STATIC_UI_DIR` | `/app/ui` | Built UI |
-| Resources | `RESOURCES_DIR` | `/app/resources` | Bundled resources |
+| Data | `DATA_DIR` | `/var/lib/mc` | Everything persistent (mounted as the `mc-data` volume) |
+| Config | `MC_CONFIG_DIR` | `/var/lib/mc/etc` | `mc.conf.json`, `users.json`, `ssh_config`, `ssl/`, `ssh_keys/`, `inventory/` (user types), `inventory.toml` |
+| Inventory | | `$MC_HOME/inventory` | Stored items |
+| Apps | | `$MC_HOME/apps/<stack id>` | Working dir of each app stack |
+| Repo cache | | `$MC_HOME/cache/repos` | Git checkouts of stack repositories |
+| UI | `MC_UI_HTML_DIR` | `/app/ui` | Built UI |
 
-Running locally without the env vars, `DATA_DIR` defaults to `/opt/mc` too, so set `DATA_DIR` in `.env.local`
+Running locally without the env vars, `MC_HOME` defaults to `/var/lib/mc` too, so set `MC_HOME` in `.env.local`
 for development.
 
 ## Config file
 
-`mc.config.load_config()` reads `mc.conf.json` from `/etc/mc` and then `$DATA_DIR/etc`, and deep-merges them
+`mc.config.load_config()` reads `mc.conf.json` from `/etc/mc` and then `$MC_HOME/etc`, and deep-merges them
 (later wins). It's read once at import; changes need a restart.
 
 ```json
@@ -69,7 +68,7 @@ for development.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DEV_MODE` | `false` | Enables `/docs`, `/redoc` and `/api/openapi.json` |
+| `MC_DEV_MODE` | `false` | Enables `/docs`, `/redoc` and `/api/openapi.json` |
 | `MC_API_KEY` | none | Enables `x-api-key` auth (must be more than 8 chars). Used by nodes |
 | `JWT_SECRET_KEY` | random per start | Signs login tokens. Unset means a restart logs everyone out |
 | `INVENTORY_STORAGE` | `directory` | `directory`, `file` or `sqlite` |
@@ -83,5 +82,5 @@ The `*_WRITABLE` flags are read from the real process env only, so `mc.conf.json
 
 ## Users
 
-Users live in `$CONFIG_DIR/users.json`, one `username:bcrypt-hash` per line (`mc/users.py`). On first start the
+Users live in `$MC_CONFIG_DIR/users.json`, one `username:bcrypt-hash` per line (`mc/users.py`). On first start the
 `operator` user is created and its password is printed to the log once.

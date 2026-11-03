@@ -38,5 +38,5 @@ them again.
 
 ## Back up
 
-Everything mc stores is in the `mc-data` volume (`/opt/mc`): config, users, inventory and stack working dirs.
+Everything mc stores is in the `mc-data` volume (`/var/lib/mc`): config, users, inventory and stack working dirs.
 Back it up like any Docker volume.

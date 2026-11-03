@@ -24,7 +24,7 @@ Deploy/destroy: `src/mc/tasks.py`
 }
 ```
 
-The `id` is the compose project name and the working dir name: `$DATA_DIR/apps/<id>`.
+The `id` is the compose project name and the working dir name: `$MC_HOME/apps/<id>`.
 
 ## Actions
 
@@ -32,7 +32,7 @@ The actions are registered in `__init__.py` (`actions` dict) and offered in the 
 
 | Action | Handler | What it does |
 |---|---|---|
-| `sync` | `handle_app_stack_action_sync` | Clones or pulls the repo into `$DATA_DIR/cache/repos/...`, then copies `repository.path` into the working dir (skips `.git`, `.github`, ...). `wipe_working_dir` deletes the working dir first |
+| `sync` | `handle_app_stack_action_sync` | Clones or pulls the repo into `$MC_HOME/cache/repos/...`, then copies `repository.path` into the working dir (skips `.git`, `.github`, ...). `wipe_working_dir` deletes the working dir first |
 | `configure` | `handle_app_stack_action_configure` | Saves `environment` on the item (drops empty values), then runs `prepare` |
 | `deploy` | `handle_app_stack_action_deploy` | Needs `confirm: true`. Runs `prepare`, then `compose stop`, `up -d` |
 | `redeploy` | `handle_app_stack_redeploy` | Needs `confirm: true`. Optional `sync`, then `configure` and `deploy` |
@@ -60,7 +60,7 @@ If `stackfile` is empty, no `-f` is passed and compose uses its own defaults.
 
 - **HTTPS:** set `repository.private` and `repository.auth.username` / `.password`. They are put into the URL.
 - **SSH:** set `repository.private` and `repository.ssh_key_id`. The key must be at
-  `$DATA_DIR/etc/ssh_keys/<ssh_key_id>.pem`.
+  `$MC_HOME/etc/ssh_keys/<ssh_key_id>.pem`.
 
 ## Proxy (Traefik)
 

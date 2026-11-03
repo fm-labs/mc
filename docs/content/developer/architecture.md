@@ -9,9 +9,9 @@ browser ──► nginx :3080 / :3443 (TLS)
                     ├─ /api/...           REST API (JWT or API key)
                     │    ├─ containers  ──► docker / podman SDK ──► local socket, tcp://, ssh://
                     │    │              └─► NodeContainerClient ──► other mc instance (/api/containers)
-                    │    ├─ inventory   ──► inventorydb ──► $DATA_DIR/inventory (JSON files)
+                    │    ├─ inventory   ──► inventorydb ──► $MC_HOME/inventory (JSON files)
                     │    ├─ rpc         ──► mc.rpc handlers (docker, swarm, users, ssh)
-                    │    └─ config      ──► $CONFIG_DIR/mc.conf.json, ssh_config
+                    │    └─ config      ──► $MC_CONFIG_DIR/mc.conf.json, ssh_config
                     └─ /              static UI (ui/dist, hash router)
 ```
 
@@ -45,7 +45,7 @@ browser ──► nginx :3080 / :3443 (TLS)
    Clients are created lazily on first use (see [Container hosts](container-hosts.md)).
 4. Inventory routes load the item type from the registry and read/write storage. Actions (e.g. `deploy`) call
    the Python handlers registered by the item type.
-5. Everything else falls through to the static UI mount at `/` (`STATIC_UI_DIR`, default `ui/dist`).
+5. Everything else falls through to the static UI mount at `/` (`MC_UI_HTML_DIR`, default `ui/dist`).
 
 ## Startup
 
@@ -62,7 +62,7 @@ On shutdown, all container clients are closed.
 
 Some code exists but is not mounted or not enabled by default:
 
-- Routers in `routes_infra.py`, `routes_sse.py` and `plugin/tools/routes.py` are not included in `app_router`.
+- Routers in `routes_infra.py`, `routes_stream.py` and `plugin/tools/routes.py` are not included in `app_router`.
 - The MCP app is initialized with `MCP_ENABLED=true`, but its `app.mount("/mcp", ...)` is commented out.
 - Celery worker, Flower and redis have supervisor programs with `autostart=false`. Deploys run synchronously
   in the request.

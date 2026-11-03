@@ -78,6 +78,9 @@ It is safe to run multiple times, but the initial credentials will only be print
 - [x] Volumes
   - [x] List volumes
   - [x] Inspect volume
+  - [z] Clone volume
+  - [z] Backup volume
+  - [z] Restore volume
 - [ ] Compose Stacks
   - [ ] List compose stacks
     - [x] List compose stacks from local filesystem
@@ -98,12 +101,12 @@ It is safe to run multiple times, but the initial credentials will only be print
   - [ ] Inspect node
   - [ ] Join swarm
   - [ ] Leave swarm
-- [ ] Docker Engine
+- [x] Docker Engine
   - [x] Info
   - [x] Version
   - [x] Disk usage
   - [x] Events
-  - [ ] Prune unused resources
+  - [x] Prune unused resources
 
 - [ ] Low-level docker command invocation
   - [ ] docker top
@@ -113,18 +116,20 @@ It is safe to run multiple times, but the initial credentials will only be print
   - [ ] docker compose
   - [ ] docker system prune
 
+**Incubating**
+
 - [ ] Launch Templates / Launch Packs
   - [ ] Container 
-    - [x] Launch container from template
+    - [z] Launch container from template
   - [ ] Compose
-    - [x] MissionControl launch packs (github-hosted stack folders)
+    - [z] MissionControl launch packs (github-hosted stack folders)
     - [ ] List user-defined compose templates
-    - [x] Add compose template
-      - [x] Compose file upload
-      - [x] Compose file url
-      - [x] GitHub repository with compose file
+    - [z] Add compose template
+      - [z] Compose file upload
+      - [z] Compose file url
+      - [z] GitHub repository with compose file
   - [ ] 3rd-party Blueprints
-    - [Z] Support for Portainer templates (github-hosted portainer template json files)
+    - [z] Support for Portainer templates (github-hosted portainer template json files)
 
 ## Useful links
 

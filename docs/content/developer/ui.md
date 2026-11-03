@@ -8,7 +8,7 @@ cd ui && pnpm install && pnpm run dev   # http://localhost:3081
 pnpm run build                         # tsc + vite build -> ui/dist
 ```
 
-The backend serves `ui/dist` (`STATIC_UI_DIR`) at `/`, so after a build the UI is also on port 3080.
+The backend serves `ui/dist` (`MC_UI_HTML_DIR`) at `/`, so after a build the UI is also on port 3080.
 
 ## Layout
 
