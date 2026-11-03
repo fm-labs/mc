@@ -10,8 +10,10 @@ export type AppNavigationData = {
     //user: any,
     navMain: NavigationItem[];
     navSecondary: NavigationItem[];
-    navFindings: NavigationItem[];
-    navContainers: NavigationItem[];
-    navAdmin: NavigationItem[];
-    navInventory: NavigationItem[];
+    //navFindings: NavigationItem[];
+    //navInventory: NavigationItem[];
 }
+export type AdminNavigationData = {
+    navAdmin: NavigationItem[];
+}
+

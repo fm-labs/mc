@@ -237,9 +237,9 @@ const ContainerHostsNetwork = () => {
     const [search, setSearch] = React.useState("");
     const [selectedId, setSelectedId] = React.useState<string>();
     const [params, setParams] = useSearchParams();
-    const mode: LayoutMode = params.get("view") === "tree" ? "tree" : "graph";
+    const mode: LayoutMode = params.get("view") === "graph" ? "graph" : "tree";
     const setMode = (m: LayoutMode) => setParams((p) => {
-        if (m === "tree") p.set("view", "tree"); else p.delete("view");
+        if (m === "tree") p.set("view", "tree"); else p.set("view", "graph");
         return p;
     }, {replace: true});
 

@@ -22,8 +22,9 @@ import AppIcon from "@/components/app-icon.tsx";
 import {NavLink, useNavigate} from "react-router";
 import {useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
 import {NavUser} from "@/components/layout/nav-user.tsx";
-import {navigationData} from "@/components/layout/data/app-navigation-data.ts";
+import {appNavigationData, appSidebarData} from "@/components/layout/data/app-navigation-data.ts";
 import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
+import {EnvironmentSwitcher} from "@/components/layout/environment-switcher.tsx";
 
 type NavItem = {
     title: string
@@ -105,23 +106,25 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
     return (
         <Sidebar {...props}>
             <SidebarHeader>
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
-                            <a href="#">
-                                <div
-                                    className="bg-sidebar-accent text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                                    <AppIcon icon={"container"} className="size-4"/>
-                                </div>
-                                <div className="flex flex-col gap-0.5 leading-none">
-                                    <span className="font-medium">Containers</span>
-                                    <span className="">v1.0.0</span>
-                                </div>
-                            </a>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
+                {/*<SidebarMenu>*/}
+                {/*    <SidebarMenuItem>*/}
+                {/*        <SidebarMenuButton size="lg" asChild>*/}
+                {/*            <a href="#">*/}
+                {/*                <div*/}
+                {/*                    className="bg-sidebar-accent text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">*/}
+                {/*                    <AppIcon icon={"container"} className="size-4"/>*/}
+                {/*                </div>*/}
+                {/*                <div className="flex flex-col gap-0.5 leading-none">*/}
+                {/*                    <span className="font-medium">Containers</span>*/}
+                {/*                    <span className="">v1.0.0</span>*/}
+                {/*                </div>*/}
+                {/*            </a>*/}
+                {/*        </SidebarMenuButton>*/}
+                {/*    </SidebarMenuItem>*/}
+                {/*</SidebarMenu>*/}
                 {/*<SearchForm />*/}
+
+                <EnvironmentSwitcher environments={appSidebarData.environments}/>
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -135,7 +138,7 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                         <SidebarMenuItem>
                             <SidebarMenuButton>
                                 <AppIcon icon={"report"}/>
-                                <NavLink to={"/containers/stats"}>Stats</NavLink>
+                                <NavLink to={"/containers/stats"}>Dashboard</NavLink>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
@@ -189,7 +192,7 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                         ))}
                     </SidebarMenu>
                 </SidebarGroup>
-                <NavSecondary items={navigationData?.navAdmin as any[]} className="mt-auto"/>
+                <NavSecondary items={appNavigationData?.navSecondary as any[]} className="mt-auto"/>
             </SidebarContent>
             <SidebarFooter>
                 <NavUser/>

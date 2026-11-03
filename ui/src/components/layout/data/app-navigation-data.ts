@@ -1,6 +1,7 @@
-import { AppNavigationData } from "@/components/layout/data/types.ts";
+import {AppNavigationData} from "@/components/layout/data/types.ts";
+import {CloudIcon, SatelliteIcon} from "lucide-react";
 
-export const navigationData: AppNavigationData = {
+export const appNavigationData: AppNavigationData = {
     navMain: [
         {
             title: "Dashboard",
@@ -34,87 +35,81 @@ export const navigationData: AppNavigationData = {
         },
     ],
     navSecondary: [],
-    navInventory: [
+    // navInventory: [
+    //     {
+    //         title: "Kitchensink",
+    //         url: "/kitchensink",
+    //         //icon: IconTool,
+    //         iconName: "kitchensink",
+    //     },
+    // ],
+    // navFindings: [
+    //     {
+    //         title: "Findings",
+    //         url: "/findings",
+    //         //icon: IconTool,
+    //         iconName: "findings",
+    //     },
+    //     {
+    //         title: "Critical",
+    //         iconName: "error",
+    //         isActive: true,
+    //         url: "#",
+    //         items: [
+    //             {
+    //                 title: "Active Proposals",
+    //                 url: "#",
+    //             },
+    //             {
+    //                 title: "Archived",
+    //                 url: "#",
+    //             },
+    //         ],
+    //     },
+    //     {
+    //         title: "Warnings",
+    //         iconName: "warning",
+    //         url: "#",
+    //         items: [
+    //             {
+    //                 title: "Active Proposals",
+    //                 url: "#",
+    //             },
+    //             {
+    //                 title: "Archived",
+    //                 url: "#",
+    //             },
+    //         ],
+    //     },
+    //     {
+    //         title: "Info",
+    //         iconName: "info",
+    //         url: "#",
+    //         items: [
+    //             {
+    //                 title: "Active Proposals",
+    //                 url: "#",
+    //             },
+    //             {
+    //                 title: "Archived",
+    //                 url: "#",
+    //             },
+    //         ],
+    //     },
+    // ]
+};
+
+export const appSidebarData: any = {
+    environments: [
         {
-            title: "Kitchensink",
-            url: "/kitchensink",
-            //icon: IconTool,
-            iconName: "kitchensink",
-        },
-    ],
-    navContainers: [
-    ],
-    navFindings: [
-        {
-            title: "Findings",
-            url: "/findings",
-            //icon: IconTool,
-            iconName: "findings",
-        },
-        {
-            title: "Critical",
-            iconName: "error",
-            isActive: true,
-            url: "#",
-            items: [
-                {
-                    title: "Active Proposals",
-                    url: "#",
-                },
-                {
-                    title: "Archived",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Warnings",
-            iconName: "warning",
-            url: "#",
-            items: [
-                {
-                    title: "Active Proposals",
-                    url: "#",
-                },
-                {
-                    title: "Archived",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Info",
-            iconName: "info",
-            url: "#",
-            items: [
-                {
-                    title: "Active Proposals",
-                    url: "#",
-                },
-                {
-                    title: "Archived",
-                    url: "#",
-                },
-            ],
-        },
-    ],
-    navAdmin: [
-        // {
-        //     title: "Settings",
-        //     url: "/settings",
-        //     iconName: "settings",
-        // },
-        {
-            title: "RPC",
-            url: "/admin/rpc",
-            //icon: IconDashboard,
-            iconName: "xterm",
+            name: "Local",
+            logo: SatelliteIcon,
+            plan: "Basic",
         },
         {
-            title: "Tools",
-            url: "/admin/tools",
-            //icon: IconTool,
-            iconName: "tool",
+            name: "Cloud",
+            logo: CloudIcon,
+            plan: "Pro",
         },
     ],
 };

@@ -37,7 +37,15 @@ import {
 } from "@tabler/icons-react";
 import { type SVGProps } from "react";
 import { IconPodman } from "@/assets/brand-icons/icon-podman.tsx";
-import {HatGlassesIcon, Layers2Icon, LayersIcon, SearchCodeIcon, Share2Icon, ShieldAlertIcon} from "lucide-react";
+import {
+    HatGlassesIcon,
+    Layers2Icon,
+    LayersIcon,
+    SatelliteIcon,
+    SearchCodeIcon,
+    Share2Icon,
+    ShieldAlertIcon
+} from "lucide-react";
 
 const appIconsMap: {[key: string]: any} = {
     // navigation
@@ -71,6 +79,7 @@ const appIconsMap: {[key: string]: any} = {
     "warning": IconAlertTriangle,
     "error": ShieldAlertIcon,
     "info": IconInfoCircle,
+    "satellite": SatelliteIcon,
 
     // brands
     "discord": IconDiscord,

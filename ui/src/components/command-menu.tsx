@@ -11,8 +11,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command'
 import { ScrollArea } from './ui/scroll-area'
-import { appSidebarData } from "@/components/layout/data/app-sidebar-data.ts";
-import {navigationData} from "@/components/layout/data/app-navigation-data.ts";
+import {appNavigationData, appSidebarData} from "@/components/layout/data/app-navigation-data.ts";
 
 export function CommandMenu() {
   const { open, setOpen } = useSearch()
@@ -31,7 +30,7 @@ export function CommandMenu() {
       <CommandList>
         <ScrollArea type='hover' className='h-72 pe-1'>
           <CommandEmpty>No results found.</CommandEmpty>
-          {navigationData.navMain.map((group: any) => (
+          {appNavigationData.navMain.map((group: any) => (
             <CommandGroup key={group.title} heading={group.title}>
               {group?.items?.map((navItem: any, i: number) => {
                 if (navItem.url)

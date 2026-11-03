@@ -1,6 +1,5 @@
 import * as React from "react";
 
-import {NavInventory} from "@/components/layout/nav-inventory.tsx";
 import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
 import {NavUser} from "@/components/layout/nav-user.tsx";
 import {
@@ -9,13 +8,10 @@ import {
     SidebarFooter,
     SidebarHeader,
 } from "@/components/ui/sidebar.tsx";
-import {InventoryMetadata} from "@/features/inventory/inventory.types.ts";
-import {useApi} from "@/context/api-context.tsx";
-import {navigationData} from "@/components/layout/data/app-navigation-data.ts";
-import {TeamSwitcher} from "@/components/layout/team-switcher.tsx";
-import {appSidebarData} from "@/components/layout/data/app-sidebar-data.ts";
-import {NavigationItem} from "@/components/layout/data/types.ts";
-import DevOnly from "@/components/dev-only.tsx";
+import {appSidebarData} from "@/components/layout/data/app-navigation-data.ts";
+import {EnvironmentSwitcher} from "@/components/layout/environment-switcher.tsx";
+
+import {adminNavigationData} from "@/components/layout/data/admin-navigation-data.ts";
 
 export function AdminSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     // const {api} = useApi()
@@ -70,11 +66,12 @@ export function AdminSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenuItem>
                 </SidebarMenu>*/}
                 {/*<AppTitle />*/}
-                <TeamSwitcher teams={appSidebarData.teams}/>
+                <EnvironmentSwitcher environments={appSidebarData.environments}/>
+                <NavSecondary items={adminNavigationData?.navAdmin as any[]} className="mt-auto"/>
             </SidebarHeader>
             <SidebarContent>
                 {/*<NavInventory items={inventoryNavData as any[]}/>*/}
-                <NavSecondary items={navigationData?.navAdmin as any[]} className="mt-auto"/>
+                {/*<NavSecondary items={appNavigationData?.navAdmin as any[]} className="mt-auto"/>*/}
             </SidebarContent>
             <SidebarFooter>
                 <NavUser/>

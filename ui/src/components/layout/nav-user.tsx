@@ -62,8 +62,8 @@ export function NavUser() {
                             <div className="grid flex-1 text-left text-sm leading-tight">
                                 <span className="truncate font-medium">{user.username}</span>
                                 <span className="text-muted-foreground truncate text-xs">
-                  {user.email}
-                </span>
+                                    {user.email}
+                                </span>
                             </div>
                             <IconDotsVertical className="ml-auto size-4" />
                         </SidebarMenuButton>
@@ -83,18 +83,18 @@ export function NavUser() {
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-medium">{user.username}</span>
                                     <span className="text-muted-foreground truncate text-xs">
-                    {user.email}
-                  </span>
+                                        {user.email}
+                                    </span>
                                 </div>
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuGroup>
-                            <DropdownMenuItem>
-                                <IconUserCircle />
-                                Account
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate("/settings")}>
+                            {/*<DropdownMenuItem>*/}
+                            {/*    <IconUserCircle />*/}
+                            {/*    Account*/}
+                            {/*</DropdownMenuItem>*/}
+                            <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
                                 <IconSettings />
                                 Settings
                             </DropdownMenuItem>

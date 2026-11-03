@@ -8,11 +8,9 @@ import {
     SidebarFooter,
     SidebarHeader,
 } from "@/components/ui/sidebar.tsx";
-import { navigationData } from "@/components/layout/data/app-navigation-data.ts";
-import { TeamSwitcher } from "@/components/layout/team-switcher.tsx";
-import { appSidebarData } from "@/components/layout/data/app-sidebar-data.ts";
-import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
-import {NavFindings} from "@/components/layout/nav-findings.tsx";
+import {appNavigationData, appSidebarData} from "@/components/layout/data/app-navigation-data.ts";
+import { EnvironmentSwitcher } from "@/components/layout/environment-switcher.tsx";
+
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
@@ -33,12 +31,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     </SidebarMenuItem>
                 </SidebarMenu>*/}
                 {/*<AppTitle />*/}
-                <TeamSwitcher teams={appSidebarData.teams} />
+                <EnvironmentSwitcher environments={appSidebarData.environments} />
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={navigationData?.navMain as any[]} />
+                <NavMain items={appNavigationData?.navMain as any[]} />
                 {/*<NavFindings items={navigationData?.navFindings} />*/}
-                <NavSecondary items={navigationData?.navSecondary as any[]} className="mt-auto" />
+                {/*<NavSecondary items={appNavigationData?.navSecondary as any[]} className="mt-auto" />*/}
             </SidebarContent>
             <SidebarFooter>
                 <NavUser />

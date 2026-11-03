@@ -59,7 +59,7 @@ const DockerHostHeader = ({title, icon, children}: PropsWithChildren<DockerHostH
                                 <span className="ml-1 rounded border px-1.5 text-xs">v{info.ServerVersion}</span>
                             )}
                         </div>
-                        <h2 className="flex items-center gap-1 text-2xl font-bold tracking-tight">
+                        <h2 className="flex items-center gap-1 font-bold tracking-tight">
                             {icon && <AppIcon icon={icon} size={20} className="mr-1 text-muted-foreground"/>}
                             {title}
                         </h2>

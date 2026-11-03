@@ -1,11 +1,11 @@
 import React from "react";
-import { useApi } from "@/context/api-context.tsx";
+import {useApi} from "@/context/api-context.tsx";
 import {createHashRouter, RouteObject, RouterProvider} from "react-router";
 import Root from "@/app/root.tsx";
 import AuthLayout from "@/components/layout/auth-layout.tsx";
 import AdminLayout from "@/components/layout/admin-layout.tsx";
 import MainLayout from "@/components/layout/main-layout.tsx";
-import { NotFoundError } from "@/features/errors/not-found-error.tsx";
+import {NotFoundError} from "@/features/errors/not-found-error.tsx";
 import AuthenticatedRoute from "@/components/authenticated-route.tsx";
 import ContainerHostsStatsPage from "@/app/containers/container-hosts-stats-page.tsx";
 import ContainerHostsNetworkPage from "@/app/containers/container-hosts-network-page.tsx";
@@ -29,19 +29,19 @@ const SettingsPage = await import('@/app/settings/page.tsx').then(mod => mod.def
 
 
 const AppRouter = () => {
-    const { api: apiClient } = useApi()
+    const {api: apiClient} = useApi()
 
     const routes: RouteObject[] = [
         {
             path: "/",
             Component: Root,
             children: [
-                { index: true, Component: StartPage },
+                {index: true, Component: StartPage},
                 {
                     path: "auth",
                     Component: AuthLayout,
                     children: [
-                        { path: "login", Component: LoginPage },
+                        {path: "login", Component: LoginPage},
                         //{ path: "callback/github", Component: GithubLoginPage },
                     ],
                 },
@@ -50,7 +50,7 @@ const AppRouter = () => {
                     children: [
                         {
                             path: "dashboard",
-                            Component: MainLayout,
+                            Component: AdminLayout,
                             children: [
                                 {
                                     index: true,
@@ -59,18 +59,8 @@ const AppRouter = () => {
                             ]
                         },
                         {
-                            path: "settings",
-                            Component: MainLayout,
-                            children: [
-                                {
-                                    index: true,
-                                    Component: SettingsPage,
-                                }
-                            ]
-                        },
-                        {
                             path: "stacks", // secops
-                            Component: MainLayout,
+                            Component: AdminLayout,
                             children: [
                                 {
                                     index: true,
@@ -82,7 +72,7 @@ const AppRouter = () => {
                                 {
                                     path: "details/:stackId",
                                     Component: AppStackDetailsPage,
-                                    loader: ({ params }) => {
+                                    loader: ({params}) => {
                                         return apiClient.getInventoryItem("app-stack", params.stackId!);
                                     },
                                 },
@@ -128,12 +118,22 @@ const AppRouter = () => {
                             children: [
                                 {
                                     index: true,
-                                    Component: KitchensinkPage,
+                                    //Component: KitchensinkPage,
+                                    Component: SettingsPage,
                                 },
                                 // {
                                 //     path: "tasks",
                                 //     Component: TasksPage,
                                 // },
+                                {
+                                    path: "settings",
+                                    children: [
+                                        {
+                                            index: true,
+                                            Component: SettingsPage,
+                                        }
+                                    ]
+                                },
                                 {
                                     path: "rpc",
                                     Component: RpcPage,
@@ -151,8 +151,8 @@ const AppRouter = () => {
                                         {
                                             path: ":itemType",
                                             Component: InventoryPage,
-                                            loader: ({ params }) => {
-                                                const { itemType } = params;
+                                            loader: ({params}) => {
+                                                const {itemType} = params;
                                                 if (itemType) {
                                                     return apiClient.getInventoryItems(itemType);
                                                 }
@@ -161,8 +161,8 @@ const AppRouter = () => {
                                         {
                                             path: ":itemType/:itemId",
                                             Component: InventoryItemPage,
-                                            loader: async ({ params }) => {
-                                                const { itemType, itemId } = params;
+                                            loader: async ({params}) => {
+                                                const {itemType, itemId} = params;
                                                 if (!itemType || !itemId) {
                                                     return null;
                                                 }
@@ -190,7 +190,7 @@ const AppRouter = () => {
         return createHashRouter(routes);
     }, []);
 
-    return <RouterProvider router={router} />
+    return <RouterProvider router={router}/>
 };
 
 export default AppRouter;
