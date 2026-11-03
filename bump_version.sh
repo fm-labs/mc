@@ -22,3 +22,5 @@ sed -i '' "s/^version = \".*\"/version = \"${NEW_VERSION}\"/" pyproject.toml
 
 echo "Updating Dockerfile"
 sed -i '' "s/^ARG MC_VERSION=.*/ARG MC_VERSION=v${NEW_VERSION}/" Dockerfile
+
+uv sync
