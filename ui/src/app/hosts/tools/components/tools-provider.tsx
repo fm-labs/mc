@@ -1,6 +1,5 @@
 import React from "react";
 import { useSelectedSearchParam } from "@/hooks/use-selected-search-param.ts";
-import { LOCAL_NODE } from "@/components/node-select.tsx";
 
 type ToolsContextType = {
     tools: Tool[]
@@ -14,9 +13,9 @@ type ToolsContextType = {
 const ToolsContext = React.createContext<ToolsContextType | null>(null);
 
 // The selected tool lives in the URL (?tool=name) so it survives reloads and can be linked to.
-export function ToolsProvider({ children, tools }: { children: React.ReactNode, tools: Tool[] }) {
+export function ToolsProvider({ children, tools, targetNode }: { children: React.ReactNode, tools: Tool[], targetNode: string }) {
     const [selectedName, setSelectedName] = useSelectedSearchParam("tool");
-    const [targetNode, setTargetNode] = React.useState<string>(LOCAL_NODE);
+    const [_targetNode, setTargetNode] = React.useState<string>(targetNode);
 
     const currentTool = React.useMemo(
         () => tools.find((t) => t.name === selectedName) || null,
@@ -29,7 +28,7 @@ export function ToolsProvider({ children, tools }: { children: React.ReactNode, 
     );
 
     return (
-        <ToolsContext value={{ currentTool, setCurrentTool, tools, targetNode, setTargetNode }}>
+        <ToolsContext value={{ currentTool, setCurrentTool, tools, targetNode: _targetNode, setTargetNode }}>
             {children}
         </ToolsContext>
     );

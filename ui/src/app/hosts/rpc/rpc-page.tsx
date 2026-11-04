@@ -2,14 +2,17 @@ import React from "react";
 import { IconBolt, IconBell, IconTerminal } from "@tabler/icons-react";
 import MainContent from "@/components/layout/main-content.tsx";
 import { DetailEmpty, ListDetailLayout, SearchableList } from "@/components/layout/list-detail-layout.tsx";
-import { RpcCommandDef, RpcCommandProvider } from "@/app/rpc/components/rpc-command-provider.tsx";
-import RpcCommand from "@/app/rpc/components/rpc-command.tsx";
+import { RpcCommandDef, RpcCommandProvider } from "@/app/hosts/rpc/components/rpc-command-provider.tsx";
+import RpcCommand from "@/app/hosts/rpc/components/rpc-command.tsx";
 import { useApi } from "@/context/api-context.tsx";
 import { useSelectedSearchParam } from "@/hooks/use-selected-search-param.ts";
 import Header from "@/components/header.tsx";
+import {ContainerHostsProvider} from "@/app/containers/components/container-hosts-provider.tsx";
+import ContainersLayout from "@/components/layout/containers-layout.tsx";
+import {useParams} from "react-router";
 
 
-const RpcPage = () => {
+const RpcView = ({hostId}: {hostId: string}) => {
     const { api } = useApi();
 
     const [commands, setCommands] = React.useState<RpcCommandDef[]>([]);
@@ -22,12 +25,12 @@ const RpcPage = () => {
 
     const fetchCommands = React.useCallback(async () => {
         try {
-            const response = await api.get("/api/rpc");
+            const response = await api.get("/api/rpc", { headers: { "x-mc-node": hostId }});
             setCommands(response || []);
         } catch (error) {
             console.error("Failed to fetch RPC commands:", error);
         }
-    }, [api]);
+    }, [api, hostId]);
 
     React.useEffect(() => {
         fetchCommands();
@@ -41,9 +44,7 @@ const RpcPage = () => {
     })), [commands]);
 
     return (
-        <MainContent>
-            <Header title={"Admin RPC"} subtitle={"Run admin RPC commands against your server."} />
-
+        <>
             <ListDetailLayout
                 list={<SearchableList items={items} selectedId={selectedMethod} onSelect={setSelectedMethod} noun="commands" />}
             >
@@ -56,8 +57,24 @@ const RpcPage = () => {
                         Select a command from the list to see its parameters and run it.
                     </DetailEmpty>}
             </ListDetailLayout>
-        </MainContent>
+        </>
     );
+};
+
+const RpcPage = () => {
+    const {hostId, view} = useParams<{ hostId: string, view: string }>();
+    if (!hostId) {
+        return <div>Host ID missing</div>
+    }
+
+    return <ContainerHostsProvider>
+        <ContainersLayout>
+            <MainContent>
+                <Header title={"Admin RPC"} subtitle={"Run admin RPC commands against your server."} />
+                <RpcView hostId={hostId} />
+            </MainContent>
+        </ContainersLayout>
+    </ContainerHostsProvider>;
 };
 
 export default RpcPage;

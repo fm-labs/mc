@@ -14,7 +14,7 @@ import ContainerHostsNetworkPage from "@/app/containers/container-hosts-network-
 const StartPage = await import('@/app/start-page.tsx').then(mod => mod.default);
 const InventoryPage = await import('@/app/inventory/page.tsx').then(mod => mod.default);
 const InventoryItemPage = await import('@/app/inventory/item-page.tsx').then(mod => mod.default);
-const ToolsPage = await import('@/app/tools/page.tsx').then(mod => mod.default);
+const ToolsPage = await import('@/app/hosts/tools/tools-page.tsx').then(mod => mod.default);
 const ContainerHostsPage = await import('@/app/containers/container-hosts-page.tsx').then(mod => mod.default);
 const ContainerHostPage = await import('@/app/containers/container-host-page.tsx').then(mod => mod.default);
 const ContainerPage = await import('@/app/containers/container-page.tsx').then(mod => mod.default);
@@ -24,7 +24,7 @@ const KitchensinkPage = await import('@/app/kitchensink/page.tsx').then(mod => m
 const PortainerTemplatesPage = await import('@/app/app-stacks/portainer-templates-page.tsx').then(mod => mod.default);
 const AppStacksPage = await import('@/app/app-stacks/app-stacks-page.tsx').then(mod => mod.default);
 const AppStackDetailsPage = await import('@/app/app-stacks/app-stack-details-page.tsx').then(mod => mod.default);
-const RpcPage = await import('@/app/rpc/rpc-page.tsx').then(mod => mod.default);
+const RpcPage = await import('@/app/hosts/rpc/rpc-page.tsx').then(mod => mod.default);
 const AppsPage = await import('@/app/apps/apps-page.tsx').then(mod => mod.default);
 const AppSpecEditPage = await import('@/app/apps/app-spec-edit-page.tsx').then(mod => mod.default);
 const SettingsPage = await import('@/app/settings/page.tsx').then(mod => mod.default);
@@ -115,6 +115,22 @@ const AppRouter = () => {
                             ],
                         },
                         {
+                            path: "manage/:hostId",
+                            children: [
+                                {
+                                    path: "rpc",
+                                    Component: RpcPage,
+                                },
+                                {
+                                    path: "tools",
+                                    Component: ToolsPage,
+                                    loader: () => {
+                                        return apiClient.getToolList();
+                                    },
+                                },
+                            ]
+                        },
+                        {
                             path: "admin", // admin tools
                             Component: AdminLayout,
                             children: [
@@ -156,17 +172,6 @@ const AppRouter = () => {
                                                 .catch(() => null),
                                         },
                                     ],
-                                },
-                                {
-                                    path: "rpc",
-                                    Component: RpcPage,
-                                },
-                                {
-                                    path: "tools",
-                                    Component: ToolsPage,
-                                    loader: () => {
-                                        return apiClient.getToolList();
-                                    },
                                 },
                                 {
                                     path: "inventory",

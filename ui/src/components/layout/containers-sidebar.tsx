@@ -93,6 +93,16 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                     url: `/containers/${host.id}/events`,
                     icon: "container-events"
                 },
+                {
+                    title: "Manage",
+                    url: `/manage/${host.id}/tools`,
+                    icon: "gear"
+                },
+                {
+                    title: "RPC",
+                    url: `/manage/${host.id}/rpc`,
+                    icon: "gear"
+                },
             ],
         }
         })

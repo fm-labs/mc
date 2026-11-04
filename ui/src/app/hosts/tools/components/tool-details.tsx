@@ -3,14 +3,14 @@ import validator from "@rjsf/validator-ajv8";
 import Form from "@rjsf/shadcn";
 import { IconPlayerPlay, IconPlayerStop, IconBroadcast } from "@tabler/icons-react";
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button.tsx";
+import { Badge } from "@/components/ui/badge.tsx";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
+import { Separator } from "@/components/ui/separator.tsx";
 import { toast } from "react-toastify";
 import { useApi } from "@/context/api-context.tsx";
-import { getToolTarget, getToolType, isCmdTool } from "@/app/tools/components/tool-utils.ts";
-import { useTools } from "@/app/tools/components/tools-provider.tsx";
+import { getToolTarget, getToolType, isCmdTool } from "@/app/hosts/tools/components/tool-utils.ts";
+import { useTools } from "@/app/hosts/tools/components/tools-provider.tsx";
 import { LOCAL_NODE, NodeSelect, nodeHeaders } from "@/components/node-select.tsx";
 
 type ExecOutput = {

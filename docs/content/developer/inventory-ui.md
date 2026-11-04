@@ -18,7 +18,7 @@ adds a link for each item type. The link label is the schema `title`, and the li
 
 | Route | Page |
 |---|---|
-| `/admin/inventory/:itemType` | Item list (`page.tsx`) |
+| `/admin/inventory/:itemType` | Item list (`tools-page.tsx`) |
 | `/admin/inventory/:itemType/:itemId` | Item detail view (`item-page.tsx`) |
 
 The list page is structured like this:
