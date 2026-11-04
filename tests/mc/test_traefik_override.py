@@ -9,7 +9,7 @@ import pydantic
 import pytest
 import yaml
 
-from mc.plugin.apps.apps_helper import AppNetworkSpec, AppRoutingSpec, AppSpec, compose_service_ports
+from mc.plugin.apps.apps_helper import AppNetworkSpec, AppRoutingSpec, AppSpec, compose_container_ports
 from mc.plugin.apps.compose_override import (
     OverrideDict,
     TRAEFIK_NETWORK_NAME,
@@ -105,8 +105,8 @@ def test_unknown_and_network_mode_services_warn():
 
 
 @pytest.mark.parametrize("kwargs", [
-    {"service_port": 0},
-    {"service_port": 70000},
+    {"container_port": 0},
+    {"container_port": 70000},
     {"service_name": "bad name"},
     {"domain_names": []},
     {"domain_names": ["  "]},
@@ -116,7 +116,7 @@ def test_unknown_and_network_mode_services_warn():
 ])
 def test_invalid_routes(kwargs):
     with pytest.raises(pydantic.ValidationError):
-        AppRoutingSpec(**{"service_name": "web", "service_port": 80, "domain_names": ["example.com"], **kwargs})
+        AppRoutingSpec(**{"service_name": "web", "container_port": 80, "domain_names": ["example.com"], **kwargs})
 
 
 def test_domains_are_normalized():
@@ -129,11 +129,11 @@ def test_duplicate_routes_rejected():
         spec([route(), route(domains=["other.example.com"])])
 
 
-def test_compose_service_ports():
-    assert compose_service_ports(STACK) == {"web": [80, 443], "admin.ui": [3000], "host": []}
-    assert compose_service_ports({"services": {"x": {"ports": [{"target": 81}, 82, "1000-1001:9000-9001"]}}}) \
+def test_compose_container_ports():
+    assert compose_container_ports(STACK) == {"web": [80, 443], "admin.ui": [3000], "host": []}
+    assert compose_container_ports({"services": {"x": {"ports": [{"target": 81}, 82, "1000-1001:9000-9001"]}}}) \
         == {"x": [81, 82, 9000]}
-    assert compose_service_ports(None) == {}
+    assert compose_container_ports(None) == {}
 
 
 @pytest.mark.skipif(not shutil.which("docker"), reason="docker CLI not installed")

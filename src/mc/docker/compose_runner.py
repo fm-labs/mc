@@ -187,6 +187,7 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         env["DOCKER_HOST"] = self.docker_host
         env["COMPOSE_PROJECT_DIRECTORY"] = project_dir
         env["COMPOSE_PROJECT_NAME"] = self.project_name
+        #env["BUILDX_BAKE_ENTITLEMENTS_FS"] = "0"
 
         _cmd = ["docker", "compose"]
         _cmd.extend(["--project-directory", project_dir])

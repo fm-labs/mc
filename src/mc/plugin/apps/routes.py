@@ -18,7 +18,7 @@ from mc.plugin.apps.apps_helper import (
     AppSpec,
     AppVolumeSpec,
     compose_declared_names,
-    compose_service_ports,
+    compose_container_ports,
     app_spec_exists,
     get_appspec_path,
     list_app_specs,
@@ -103,7 +103,7 @@ def _details(spec: AppSpec, compile_warnings: list[str] | None = None) -> AppSpe
         except yaml.YAMLError:
             stack = None
         details.compose_volumes, details.compose_networks = compose_declared_names(stack)
-        details.compose_services = compose_service_ports(stack)
+        details.compose_services = compose_container_ports(stack)
     if spec.type == "compose":
         for attr in ("override", "traefik_override"):
             path = getattr(spec, f"{attr}_path")
@@ -302,8 +302,6 @@ async def apps_action_stream(request: Request, app_id: str, action: AppAction,
         if spec.stackfile and not os.path.isfile(spec.stackfile_path):
             raise ValueError(f"Compose file not found: {spec.stackfile_path}")
         cmd, env = _action_cmd(spec, action)
-        env["BUILDX_BAKE_ENTITLEMENTS_FS"] = "0"
-
         print("action", spec.project_dir, cmd, env)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

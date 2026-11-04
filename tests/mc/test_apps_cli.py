@@ -146,7 +146,7 @@ def test_edit_spec(run, monkeypatch, tmp_path):
 
     def editor(text, **kwargs):
         data = yaml.safe_load(text)
-        data["routing"] = [{"service_name": "web", "service_port": 80, "domain_names": ["b.example.com"]}]
+        data["routing"] = [{"service_name": "web", "container_port": 80, "domain_names": ["b.example.com"]}]
         return yaml.safe_dump(data)
     monkeypatch.setattr(cli_apps.click, "edit", editor)
     r = run("edit", "myapp")
@@ -157,7 +157,7 @@ def test_edit_spec(run, monkeypatch, tmp_path):
 
 def test_edit_invalid_then_give_up(run, monkeypatch):
     create(run)
-    monkeypatch.setattr(cli_apps.click, "edit", lambda text, **kw: text + "routing: [{service_port: 0}]\n")
+    monkeypatch.setattr(cli_apps.click, "edit", lambda text, **kw: text + "routing: [{container_port: 0}]\n")
     r = run("edit", "myapp", input="n\n")
     assert r.exit_code == 1
     assert "Invalid app spec" in r.output

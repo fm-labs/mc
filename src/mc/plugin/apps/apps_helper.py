@@ -91,7 +91,7 @@ def _container_port(entry: Any) -> int | None:
     return None
 
 
-def compose_service_ports(stack: dict[str, Any] | None) -> dict[str, list[int]]:
+def compose_container_ports(stack: dict[str, Any] | None) -> dict[str, list[int]]:
     """Service names of a parsed compose file, with the container ports they publish or expose."""
     if not isinstance(stack, dict) or not isinstance(stack.get("services"), dict):
         return {}

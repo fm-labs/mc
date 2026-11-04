@@ -317,7 +317,7 @@ def test_mc_compose_env_wins_over_spec(client):
 
 def test_routing_saved_and_compiled(client, tmp_path):
     compose = "services:\n  web:\n    image: nginx:alpine\n    expose: [80]\n"
-    routing = [{"service_name": "web", "service_port": 80, "mode": "https", "domain_names": ["app.example.com"]}]
+    routing = [{"service_name": "web", "container_port": 80, "mode": "https", "domain_names": ["app.example.com"]}]
     r = create(client, stackfile_content=compose, routing=routing)
     assert r.status_code == 200, r.text
     body = r.json()
@@ -333,8 +333,8 @@ def test_routing_saved_and_compiled(client, tmp_path):
 
 
 def test_routing_to_unknown_service_warns(client):
-    routing = [{"service_name": "nope", "service_port": 80, "domain_names": ["a.example.com"]}]
+    routing = [{"service_name": "nope", "container_port": 80, "domain_names": ["a.example.com"]}]
     r = create(client, routing=routing)
     assert r.status_code == 200
     assert any("nope" in w for w in r.json()["compile_warnings"])
-    assert create(client, id="other", routing=[{**routing[0], "service_port": 0}]).status_code == 422
+    assert create(client, id="other", routing=[{**routing[0], "container_port": 0}]).status_code == 422
