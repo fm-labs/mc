@@ -15,12 +15,16 @@ import CompiledSpecDialog from "@/app/apps/components/compiled-spec-dialog.tsx";
 import AppVolumesEditor from "@/app/apps/components/app-volumes-editor.tsx";
 import AppNetworksEditor from "@/app/apps/components/app-networks-editor.tsx";
 import AppEnvironmentEditor from "@/app/apps/components/app-environment-editor.tsx";
+import AppRoutingEditor from "@/app/apps/components/app-routing-editor.tsx";
 import {
     composeVariableRefs,
     envToRows,
     normalizeNetworks,
+    routingToRows,
     rowsToEnv,
+    rowsToRouting,
     validateEnvironment,
+    validateRouting,
     normalizeVolumes,
     validateNetworks,
     validateVolumes,
@@ -65,6 +69,7 @@ const AppSpecEditPage = () => {
         volumes: details?.spec.volumes ?? [],
         networks: details?.spec.networks ?? [],
         environment: envToRows(details?.spec.environment),
+        routing: routingToRows(details?.spec.routing),
     }), [details]);
 
     const [form, setForm] = React.useState(initial);
@@ -83,7 +88,8 @@ const AppSpecEditPage = () => {
     const networkErrors = React.useMemo(() => validateNetworks(form.networks), [form.networks]);
     const envErrors = React.useMemo(() => validateEnvironment(form.environment), [form.environment]);
     const envSuggestions = React.useMemo(() => composeVariableRefs(form.stackfile), [form.stackfile]);
-    const hasOverrideErrors = [...volumeErrors, ...networkErrors, ...envErrors].some(Boolean);
+    const routingErrors = React.useMemo(() => validateRouting(form.routing), [form.routing]);
+    const hasOverrideErrors = [...volumeErrors, ...networkErrors, ...envErrors, ...routingErrors].some(Boolean);
     const idError = isNew && form.id && !APP_ID_PATTERN.test(form.id)
         ? "Use lowercase letters, digits, '-' and '_'."
         : null;
@@ -101,6 +107,7 @@ const AppSpecEditPage = () => {
                     volumes: normalizeVolumes(form.volumes),
                     networks: normalizeNetworks(form.networks),
                     environment: rowsToEnv(form.environment),
+                    routing: rowsToRouting(form.routing),
                 });
                 toast.success(`Created app ${created.spec.id}`);
                 created.compile_warnings?.forEach((w: string) => toast.warning(w));
@@ -113,6 +120,7 @@ const AppSpecEditPage = () => {
                     volumes: normalizeVolumes(form.volumes),
                     networks: normalizeNetworks(form.networks),
                     environment: rowsToEnv(form.environment),
+                    routing: rowsToRouting(form.routing),
                 });
                 toast.success(`Saved app ${details.spec.id}`);
                 setCompileWarnings(updated.compile_warnings ?? []);
@@ -207,15 +215,20 @@ const AppSpecEditPage = () => {
                 suggestions={envSuggestions}
             />
 
+            <AppRoutingEditor
+                value={form.routing}
+                onChange={(routing) => setForm((f) => ({ ...f, routing }))}
+                errors={routingErrors}
+                services={details?.compose_services}
+            />
+
             {details && (
                 <SectionCard headerEl={
                     <div>
-                        <h2 className="text-lg font-semibold">compose.override.yaml</h2>
+                        <h2 className="text-lg font-semibold">Generated files</h2>
                         <p className="text-sm text-muted-foreground">
-                            Generated from the volumes and networks above each time you save.
+                            Generated from the volumes, networks and routes above each time you save.
                         </p>
-                        {details.override_path &&
-                            <p className="text-xs text-muted-foreground font-mono mt-1">{details.override_path}</p>}
                     </div>
                 }>
                     {compileWarnings.length > 0 && (
@@ -223,13 +236,26 @@ const AppSpecEditPage = () => {
                             {compileWarnings.map((w) => <li key={w}>{w}</li>)}
                         </ul>
                     )}
-                    {details.override_content ? (
-                        <pre className="rounded-md bg-muted px-3 py-2 font-mono text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">
-                            {details.override_content}
-                        </pre>
-                    ) : (
-                        <p className="text-sm text-muted-foreground">Not generated yet. Save the app to create it.</p>
-                    )}
+                    <div className="flex flex-col gap-4">
+                        {[
+                            { name: "compose.override.yaml", path: details.override_path, content: details.override_content },
+                            { name: "compose.traefik.yaml", path: details.traefik_override_path, content: details.traefik_override_content },
+                        ].map((file) => (
+                            <div key={file.name} className="flex flex-col gap-1.5">
+                                <div>
+                                    <h3 className="text-sm font-medium font-mono">{file.name}</h3>
+                                    {file.path && <p className="text-xs text-muted-foreground font-mono">{file.path}</p>}
+                                </div>
+                                {file.content ? (
+                                    <pre className="rounded-md bg-muted px-3 py-2 font-mono text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">
+                                        {file.content}
+                                    </pre>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">Not generated yet. Save the app to create it.</p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </SectionCard>
             )}
 

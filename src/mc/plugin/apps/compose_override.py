@@ -8,6 +8,8 @@ network. Instead, changed services get their full list rewritten with the `!over
 """
 from typing import TYPE_CHECKING, Any
 
+import re
+
 import yaml
 
 from mc.util.yaml_util import LiteralDumper
@@ -62,6 +64,14 @@ def _service_networks(service: dict[str, Any]) -> dict[str, Any]:
     if isinstance(networks, dict):
         return {name: (cfg if cfg is not None else {}) for name, cfg in networks.items()}
     return {}
+
+
+def _spec_service_networks(spec: "AppSpec", service: dict[str, Any]) -> dict[str, Any]:
+    """Service networks once compose.override.yaml is applied: its own plus every spec network."""
+    merged = _service_networks(service)
+    for net in spec.networks or []:
+        merged.setdefault(net.network_name, {})
+    return merged
 
 
 def build_override(spec: "AppSpec", stack: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
@@ -129,9 +139,7 @@ def build_override(spec: "AppSpec", stack: dict[str, Any]) -> tuple[dict[str, An
                 )
                 continue
             current = _service_networks(svc)
-            merged = dict(current)
-            for net in spec.networks:
-                merged.setdefault(net.network_name, {})
+            merged = _spec_service_networks(spec, svc)
             if merged != current or svc.get("networks") is None:
                 out_services.setdefault(service_name, {})["networks"] = OverrideDict(merged)
 
@@ -140,4 +148,75 @@ def build_override(spec: "AppSpec", stack: dict[str, Any]) -> tuple[dict[str, An
         override["volumes"] = out_volumes
     if out_networks:
         override["networks"] = out_networks
+    return override, warnings
+
+
+# Traefik runs on this external network, with these entrypoints and certificate resolver
+TRAEFIK_NETWORK_NAME = "traefik"
+TRAEFIK_HTTP_ENTRYPOINT = "web"
+TRAEFIK_HTTPS_ENTRYPOINT = "websecure"
+TRAEFIK_CERT_RESOLVER = "le"
+
+
+def traefik_key(app_id: str, service_name: str, port: int) -> str:
+    """Traefik router / service name. Dots would split the label path, so they become '-'."""
+    return re.sub(r"[^a-zA-Z0-9_-]", "-", f"{app_id}-{service_name}-{port}")
+
+
+def build_traefik_override(spec: "AppSpec", stack: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    """
+    compose.traefik.yaml: traefik labels for each route, and the routed services join the traefik network.
+
+    Applied after compose.override.yaml, so service networks are rewritten (`!override`) with the
+    spec networks included.
+
+    :param spec: the app spec with routes
+    :param stack: the parsed main compose file
+    :return: (override compose dict, warnings)
+    """
+    services: dict[str, Any] = stack.get("services") or {}
+    warnings: list[str] = []
+    labels_by_service: dict[str, dict[str, str]] = {}
+
+    for route in spec.routing or []:
+        svc = services.get(route.service_name)
+        if route.service_name not in services:
+            warnings.append(f"Route to '{route.service_name}' skipped: no such service in compose.yaml.")
+            continue
+        if (svc or {}).get("network_mode"):
+            warnings.append(
+                f"Route to '{route.service_name}' skipped: the service uses network_mode, so traefik can't reach it."
+            )
+            continue
+
+        key = traefik_key(spec.id, route.service_name, route.service_port)
+        rule = " || ".join(f"Host(`{d}`)" for d in route.domain_names)
+        labels = labels_by_service.setdefault(route.service_name, {
+            "traefik.enable": "true",
+            "traefik.docker.network": TRAEFIK_NETWORK_NAME,
+        })
+        labels[f"traefik.http.services.{key}.loadbalancer.server.port"] = str(route.service_port)
+        if route.mode in ("http", "http+https"):
+            router = f"traefik.http.routers.{key}-http"
+            labels[f"{router}.rule"] = rule
+            labels[f"{router}.entrypoints"] = TRAEFIK_HTTP_ENTRYPOINT
+            labels[f"{router}.service"] = key
+        if route.mode in ("https", "http+https"):
+            router = f"traefik.http.routers.{key}-https"
+            labels[f"{router}.rule"] = rule
+            labels[f"{router}.entrypoints"] = TRAEFIK_HTTPS_ENTRYPOINT
+            labels[f"{router}.service"] = key
+            labels[f"{router}.tls"] = "true"
+            labels[f"{router}.tls.certresolver"] = TRAEFIK_CERT_RESOLVER
+
+    out_services: dict[str, Any] = {}
+    for service_name, labels in labels_by_service.items():
+        networks = _spec_service_networks(spec, services[service_name] or {})
+        networks.setdefault(TRAEFIK_NETWORK_NAME, {})
+        # labels merge with the base file's labels; networks must list everything (see module docstring)
+        out_services[service_name] = {"labels": labels, "networks": OverrideDict(networks)}
+
+    override: dict[str, Any] = {"services": out_services}
+    if out_services:
+        override["networks"] = {TRAEFIK_NETWORK_NAME: OverrideDict(external=True)}
     return override, warnings

@@ -19,9 +19,11 @@ from mc.docker.compose_runner import (
 )
 from mc.plugin.apps.apps_helper import (
     AppNetworkSpec,
+    AppRoutingSpec,
     AppSpec,
     AppVolumeSpec,
     compose_declared_names,
+    compose_service_ports,
     app_spec_exists,
     get_appspec_path,
     list_app_specs,
@@ -45,6 +47,7 @@ class CreateAppFromScratchRequest(BaseModel):
     volumes: list[AppVolumeSpec] = []
     networks: list[AppNetworkSpec] = []
     environment: dict[str, str] = {}
+    routing: list[AppRoutingSpec] = []
 
 
 class UpdateAppRequest(BaseModel):
@@ -54,6 +57,7 @@ class UpdateAppRequest(BaseModel):
     volumes: list[AppVolumeSpec] | None = None  # omit to keep the current list
     networks: list[AppNetworkSpec] | None = None  # omit to keep the current list
     environment: dict[str, str] | None = None  # omit to keep the current variables
+    routing: list[AppRoutingSpec] | None = None  # omit to keep the current routes
 
 
 class AppSpecDetails(BaseModel):
@@ -64,9 +68,13 @@ class AppSpecDetails(BaseModel):
     # names declared at the top level of the compose file, as hints for the override editors
     compose_volumes: list[str] = []
     compose_networks: list[str] = []
-    # compose.override.yaml generated from the spec on save
-    override_path: str | None = None
+    # service name -> container ports from `ports` / `expose`, as hints for the routing editor
+    compose_services: dict[str, list[int]] = {}
+    # generated from the spec on save
+    override_path: str | None = None  # compose.override.yaml: volumes, networks
     override_content: str | None = None
+    traefik_override_path: str | None = None  # compose.traefik.yaml: routing
+    traefik_override_content: str | None = None
     # only set by create / update: overrides that couldn't be applied
     compile_warnings: list[str] = []
 
@@ -100,10 +108,14 @@ def _details(spec: AppSpec, compile_warnings: list[str] | None = None) -> AppSpe
         except yaml.YAMLError:
             stack = None
         details.compose_volumes, details.compose_networks = compose_declared_names(stack)
-    if spec.type == "compose" and os.path.isfile(spec.override_path):
-        details.override_path = spec.override_path
-        with open(spec.override_path) as f:
-            details.override_content = f.read()
+        details.compose_services = compose_service_ports(stack)
+    if spec.type == "compose":
+        for attr in ("override", "traefik_override"):
+            path = getattr(spec, f"{attr}_path")
+            if os.path.isfile(path):
+                setattr(details, f"{attr}_path", path)
+                with open(path) as f:
+                    setattr(details, f"{attr}_content", f.read())
     return details
 
 
@@ -132,6 +144,7 @@ def create_app_from_scratch(body: CreateAppFromScratchRequest) -> AppSpecDetails
         spec = AppSpec.create_from_string(
             body.id, body.stackfile_content, title=body.title, description=body.description,
             volumes=body.volumes, networks=body.networks, environment=body.environment,
+            routing=body.routing,
         )
     except pydantic.ValidationError as e:
         raise _validation_error(e) from e

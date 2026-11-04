@@ -8,7 +8,7 @@ import yaml
 
 from mc.config import MC_HOME, MC_CONFIG_DIR, get_mc_real_path
 from mc.docker.compose_runner import LocalDockerComposeStackRunner, DockerComposeUpArgs
-from mc.plugin.apps.compose_override import build_override, dump_override
+from mc.plugin.apps.compose_override import build_override, build_traefik_override, dump_override
 
 
 # App ids double as compose project names: lowercase letters, digits, "-" and "_".
@@ -66,6 +66,35 @@ def compose_declared_names(stack: dict[str, Any] | None) -> tuple[list[str], lis
         section = stack.get(key)
         names.append(sorted(section.keys()) if isinstance(section, dict) else [])
     return names[0], names[1]
+
+
+def _container_port(entry: Any) -> int | None:
+    """Container port of a `ports` / `expose` entry: "8080:80", "127.0.0.1:80:80/tcp", 80, {target: 80}."""
+    if isinstance(entry, dict):
+        entry = entry.get("target")
+    if isinstance(entry, int):
+        return entry
+    if isinstance(entry, str):
+        port = entry.rsplit(":", 1)[-1].split("/", 1)[0].split("-", 1)[0]
+        return int(port) if port.isdigit() else None
+    return None
+
+
+def compose_service_ports(stack: dict[str, Any] | None) -> dict[str, list[int]]:
+    """Service names of a parsed compose file, with the container ports they publish or expose."""
+    if not isinstance(stack, dict) or not isinstance(stack.get("services"), dict):
+        return {}
+    result = {}
+    for name, svc in stack["services"].items():
+        svc = svc if isinstance(svc, dict) else {}
+        ports = []
+        for key in ("ports", "expose"):
+            for entry in svc.get(key) or []:
+                port = _container_port(entry)
+                if port and port not in ports:
+                    ports.append(port)
+        result[str(name)] = sorted(ports)
+    return result
 
 
 def validate_compose_stackfile(contents: str) -> dict[str, Any]:
@@ -131,6 +160,44 @@ class AppNetworkSpec(pydantic.BaseModel):
     def _check_network_name(cls, v: str) -> str:
         return _validate_resource_name("network", v)
 
+
+# Compose service names
+SERVICE_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_.-]*$")
+# Hostnames for traefik Host() rules, no wildcards
+DOMAIN_NAME_PATTERN = re.compile(r"^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$")
+
+
+class AppRoutingSpec(pydantic.BaseModel):
+    service_name: str
+    service_port: int = pydantic.Field(ge=1, le=65535)
+    mode: Literal["http", "https", "http+https"] = "http"
+    domain_names: list[str] = pydantic.Field(default_factory=list)
+
+    @pydantic.field_validator("service_name")
+    @classmethod
+    def _check_service_name(cls, v: str) -> str:
+        v = v.strip()
+        if not SERVICE_NAME_PATTERN.match(v):
+            raise ValueError(f"Invalid service name '{v}'. Use letters, digits, '_', '.' and '-'.")
+        return v
+
+    @pydantic.field_validator("domain_names")
+    @classmethod
+    def _check_domain_names(cls, v: list[str]) -> list[str]:
+        names = []
+        for d in v:
+            d = d.strip().lower().rstrip(".")
+            if not d:
+                continue
+            if not DOMAIN_NAME_PATTERN.match(d):
+                raise ValueError(f"Invalid domain name '{d}'")
+            if d not in names:
+                names.append(d)
+        if not names:
+            raise ValueError("At least one domain name is required")
+        return names
+
+
 # Environment variable names, and the ones mc sets for docker compose itself
 ENV_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 RESERVED_ENV_NAMES = {"DOCKER_HOST", "COMPOSE_PROJECT_DIRECTORY", "COMPOSE_PROJECT_NAME"}
@@ -151,10 +218,13 @@ class AppSpec(pydantic.BaseModel):
     description: str | None = None
     image: str | None = None # only container
     stackfile: str | None = None # only compose
-    volumes: list[AppVolumeSpec] | None = pydantic.Field(default_factory=list) # overrides
-    networks: list[AppNetworkSpec] | None = pydantic.Field(default_factory=list) # overrides
+    volumes: list[AppVolumeSpec] = pydantic.Field(default_factory=list) # overrides
+    networks: list[AppNetworkSpec] = pydantic.Field(default_factory=list) # overrides
     # injected into the docker compose subprocess (variable interpolation), never written to compose files
-    environment: dict[str, str] | None = pydantic.Field(default_factory=dict)
+    environment: dict[str, str] = pydantic.Field(default_factory=dict)
+    # routing options
+    routing: list[AppRoutingSpec] = pydantic.Field(default_factory=list)
+
 
     @pydantic.field_validator("environment", mode="before")
     @classmethod
@@ -183,6 +253,10 @@ class AppSpec(pydantic.BaseModel):
             dupes = sorted({n for n in names if names.count(n) > 1})
             if dupes:
                 raise ValueError(f"Duplicate {kind} names: {', '.join(dupes)}")
+        targets = [f"{r.service_name}:{r.service_port}" for r in self.routing]
+        dupes = sorted({t for t in targets if targets.count(t) > 1})
+        if dupes:
+            raise ValueError(f"Duplicate routes to {', '.join(dupes)}. Put all domains of a port in one route.")
         return self
 
     @property
@@ -206,17 +280,17 @@ class AppSpec(pydantic.BaseModel):
     def write_stackfile(self, contents: str) -> None:
         write_file_atomic(self.stackfile_path, contents)
 
-    @staticmethod
-    def parse_stackfile(contents: str) -> dict[str, Any]:
-        return yaml.safe_load(contents)
-
     @property
     def override_path(self) -> str:
         return os.path.join(get_app_dir(self.id), "compose.override.yaml")
 
+    @property
+    def traefik_override_path(self) -> str:
+        return os.path.join(get_app_dir(self.id), "compose.traefik.yaml")
+
     def compile(self, vars: dict[str, str] | None = None) -> list[str]:
         """
-        Generate compose.override.yaml (volume / network overrides) and compose.traefik.yaml.
+        Generate compose.override.yaml (volume / network overrides) and compose.traefik.yaml (routing).
 
         :return: warnings, e.g. overrides that couldn't be applied
         """
@@ -224,10 +298,9 @@ class AppSpec(pydantic.BaseModel):
         override, warnings = build_override(self, stack)
         write_file_atomic(self.override_path, dump_override(override))
 
-        # compose.traefik.yaml: placeholder until proxy settings are part of the spec
-        traefik = {"services": {}}
-        write_file_atomic(os.path.join(get_app_dir(self.id), "compose.traefik.yaml"), dump_override(traefik))
-        return warnings
+        traefik, traefik_warnings = build_traefik_override(self, stack)
+        write_file_atomic(self.traefik_override_path, dump_override(traefik))
+        return warnings + traefik_warnings
 
     def stackfile_paths(self) -> list[str]:
         """Main stackfile plus the generated override files that exist."""
@@ -263,6 +336,9 @@ class AppSpec(pydantic.BaseModel):
         else:
             raise NotImplementedError()
 
+    @staticmethod
+    def parse_stackfile(contents: str) -> dict[str, Any]:
+        return yaml.safe_load(contents)
 
     @staticmethod
     def create_from_string(name: str, contents: str, **kwargs) -> "AppSpec":

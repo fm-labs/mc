@@ -313,3 +313,28 @@ def test_mc_compose_env_wins_over_spec(client):
     spec.environment = {"COMPOSE_PROJECT_NAME": "other"}  # bypasses validation
     _, env = routes._action_cmd(spec, "up")
     assert env["COMPOSE_PROJECT_NAME"] == "myapp"
+
+
+def test_routing_saved_and_compiled(client, tmp_path):
+    compose = "services:\n  web:\n    image: nginx:alpine\n    expose: [80]\n"
+    routing = [{"service_name": "web", "service_port": 80, "mode": "https", "domain_names": ["app.example.com"]}]
+    r = create(client, stackfile_content=compose, routing=routing)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["spec"]["routing"][0]["domain_names"] == ["app.example.com"]
+    assert body["compose_services"] == {"web": [80]}
+    assert "Host(`app.example.com`)" in body["traefik_override_content"]
+    assert body["traefik_override_path"].endswith("compose.traefik.yaml")
+
+    # omitted keeps routes, empty clears them
+    assert client.put("/api/apps/myapp", json={"title": "x"}).json()["spec"]["routing"] == body["spec"]["routing"]
+    r = client.put("/api/apps/myapp", json={"routing": []})
+    assert "traefik" not in r.json()["traefik_override_content"].split("\n", 1)[1]
+
+
+def test_routing_to_unknown_service_warns(client):
+    routing = [{"service_name": "nope", "service_port": 80, "domain_names": ["a.example.com"]}]
+    r = create(client, routing=routing)
+    assert r.status_code == 200
+    assert any("nope" in w for w in r.json()["compile_warnings"])
+    assert create(client, id="other", routing=[{**routing[0], "service_port": 0}]).status_code == 422

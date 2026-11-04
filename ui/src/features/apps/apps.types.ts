@@ -12,6 +12,15 @@ export type AppNetworkSpec = {
     external?: boolean;
 };
 
+export type AppRoutingMode = "http" | "https" | "http+https";
+
+export type AppRoutingSpec = {
+    service_name: string;
+    service_port: number;
+    mode: AppRoutingMode;
+    domain_names: string[];
+};
+
 export type AppSpec = {
     id: string;
     type: "container" | "compose";
@@ -22,6 +31,7 @@ export type AppSpec = {
     volumes?: AppVolumeSpec[] | null;
     networks?: AppNetworkSpec[] | null;
     environment?: Record<string, string> | null;
+    routing?: AppRoutingSpec[];
 };
 
 export type AppSpecDetails = {
@@ -32,9 +42,13 @@ export type AppSpecDetails = {
     // names declared at the top level of compose.yaml
     compose_volumes?: string[];
     compose_networks?: string[];
-    // compose.override.yaml generated from the spec on save
-    override_path?: string | null;
+    // service name -> container ports from `ports` / `expose`
+    compose_services?: Record<string, number[]>;
+    // generated from the spec on save
+    override_path?: string | null; // compose.override.yaml: volumes, networks
     override_content?: string | null;
+    traefik_override_path?: string | null; // compose.traefik.yaml: routing
+    traefik_override_content?: string | null;
     // only set by create / update: overrides that couldn't be applied
     compile_warnings?: string[];
 };
@@ -47,6 +61,7 @@ export type CreateAppFromScratchRequest = {
     volumes?: AppVolumeSpec[];
     networks?: AppNetworkSpec[];
     environment?: Record<string, string>;
+    routing?: AppRoutingSpec[];
 };
 
 export type UpdateAppSpecRequest = {
@@ -56,6 +71,7 @@ export type UpdateAppSpecRequest = {
     volumes?: AppVolumeSpec[];
     networks?: AppNetworkSpec[];
     environment?: Record<string, string>;
+    routing?: AppRoutingSpec[];
 };
 
 // POST /apps/{id}/action/{action}

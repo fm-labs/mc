@@ -1,5 +1,5 @@
 // Client-side mirror of the AppVolumeSpec / AppNetworkSpec validators in apps_helper.py
-import { AppNetworkSpec, AppVolumeSpec } from "@/features/apps/apps.types.ts";
+import { AppNetworkSpec, AppRoutingMode, AppRoutingSpec, AppVolumeSpec } from "@/features/apps/apps.types.ts";
 
 const RESOURCE_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
 
@@ -79,4 +79,49 @@ export const composeVariableRefs = (compose: string): string[] => {
         if (m[1].length % 2 === 1) names.add(m[2]);
     }
     return [...names].sort();
+};
+
+// Routes, mirrors AppRoutingSpec in apps_helper.py
+const SERVICE_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
+const DOMAIN_NAME_PATTERN = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/;
+
+/** One editor row. Port and domains stay text while typing. */
+export type RouteRow = { service_name: string; service_port: string; mode: AppRoutingMode; domains: string };
+
+/** Domains are separated by commas, spaces or new lines. */
+export const parseDomains = (domains: string): string[] => [
+    ...new Set(domains.split(/[\s,]+/).map((d) => d.trim().toLowerCase().replace(/\.$/, "")).filter(Boolean)),
+];
+
+export const routingToRows = (routing: AppRoutingSpec[] | null | undefined): RouteRow[] =>
+    (routing ?? []).map((r) => ({
+        service_name: r.service_name,
+        service_port: String(r.service_port),
+        mode: r.mode,
+        domains: r.domain_names.join(", "),
+    }));
+
+export const rowsToRouting = (rows: RouteRow[]): AppRoutingSpec[] =>
+    rows.map((r) => ({
+        service_name: r.service_name.trim(),
+        service_port: Number(r.service_port),
+        mode: r.mode,
+        domain_names: parseDomains(r.domains),
+    }));
+
+/** One error message (or null) per route row. */
+export const validateRouting = (rows: RouteRow[]): (string | null)[] => {
+    const targets = rows.map((r) => `${r.service_name.trim()}:${r.service_port.trim()}`);
+    const dupes = duplicates(targets);
+    return rows.map((r, i) => {
+        if (!SERVICE_NAME_PATTERN.test(r.service_name.trim())) return "Service: letters, digits, '_', '.' and '-'.";
+        const port = Number(r.service_port);
+        if (!/^\d+$/.test(r.service_port.trim()) || port < 1 || port > 65535) return "Port must be 1-65535.";
+        const domains = parseDomains(r.domains);
+        if (domains.length === 0) return "At least one domain name is required.";
+        const bad = domains.find((d) => !DOMAIN_NAME_PATTERN.test(d));
+        if (bad) return `Invalid domain name '${bad}'.`;
+        if (dupes.has(targets[i])) return `Duplicate route to ${targets[i]}. Put all its domains in one route.`;
+        return null;
+    });
 };
