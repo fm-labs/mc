@@ -1,129 +1,157 @@
-"""
-MC Node Proxy Middleware for FastAPI
-
-This middleware proxies requests that carry an "x-mc-node" header to an external server.
-Useful for API gateways and service routing.
-"""
+import logging
+from http.cookiejar import CookieJar, DefaultCookiePolicy
 
 import httpx
-from fastapi import Request, Response
-from fastapi.responses import StreamingResponse
+from starlette.background import BackgroundTask
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse, StreamingResponse
+
+from mc.config import get_node_proxy_config
+from mc.server.auth_helper import verify_jwt_access_token
+
+logger = logging.getLogger(__name__)
+
+_EXCLUDED_REQUEST_HEADERS = {
+    b"host", b"content-length", b"connection", b"keep-alive", b"proxy-authorization",
+    b"te", b"trailer", b"transfer-encoding", b"upgrade",
+    b"cookie", # never forward client cookies
+    b"authorization",  # replaced by the target node's API key
+    b"x-api-key",  # never forward a client-supplied key
+    b"x-mc-node",  # prevents the target node from proxying again (loop)
+}
+_EXCLUDED_RESPONSE_HEADERS = {
+    b"content-length", b"connection", b"keep-alive", b"transfer-encoding",
+    b"te", b"trailer", b"upgrade", b"proxy-authenticate", b"set-cookie"
+}
 
 
 class NodeProxyMiddleware:
     """
-    Middleware that proxies requests to an external server.
-
-    Args:
-        app: FastAPI application instance
-        timeout: Request timeout in seconds (default: 30.0)
-        follow_redirects: Whether to follow redirects (default: False)
+    Proxies HTTP requests carrying an `x-mc-node` header to that node.
 
     Example:
-        app.add_middleware(
-            NodeProxyMiddleware
-        )
+        app.add_middleware(NodeProxyMiddleware, timeout=30.0)
     """
 
-    def __init__(
-        self,
-        app,
-        timeout: float = 30.0,
-        follow_redirects: bool = False
-    ):
+    def __init__(self, app, timeout: float = 30.0, follow_redirects: bool = False):
         self.app = app
-        self.client = httpx.AsyncClient(
-            timeout=timeout,
-            follow_redirects=follow_redirects
-        )
+        self.timeout = timeout
+        self.follow_redirects = follow_redirects
+        self._client: httpx.AsyncClient | None = None
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        # Created lazily so it binds to the running event loop.
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                timeout=self.timeout, follow_redirects=self.follow_redirects,
+                # The client is shared by every caller, so it must never store
+                # cookies from a node and replay them on someone else's request.
+                cookies=CookieJar(policy=DefaultCookiePolicy(allowed_domains=[])),
+            )
+        return self._client
 
     async def __call__(self, scope, receive, send):
+        if scope["type"] == "lifespan":
+            await self.app(scope, self._wrap_lifespan_receive(receive), send)
+            return
+
         if scope["type"] == "http":
             request = Request(scope, receive)
-
-            # Check if the request has the "x-mc-node" header
-            if "x-mc-node" in request.headers:
-                response = await self.proxy_request(request)
+            node_name = request.headers.get("x-mc-node")
+            if node_name and node_name != "localhost":
+                response = await self.proxy_request(request, node_name)
                 await response(scope, receive, send)
                 return
 
-        # If not a proxy request, continue with normal processing
         await self.app(scope, receive, send)
 
-    async def proxy_request(self, request: Request) -> Response:
-        """
-        Proxy the request to the target server.
+    def _wrap_lifespan_receive(self, receive):
+        # Starlette never calls __aenter__/__aexit__ on middleware, so close the
+        # client when the server shuts down instead.
+        async def wrapped():
+            message = await receive()
+            if message["type"] == "lifespan.shutdown" and self._client is not None:
+                await self._client.aclose()
+            return message
 
-        Args:
-            request: The incoming FastAPI request
+        return wrapped
 
-        Returns:
-            Response: The proxied response
-        """
-        # Remove the proxy prefix and construct target URL
-        target_path = request.url.path[len(self.path_prefix):].lstrip("/")
-        target_url = f"{self.target_url}/{target_path}"
+    @staticmethod
+    def _validate_request(request: Request) -> bool:
+        authorization_header = request.headers.get("authorization")
+        if authorization_header and authorization_header.lower().startswith("bearer "):
+            token = authorization_header[len("bearer "):].strip()
+            try:
+                verify_jwt_access_token(token)
+            except Exception:
+                pass
+        return False
 
-        # Include query parameters
-        if request.url.query:
-            target_url += f"?{request.url.query}"
+    @staticmethod
+    def _build_target_url(base_url: str, request: Request) -> httpx.URL:
+        # Use the raw path and query string from the ASGI scope so the original
+        # percent-encoding, repeated keys (?a=1&a=2) and blank values (?flag=)
+        # reach the node exactly as the client sent them.
+        raw_path = request.scope.get("raw_path") or request.scope["path"].encode()
+        url = httpx.URL(base_url.rstrip("/") + raw_path.decode("latin-1"))
+        query = request.scope.get("query_string", b"")
+        return url.copy_with(query=query) if query else url
 
-        # Prepare headers (exclude host and other problematic headers)
-        headers = {}
-        excluded_headers = {"host", "content-length", "connection"}
+    async def proxy_request(self, request: Request, node_name: str):
+        # Validate the request first!
+        if not self._validate_request(request):
+            logger.warning("Unauthorized proxy request for node %s", node_name)
+            return PlainTextResponse("Unauthorized", status_code=401)
 
-        for name, value in request.headers.items():
-            if name.lower() not in excluded_headers:
-                headers[name] = value
+        node_proxy = get_node_proxy_config(node_name)
+        if node_proxy is None:
+            return PlainTextResponse("Node not found", status_code=404)
 
+        base_url, api_key = node_proxy
+        target_url = self._build_target_url(base_url, request)
+
+        # A list of tuples keeps repeated headers that a dict would collapse.
+        headers = [
+            (k, v) for k, v in request.headers.raw
+            if k.lower() not in _EXCLUDED_REQUEST_HEADERS
+        ]
+        # Inject api key
+        headers.append((b"x-api-key", api_key.encode()))
+
+        logger.debug("Proxying %s %s to node %s", request.method, request.url.path, node_name)
+
+        upstream_request = self.client.build_request(
+            request.method,
+            target_url,
+            headers=headers,
+            content=request.stream(),  # stream the body instead of buffering it
+        )
         try:
-            # Get request body
-            body = await request.body()
-
-            # Make the proxy request
-            proxy_response = await self.client.request(
-                method=request.method,
-                url=target_url,
-                headers=headers,
-                content=body
-            )
-
-            # Prepare response headers (exclude problematic ones)
-            response_headers = {}
-            excluded_response_headers = {
-                "content-length", "transfer-encoding", "connection"
-            }
-
-            for name, value in proxy_response.headers.items():
-                if name.lower() not in excluded_response_headers:
-                    response_headers[name] = value
-
-            # Return streaming response for better memory efficiency
-            async def generate():
-                async for chunk in proxy_response.aiter_bytes():
-                    yield chunk
-
-            return StreamingResponse(
-                generate(),
-                status_code=proxy_response.status_code,
-                headers=response_headers
-            )
-
+            upstream = await self.client.send(upstream_request, stream=True)
+        except httpx.TimeoutException:
+            logger.warning("Timeout proxying to node %s", node_name)
+            return PlainTextResponse("Upstream node timed out", status_code=504)
         except httpx.RequestError as e:
-            return Response(
-                content=f"Proxy error: {str(e)}",
-                status_code=502,
-                headers={"content-type": "text/plain"}
-            )
-        except Exception as e:
-            return Response(
-                content=f"Internal proxy error: {str(e)}",
-                status_code=500,
-                headers={"content-type": "text/plain"}
-            )
+            logger.warning("Error proxying to node %s: %r", node_name, e)
+            return PlainTextResponse("Upstream node unreachable", status_code=502)
 
-    async def __aenter__(self):
-        return self
+        if upstream.status_code == 401:
+            # Our API key for that node was rejected; that's a gateway problem,
+            # not the caller's credentials.
+            await upstream.aclose()
+            logger.error("Node %s rejected the proxy API key", node_name)
+            return PlainTextResponse("Proxy authentication error", status_code=502)
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.client.aclose()
+        response = StreamingResponse(
+            upstream.aiter_raw(),  # raw bytes, so content-encoding stays valid
+            status_code=upstream.status_code,
+            background=BackgroundTask(upstream.aclose),
+        )
+        # raw_headers keeps duplicates such as multiple set-cookie headers.
+        response.raw_headers = [
+            (k.lower(), v) for k, v in upstream.headers.raw
+            if k.lower() not in _EXCLUDED_RESPONSE_HEADERS
+        ]
+        # response.raw_headers.append((b"x-mc-gateway", b"localhost"))
+        return response
