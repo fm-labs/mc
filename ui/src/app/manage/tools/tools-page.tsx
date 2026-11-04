@@ -1,10 +1,10 @@
 import { useLoaderData, useParams } from "react-router";
 import { IconTool } from "@tabler/icons-react";
-import { ToolsProvider, useTools } from "@/app/hosts/tools/components/tools-provider.tsx";
+import { ToolsProvider, useTools } from "@/app/manage/tools/components/tools-provider.tsx";
 import MainContent from "@/components/layout/main-content.tsx";
 import { DetailEmpty, ListDetailLayout } from "@/components/layout/list-detail-layout.tsx";
-import ToolList from "@/app/hosts/tools/components/tool-list.tsx";
-import { ToolDetails } from "@/app/hosts/tools/components/tool-details.tsx";
+import ToolList from "@/app/manage/tools/components/tool-list.tsx";
+import { ToolDetails } from "@/app/manage/tools/components/tool-details.tsx";
 import { FEAT_TOOLS_ENABLED } from "@/constants.ts";
 import Header from "@/components/header.tsx";
 import { ContainerHostsProvider } from "@/app/containers/components/container-hosts-provider.tsx";

@@ -1,8 +1,8 @@
 import * as React from "react";
 import { IconTerminal2, IconWorld } from "@tabler/icons-react";
 import { SearchableList } from "@/components/layout/list-detail-layout.tsx";
-import { useTools } from "@/app/hosts/tools/components/tools-provider.tsx";
-import { getToolType } from "@/app/hosts/tools/components/tool-utils.ts";
+import { useTools } from "@/app/manage/tools/components/tools-provider.tsx";
+import { getToolType } from "@/app/manage/tools/components/tool-utils.ts";
 
 const ToolList = () => {
     const { tools, currentTool, setCurrentTool } = useTools();

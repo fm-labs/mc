@@ -15,7 +15,7 @@ import { nodeHeaders } from "@/lib/node-headers.ts";
 const StartPage = await import('@/app/start-page.tsx').then(mod => mod.default);
 const InventoryPage = await import('@/app/inventory/page.tsx').then(mod => mod.default);
 const InventoryItemPage = await import('@/app/inventory/item-page.tsx').then(mod => mod.default);
-const ToolsPage = await import('@/app/hosts/tools/tools-page.tsx').then(mod => mod.default);
+const ToolsPage = await import('@/app/manage/tools/tools-page.tsx').then(mod => mod.default);
 const ContainerHostsPage = await import('@/app/containers/container-hosts-page.tsx').then(mod => mod.default);
 const ContainerHostPage = await import('@/app/containers/container-host-page.tsx').then(mod => mod.default);
 const ContainerPage = await import('@/app/containers/container-page.tsx').then(mod => mod.default);
@@ -25,10 +25,10 @@ const KitchensinkPage = await import('@/app/kitchensink/page.tsx').then(mod => m
 const PortainerTemplatesPage = await import('@/app/app-stacks/portainer-templates-page.tsx').then(mod => mod.default);
 const AppStacksPage = await import('@/app/app-stacks/app-stacks-page.tsx').then(mod => mod.default);
 const AppStackDetailsPage = await import('@/app/app-stacks/app-stack-details-page.tsx').then(mod => mod.default);
-const RpcPage = await import('@/app/hosts/rpc/rpc-page.tsx').then(mod => mod.default);
+const RpcPage = await import('@/app/manage/rpc/rpc-page.tsx').then(mod => mod.default);
 const AppsPage = await import('@/app/apps/apps-page.tsx').then(mod => mod.default);
 const AppSpecEditPage = await import('@/app/apps/app-spec-edit-page.tsx').then(mod => mod.default);
-const SettingsPage = await import('@/app/settings/page.tsx').then(mod => mod.default);
+const SettingsPage = await import('@/app/manage/settings/settings-page.tsx').then(mod => mod.default);
 
 
 const AppRouter = () => {
@@ -119,6 +119,14 @@ const AppRouter = () => {
                             path: "manage/:hostId",
                             children: [
                                 {
+                                    index: true,
+                                    Component: SettingsPage,
+                                },
+                                {
+                                    path: "settings",
+                                    Component: SettingsPage,
+                                },
+                                {
                                     path: "rpc",
                                     Component: RpcPage,
                                 },
@@ -128,30 +136,6 @@ const AppRouter = () => {
                                     loader: ({ params }) => {
                                         return apiClient.getToolList({ headers: nodeHeaders(params.hostId) });
                                     },
-                                },
-                            ]
-                        },
-                        {
-                            path: "admin", // admin tools
-                            Component: AdminLayout,
-                            children: [
-                                {
-                                    index: true,
-                                    //Component: KitchensinkPage,
-                                    Component: SettingsPage,
-                                },
-                                // {
-                                //     path: "tasks",
-                                //     Component: TasksPage,
-                                // },
-                                {
-                                    path: "settings",
-                                    children: [
-                                        {
-                                            index: true,
-                                            Component: SettingsPage,
-                                        }
-                                    ]
                                 },
                                 {
                                     path: "apps",
@@ -174,6 +158,12 @@ const AppRouter = () => {
                                         },
                                     ],
                                 },
+                            ]
+                        },
+                        {
+                            path: "admin", // admin tools
+                            Component: AdminLayout,
+                            children: [
                                 {
                                     path: "inventory",
                                     children: [

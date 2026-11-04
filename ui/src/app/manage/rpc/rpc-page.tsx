@@ -2,8 +2,8 @@ import React from "react";
 import { IconBolt, IconBell, IconTerminal } from "@tabler/icons-react";
 import MainContent from "@/components/layout/main-content.tsx";
 import { DetailEmpty, ListDetailLayout, SearchableList } from "@/components/layout/list-detail-layout.tsx";
-import { RpcCommandDef, RpcCommandProvider } from "@/app/hosts/rpc/components/rpc-command-provider.tsx";
-import RpcCommand from "@/app/hosts/rpc/components/rpc-command.tsx";
+import { RpcCommandDef, RpcCommandProvider } from "@/app/manage/rpc/components/rpc-command-provider.tsx";
+import RpcCommand from "@/app/manage/rpc/components/rpc-command.tsx";
 import { useApi } from "@/context/api-context.tsx";
 import { useSelectedSearchParam } from "@/hooks/use-selected-search-param.ts";
 import Header from "@/components/header.tsx";
@@ -13,7 +13,7 @@ import {useParams} from "react-router";
 import { nodeHeaders } from "@/lib/node-headers.ts";
 
 
-const RpcView = ({hostId}: {hostId: string}) => {
+const RpcView = ({hostId}: {hostId?: string}) => {
     const { api } = useApi();
 
     const [commands, setCommands] = React.useState<RpcCommandDef[]>([]);

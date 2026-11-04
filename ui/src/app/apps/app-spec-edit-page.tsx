@@ -32,6 +32,8 @@ import {
     validateNetworks,
     validateVolumes,
 } from "@/features/apps/apps-validation.ts";
+import {ContainerHostsProvider} from "@/app/containers/components/container-hosts-provider.tsx";
+import ContainersLayout from "@/components/layout/containers-layout.tsx";
 
 const COMPOSE_TEMPLATE = `services:
   app:
@@ -45,9 +47,9 @@ const APP_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,62}$/;
 type AppSource = "compose" | "bundle";
 
 /**
- * Create (/admin/apps/new, ?source=bundle) or edit (/admin/apps/:appId) an app spec.
+ * Create (/manage/${hostId}/apps/new, ?source=bundle) or edit (/manage/${hostId}/apps/:appId) an app spec.
  */
-const AppSpecEditPage = () => {
+const AppSpecEditPageView = ({hostId}: {hostId?: string}) => {
     const { appId } = useParams();
     const isNew = !appId;
     const details = (useLoaderData() as AppSpecDetails | null | undefined) ?? null;
@@ -109,7 +111,7 @@ const AppSpecEditPage = () => {
                 });
                 toast.success(`Created app ${created.spec.id} from ${bundleFile.name}`);
                 created.compile_warnings?.forEach((w: string) => toast.warning(w));
-                navigate(`/admin/apps/${encodeURIComponent(created.spec.id)}`, { replace: true });
+                navigate(`/manage/${hostId}/apps/${encodeURIComponent(created.spec.id)}`, { replace: true });
             } else if (isNew) {
                 const created = await api.createAppFromScratch({
                     id: form.id,
@@ -123,7 +125,7 @@ const AppSpecEditPage = () => {
                 });
                 toast.success(`Created app ${created.spec.id}`);
                 created.compile_warnings?.forEach((w: string) => toast.warning(w));
-                navigate(`/admin/apps/${encodeURIComponent(created.spec.id)}`, { replace: true });
+                navigate(`/manage/${hostId}/apps/${encodeURIComponent(created.spec.id)}`, { replace: true });
             } else if (details) {
                 const updated = await api.updateAppSpec(details.spec.id, {
                     title: form.title || null,
@@ -157,7 +159,7 @@ const AppSpecEditPage = () => {
             >
                 <div className="flex gap-2">
                     {details && <CompiledSpecDialog appId={details.spec.id} unsaved={isDirty} />}
-                    <Button variant="outline" onClick={() => navigate("/admin/apps")}>Back</Button>
+                    <Button variant="outline" onClick={() => navigate(`/manage/${hostId}/apps`)}>Back</Button>
                 </div>
             </Header>
 
@@ -341,6 +343,19 @@ const AppSpecEditPage = () => {
             )}
         </MainContent>
     );
+};
+
+const AppSpecEditPage = () => {
+    const {hostId} = useParams<{ hostId: string }>();
+    if (!hostId) {
+        return <div className={"p-4"}>Host ID missing</div>;
+    }
+
+    return <ContainerHostsProvider>
+        <ContainersLayout>
+            <AppSpecEditPageView />
+        </ContainersLayout>
+    </ContainerHostsProvider>;
 };
 
 export default AppSpecEditPage;

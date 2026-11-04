@@ -1,6 +1,6 @@
-import { LOCAL_NODE } from "@/lib/node-headers.ts";
+import {LOCAL_NODE} from "@/lib/node-headers.ts";
 import * as React from "react"
-import {Minus, Plus} from "lucide-react"
+import {Minus, MoreHorizontal, Plus} from "lucide-react"
 
 import {
     Collapsible,
@@ -17,7 +17,7 @@ import {
     SidebarMenuItem,
     SidebarMenuSub,
     SidebarMenuSubItem,
-    SidebarRail,
+    SidebarRail, useSidebar,
 } from "@/components/ui/sidebar"
 import AppIcon from "@/components/app-icon.tsx";
 import {NavLink, useNavigate} from "react-router";
@@ -26,6 +26,8 @@ import {NavUser} from "@/components/layout/nav-user.tsx";
 import {appNavigationData, appSidebarData} from "@/components/layout/data/app-navigation-data.ts";
 import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
 import {EnvironmentSwitcher} from "@/components/layout/environment-switcher.tsx";
+import {DropdownMenuTrigger} from "@radix-ui/react-dropdown-menu";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem} from "@/components/ui/dropdown-menu.tsx";
 
 type NavItem = {
     title: string
@@ -37,6 +39,7 @@ type NavItem = {
 
 type ContainerNavItem = NavItem & {
     isConnected?: boolean
+    secondaryItems?: NavItem[]
 }
 
 // Icon color for connected hosts, per engine
@@ -61,57 +64,70 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
         const items: ContainerNavItem[] = hosts.map((host) => {
 
             return {
-            title: host.id || host.id,
-            isActive: false,
-            isConnected: isHostEnabled(host.id),
-            url: `/containers/${host.id}`,
-            icon: host.properties?.engine || "container-host",
-            items: [
-                {
-                    title: "Containers",
-                    url: `/containers/${host.id}/container`,
-                    icon: "container"
-                },
-                {
-                    title: "Images",
-                    url: `/containers/${host.id}/images`,
-                    icon: "container-image"
-                },
-                {
-                    title: "Volumes",
-                    url: `/containers/${host.id}/volumes`,
-                    icon: "container-volume"
-                },
-                {
-                    title: "Networks",
-                    url: `/containers/${host.id}/networks`,
-                    icon: "container-network"
-                },
-                {
-                    title: "Engine",
-                    url: `/containers/${host.id}/engine`,
-                    icon: "info"
-                },
-                {
-                    title: "Events",
-                    url: `/containers/${host.id}/events`,
-                    icon: "container-events"
-                },
+                title: host.id || host.id,
+                isActive: false,
+                isConnected: isHostEnabled(host.id),
+                url: `/containers/${host.id}`,
+                icon: host.properties?.engine || "container-host",
+                items: [
+                    {
+                        title: "Containers",
+                        url: `/containers/${host.id}/container`,
+                        icon: "container"
+                    },
+                    {
+                        title: "Images",
+                        url: `/containers/${host.id}/images`,
+                        icon: "container-image"
+                    },
+                    {
+                        title: "Volumes",
+                        url: `/containers/${host.id}/volumes`,
+                        icon: "container-volume"
+                    },
+                    {
+                        title: "Networks",
+                        url: `/containers/${host.id}/networks`,
+                        icon: "container-network"
+                    },
+                    {
+                        title: "Engine",
+                        url: `/containers/${host.id}/engine`,
+                        icon: "info"
+                    },
+                    {
+                        title: "Events",
+                        url: `/containers/${host.id}/events`,
+                        icon: "container-events"
+                    },
+
+                ],
                 // tools and rpc only exist on an mc: this one, or a node reached via the node proxy
-                ...(isMcHost(host) ? [
-                    {
-                        title: "Tools",
-                        url: `/manage/${host.id}/tools`,
-                        icon: "tool"
-                    },
-                    {
-                        title: "RPC",
-                        url: `/manage/${host.id}/rpc`,
-                        icon: "settings"
-                    },
-                ] : []),
-            ],
-        }
+                secondaryItems: [
+                    ...(isMcHost(host) ? [
+                        {
+                            title: "Tools",
+                            url: `/manage/${host.id}/tools`,
+                            icon: "tool"
+                        },
+                        {
+                            title: "RPC",
+                            url: `/manage/${host.id}/rpc`,
+                            icon: "settings"
+                        },
+                        {
+                            title: "Apps",
+                            url: `/manage/${host.id}/apps`,
+                            icon: "settings"
+                        },
+                        {
+                            title: "Settings",
+                            url: `/manage/${host.id}/settings`,
+                            icon: "settings"
+                        },
+                    ] : [])
+                ]
+            }
         })
 
         if (items.length > 0) {
@@ -119,6 +135,8 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
         }
         return items
     }, [hosts, isHostEnabled])
+
+    const {isMobile} = useSidebar()
 
     return (
         <Sidebar {...props}>
@@ -176,20 +194,39 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                 className="group/collapsible"
                             >
                                 <SidebarMenuItem>
-                                    <CollapsibleTrigger asChild>
-                                        <SidebarMenuButton onClick={() => navigate(item.url + '/container')}>
-                                            <div className={`flex min-w-0 items-center gap-2 ${item.isConnected ? "" : "text-muted-foreground"}`}
-                                                 title={item.isConnected ? "Connected" : "Not connected"}>
+                                    <SidebarMenuButton>
+                                        <CollapsibleTrigger asChild>
+                                            <div
+                                                onClick={() => navigate(item.url + '/container')}
+                                                className={`flex min-w-0 items-center gap-2 ${item.isConnected ? "" : "text-muted-foreground"}`}
+                                                title={item.isConnected ? "Connected" : "Not connected"}>
                                                 <AppIcon icon={item?.icon}
                                                          className={`shrink-0 ${item.isConnected ? engineColor(item.icon) : "opacity-60"}`}/>
-                                                <span className={`truncate ${item.isConnected ? "font-medium" : ""}`}>{item.title}</span>
+                                                <span
+                                                    className={`truncate ${item.isConnected ? "font-medium" : ""}`}>{item.title}</span>
                                                 {item.isConnected &&
-                                                    <span className="size-1.5 shrink-0 rounded-full bg-green-500" aria-label="Connected"/>}
+                                                    <span className="size-1.5 shrink-0 rounded-full bg-green-500"
+                                                          aria-label="Connected"/>}
                                             </div>
-                                            <Plus className="ml-auto group-data-[state=open]/collapsible:hidden"/>
-                                            <Minus className="ml-auto group-data-[state=closed]/collapsible:hidden"/>
-                                        </SidebarMenuButton>
-                                    </CollapsibleTrigger>
+                                        </CollapsibleTrigger>
+                                        {item.secondaryItems && <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <MoreHorizontal className="ml-auto"/>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent
+                                                side={isMobile ? "bottom" : "right"}
+                                                align={isMobile ? "end" : "start"}
+                                                className="min-w-56 rounded-lg"
+                                            >
+                                                {item.secondaryItems.map((sec) => <DropdownMenuItem asChild>
+                                                    <span>
+                                                        <AppIcon icon={sec?.icon}/>
+                                                        <NavLink to={sec.url}>{sec.title}</NavLink>
+                                                    </span>
+                                                </DropdownMenuItem>)}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>}
+                                    </SidebarMenuButton>
                                     {item.items?.length ? (
                                         <CollapsibleContent>
                                             <SidebarMenuSub>

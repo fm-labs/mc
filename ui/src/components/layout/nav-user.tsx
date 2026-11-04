@@ -89,15 +89,15 @@ export function NavUser() {
                             </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
+                        {/*<DropdownMenuGroup>*/}
                             {/*<DropdownMenuItem>*/}
                             {/*    <IconUserCircle />*/}
                             {/*    Account*/}
                             {/*</DropdownMenuItem>*/}
-                            <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
-                                <IconSettings />
-                                Settings
-                            </DropdownMenuItem>
+                            {/*<DropdownMenuItem onClick={() => navigate("/admin/settings")}>*/}
+                            {/*    <IconSettings />*/}
+                            {/*    Settings*/}
+                            {/*</DropdownMenuItem>*/}
                             {/*<DropdownMenuItem>
                                 <IconCreditCard />
                                 Billing
@@ -106,8 +106,8 @@ export function NavUser() {
                                 <IconNotification />
                                 Notifications
                             </DropdownMenuItem>*/}
-                        </DropdownMenuGroup>
-                        <DropdownMenuSeparator />
+                        {/*</DropdownMenuGroup>*/}
+                        {/*<DropdownMenuSeparator />*/}
                         <DropdownMenuItem onClick={handleLogoutClick}>
                             <IconLogout />
                             Log out

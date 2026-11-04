@@ -9,8 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator.tsx";
 import { toast } from "react-toastify";
 import { useApi } from "@/context/api-context.tsx";
-import { getToolTarget, getToolType, isCmdTool } from "@/app/hosts/tools/components/tool-utils.ts";
-import { useTools } from "@/app/hosts/tools/components/tools-provider.tsx";
+import { getToolTarget, getToolType, isCmdTool } from "@/app/manage/tools/components/tool-utils.ts";
+import { useTools } from "@/app/manage/tools/components/tools-provider.tsx";
 import { LOCAL_NODE, nodeHeaders } from "@/lib/node-headers.ts";
 
 type ExecOutput = {

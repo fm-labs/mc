@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { RJSFSchema } from "@rjsf/utils";
 import { IconLoader2, IconPlayerPlay, IconSend } from "@tabler/icons-react";
-import { useRpcCommand } from "@/app/hosts/rpc/components/rpc-command-provider.tsx";
+import { useRpcCommand } from "@/app/manage/rpc/components/rpc-command-provider.tsx";
 import { toast } from "sonner";
 import ReactJson from "@microlink/react-json-view";
 import MyForm from "@/components/rjsf/my-form.tsx";
@@ -47,7 +47,7 @@ const JsonBlock = ({ label, src }: { label: string, src: object }) => (
     </div>
 );
 
-const RpcCommand = ({ hostId }: { hostId: string }) => {
+const RpcCommand = ({ hostId }: { hostId?: string }) => {
     const { command } = useRpcCommand();
     const { api } = useApi();
 
