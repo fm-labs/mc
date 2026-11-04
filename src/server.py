@@ -23,6 +23,7 @@ from mc.inventory import setup_inventory
 # from mc.mcp.app import mcp as mcp_app
 # from mc.mcp.fastmcp_helper import init_mcp_http_app
 from mc.plugin.containers.manager import bootstrap_container_connection_manager
+from mc.server.middleware.node_proxy_middleware import NodeProxyMiddleware
 from mc.server.models import Problem
 from mc.server.router import app_router
 from mc.setup import setup_admin_auth
@@ -91,6 +92,10 @@ if config.MC_CORS_ENABLED:
         allow_credentials=False,
     )
 
+if config.MC_NODE_PROXY_ENABLED:
+    app.add_middleware(NodeProxyMiddleware)
+
+
 # Global exception handlers that emit Problem JSON responses
 @app.exception_handler(HTTPException)
 async def http_exception_handler(_: Request, exc: HTTPException):
@@ -148,12 +153,6 @@ MC_UI_HTML_DIR=os.environ.get("MC_UI_HTML_DIR", default="ui/dist")
 
 #app.mount("/static/", StaticFiles(directory=STATIC_FILES_DIR), name="static")
 app.mount("/", StaticFiles(directory=MC_UI_HTML_DIR, html=True), name="ui")
-
-
-# Proxy Middleware for Anthropic API
-# app.add_middleware(
-#     NodeProxyMiddleware
-# )
 
 
 if __name__ == "__main__":
