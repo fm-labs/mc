@@ -22,6 +22,7 @@ services:
       #- ${PWD}/data/local/etc:/etc/mc
     environment:
       - MC_HOST_HOME=${PWD}/data/local
+      - MC_NODE_PROXY_ENABLED=1
       #- MC_HOST_HOME=/var/lib/docker/volumes/mc_data/_data
     # environment:
       #- ${HOME}/.local/share/containers/podman/machine/podman.sock:/var/run/podman.sock:ro

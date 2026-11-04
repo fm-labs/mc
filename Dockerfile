@@ -9,6 +9,7 @@ WORKDIR /builder
 COPY ui/package.json ui/pnpm-lock.yaml ui/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY ui/ .
+RUN echo "VITE_FEAT_TOOLS_ENABLED=true" > .env
 RUN pnpm run build
 
 
