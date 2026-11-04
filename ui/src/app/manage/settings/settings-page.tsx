@@ -1,14 +1,14 @@
 import MainContent from "@/components/layout/main-content.tsx";
 import Header from "@/components/header.tsx";
 import ConfigFileEditor from "@/app/manage/settings/components/config-file-editor.tsx";
-import {useParams} from "react-router";
-import {ContainerHostsProvider} from "@/app/containers/components/container-hosts-provider.tsx";
-import ContainersLayout from "@/components/layout/containers-layout.tsx";
-import React from "react";
+import { useParams } from "react-router";
 
-const SettingsView = ({hostId}: {hostId?: string}) => {
+const SettingsPage = () => {
+    const { hostId } = useParams<{ hostId: string }>();
+
     return (
         <MainContent>
+            <Header title={"Settings"} subtitle={`View and edit the server configuration on ${hostId}.`} />
             <ConfigFileEditor
                 conf="mc"
                 title="Mission Control"
@@ -22,22 +22,5 @@ const SettingsView = ({hostId}: {hostId?: string}) => {
         </MainContent>
     );
 };
-
-const SettingsPage = () => {
-    const {hostId} = useParams<{ hostId: string }>();
-    if (!hostId) {
-        return <div className={"p-4"}>Host ID missing</div>;
-    }
-
-    return <ContainerHostsProvider>
-        <ContainersLayout>
-            <MainContent>
-                <Header title={"Settings"} subtitle={`View and edit server configuration on *${hostId}*`} />
-                <SettingsView hostId={hostId} />
-            </MainContent>
-        </ContainersLayout>
-    </ContainerHostsProvider>;
-};
-
 
 export default SettingsPage;

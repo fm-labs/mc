@@ -14,9 +14,12 @@ import {
 import { StreamEvent } from "@/features/stream/stream.types.ts";
 
 
-export const buildApiClient = (baseURL: string) => {
+/**
+ * @param defaultHeaders sent with every request, e.g. `x-mc-node` to scope the client to a node
+ */
+export const buildApiClient = (baseURL: string, defaultHeaders: Record<string, string> = {}) => {
 
-    const http = buildApiHttpClient(baseURL);
+    const http = buildApiHttpClient(baseURL, defaultHeaders);
 
 /////////// Basic HTTP Methods //////////////
 
@@ -250,6 +253,7 @@ export const buildApiClient = (baseURL: string) => {
                 "Accept": "application/x-ndjson",
                 "Content-Type": "application/json",
                 ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                ...defaultHeaders,
                 ...headers,
             },
             body: JSON.stringify(body ?? {}),

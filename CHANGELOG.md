@@ -9,6 +9,9 @@
 - Helper scripts moved to `/app/bin` (outside the data volume)
 - UI uses a monospace font
 - Added experimental node proxy: requests with an `x-mc-node` header are forwarded to that node (`MC_NODE_PROXY_ENABLED`)
+- UI: tools, RPC, apps and settings moved under `/manage/:hostId` and run on that host (via the node proxy for nodes);
+  open them from a host's `...` menu in the sidebar. Replaces `/admin/apps`, `/admin/rpc`, `/admin/tools` and `/settings`
+- UI: tools and RPC pages use a two-column layout: searchable list on the left, details and form on the right
 
 ## v2.3.1
 

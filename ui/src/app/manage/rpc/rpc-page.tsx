@@ -7,13 +7,10 @@ import RpcCommand from "@/app/manage/rpc/components/rpc-command.tsx";
 import { useApi } from "@/context/api-context.tsx";
 import { useSelectedSearchParam } from "@/hooks/use-selected-search-param.ts";
 import Header from "@/components/header.tsx";
-import {ContainerHostsProvider} from "@/app/containers/components/container-hosts-provider.tsx";
-import ContainersLayout from "@/components/layout/containers-layout.tsx";
 import {useParams} from "react-router";
-import { nodeHeaders } from "@/lib/node-headers.ts";
 
 
-const RpcView = ({hostId}: {hostId?: string}) => {
+const RpcView = () => {
     const { api } = useApi();
 
     const [commands, setCommands] = React.useState<RpcCommandDef[]>([]);
@@ -27,12 +24,12 @@ const RpcView = ({hostId}: {hostId?: string}) => {
     const fetchCommands = React.useCallback(async () => {
         setCommands([]);
         try {
-            const response = await api.get("/api/rpc", { headers: nodeHeaders(hostId) });
+            const response = await api.get("/api/rpc");
             setCommands(response || []);
         } catch (error) {
             console.error("Failed to fetch RPC commands:", error);
         }
-    }, [api, hostId]);
+    }, [api]);
 
     React.useEffect(() => {
         fetchCommands();
@@ -51,9 +48,9 @@ const RpcView = ({hostId}: {hostId?: string}) => {
                 list={<SearchableList items={items} selectedId={selectedMethod} onSelect={setSelectedMethod} noun="commands" />}
             >
                 {rpcCommand
-                    // key resets form/result state when switching commands or hosts
-                    ? <RpcCommandProvider key={`${hostId}/${rpcCommand.method}`} command={rpcCommand}>
-                        <RpcCommand hostId={hostId} />
+                    // key resets form/result state when switching commands
+                    ? <RpcCommandProvider key={rpcCommand.method} command={rpcCommand}>
+                        <RpcCommand />
                     </RpcCommandProvider>
                     : <DetailEmpty icon={<IconTerminal size={32} stroke={1.5} />}>
                         Select a command from the list to see its parameters and run it.
@@ -69,14 +66,10 @@ const RpcPage = () => {
         return <div className={"p-4"}>Host ID missing</div>;
     }
 
-    return <ContainerHostsProvider>
-        <ContainersLayout>
-            <MainContent>
-                <Header title={"Admin RPC"} subtitle={`Run admin RPC commands on ${hostId}.`} />
-                <RpcView hostId={hostId} />
-            </MainContent>
-        </ContainersLayout>
-    </ContainerHostsProvider>;
+    return <MainContent>
+        <Header title={"Admin RPC"} subtitle={`Run admin RPC commands on ${hostId}.`} />
+        <RpcView />
+    </MainContent>;
 };
 
 export default RpcPage;

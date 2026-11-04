@@ -7,17 +7,15 @@ import ToolList from "@/app/manage/tools/components/tool-list.tsx";
 import { ToolDetails } from "@/app/manage/tools/components/tool-details.tsx";
 import { FEAT_TOOLS_ENABLED } from "@/constants.ts";
 import Header from "@/components/header.tsx";
-import { ContainerHostsProvider } from "@/app/containers/components/container-hosts-provider.tsx";
-import ContainersLayout from "@/components/layout/containers-layout.tsx";
 
 const ToolsLayout = () => {
-    const { hostId, currentTool } = useTools();
+    const { currentTool } = useTools();
 
     return (
         <ListDetailLayout list={<ToolList />}>
             {currentTool
-                // key resets form/output state when switching tools or hosts
-                ? <ToolDetails key={`${hostId}/${currentTool.name}`} tool={currentTool} />
+                // key resets form/output state when switching tools
+                ? <ToolDetails key={currentTool.name} tool={currentTool} />
                 : <DetailEmpty icon={<IconTool size={32} stroke={1.5} />}>
                     Select a tool from the list to see its details and run it.
                 </DetailEmpty>}
@@ -36,16 +34,12 @@ const ToolsPage = () => {
         return <div className={"p-4"}>Host ID missing</div>;
     }
 
-    return <ContainerHostsProvider>
-        <ContainersLayout>
-            <MainContent>
-                <Header title={"Tools"} subtitle={`Tools available on ${hostId}. Manage in mc.conf.json`} />
-                <ToolsProvider tools={data || []} hostId={hostId}>
-                    <ToolsLayout />
-                </ToolsProvider>
-            </MainContent>
-        </ContainersLayout>
-    </ContainerHostsProvider>;
+    return <MainContent>
+        <Header title={"Tools"} subtitle={`Tools available on ${hostId}. Manage in mc.conf.json`} />
+        <ToolsProvider tools={data || []} hostId={hostId}>
+            <ToolsLayout />
+        </ToolsProvider>
+    </MainContent>;
 };
 
 export default ToolsPage;

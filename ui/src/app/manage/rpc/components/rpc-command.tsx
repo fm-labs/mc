@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
-import { nodeHeaders } from "@/lib/node-headers.ts";
 
 const generateJsonRpcRequestId = () => {
     return (new Date().getTime() * 1000).toString();
@@ -47,7 +46,7 @@ const JsonBlock = ({ label, src }: { label: string, src: object }) => (
     </div>
 );
 
-const RpcCommand = ({ hostId }: { hostId?: string }) => {
+const RpcCommand = () => {
     const { command } = useRpcCommand();
     const { api } = useApi();
 
@@ -72,7 +71,7 @@ const RpcCommand = ({ hostId }: { hostId?: string }) => {
         setJsonRpcRequest(jsonRpcReq);
         setJsonRpcResponse(undefined);
         setIsSubmitting(true);
-        api.post("/api/rpc", jsonRpcReq, {timeout: 120000, headers: nodeHeaders(hostId)})
+        api.post("/api/rpc", jsonRpcReq, {timeout: 120000})
             .then((response: JsonRpcResponse) => {
             if (isNotification) {
                 toast.success("Notification successfully sent.");

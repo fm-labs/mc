@@ -1,6 +1,7 @@
 import React from "react";
 import { buildApiClient } from "@/lib/api-client.ts";
 import {MC_API_BASE_URL} from "@/constants.ts";
+import { nodeHeaders } from "@/lib/node-headers.ts";
 
 type ApiContextType = {
     apiBaseUrl: string,
@@ -43,6 +44,25 @@ export const ApiProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 }
 
 
+/**
+ * Scopes `useApi()` to a host: every request below it goes to that node through the node proxy
+ * (x-mc-node header). The local mc ("localhost") gets the plain client.
+ */
+export const HostApiProvider: React.FC<{ hostId: string, children: React.ReactNode }> = ({ hostId, children }) => {
+    const parent = useApi();
+    const api = React.useMemo(
+        () => buildApiClient(parent.apiBaseUrl, nodeHeaders(hostId)),
+        [parent.apiBaseUrl, hostId],
+    );
+
+    return (
+        <ApiContext.Provider value={{ ...parent, api }}>
+            {children}
+        </ApiContext.Provider>
+    );
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
 export const useApi = () => {
     const context = React.useContext(ApiContext);
     if (context === undefined) {

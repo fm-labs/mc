@@ -6,10 +6,12 @@ import AuthLayout from "@/components/layout/auth-layout.tsx";
 import AdminLayout from "@/components/layout/admin-layout.tsx";
 import MainLayout from "@/components/layout/main-layout.tsx";
 import {NotFoundError} from "@/features/errors/not-found-error.tsx";
+import {RouteError} from "@/features/errors/route-error.tsx";
 import AuthenticatedRoute from "@/components/authenticated-route.tsx";
 import ContainerHostsStatsPage from "@/app/containers/container-hosts-stats-page.tsx";
 import ContainerHostsNetworkPage from "@/app/containers/container-hosts-network-page.tsx";
 import { nodeHeaders } from "@/lib/node-headers.ts";
+import ManageLayout from "@/app/manage/manage-layout.tsx";
 
 // lazy load pages
 const StartPage = await import('@/app/start-page.tsx').then(mod => mod.default);
@@ -38,6 +40,8 @@ const AppRouter = () => {
         {
             path: "/",
             Component: Root,
+            // catches render and loader errors of all routes
+            ErrorBoundary: RouteError,
             children: [
                 {index: true, Component: StartPage},
                 {
@@ -116,7 +120,9 @@ const AppRouter = () => {
                             ],
                         },
                         {
+                            // host-scoped admin pages: their API calls go to the host from the URL
                             path: "manage/:hostId",
+                            Component: ManageLayout,
                             children: [
                                 {
                                     index: true,
@@ -143,7 +149,7 @@ const AppRouter = () => {
                                         {
                                             index: true,
                                             Component: AppsPage,
-                                            loader: () => apiClient.getAppSpecs(),
+                                            loader: ({params}) => apiClient.getAppSpecs({ headers: nodeHeaders(params.hostId) }),
                                         },
                                         {
                                             path: "new",
@@ -153,7 +159,7 @@ const AppRouter = () => {
                                             path: ":appId",
                                             Component: AppSpecEditPage,
                                             // the page shows "not found" for a missing app
-                                            loader: ({params}) => apiClient.getAppSpec(params.appId!)
+                                            loader: ({params}) => apiClient.getAppSpec(params.appId!, { headers: nodeHeaders(params.hostId) })
                                                 .catch(() => null),
                                         },
                                     ],

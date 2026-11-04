@@ -26,8 +26,7 @@ import {NavUser} from "@/components/layout/nav-user.tsx";
 import {appNavigationData, appSidebarData} from "@/components/layout/data/app-navigation-data.ts";
 import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
 import {EnvironmentSwitcher} from "@/components/layout/environment-switcher.tsx";
-import {DropdownMenuTrigger} from "@radix-ui/react-dropdown-menu";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem} from "@/components/ui/dropdown-menu.tsx";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu.tsx";
 
 type NavItem = {
     title: string
@@ -102,7 +101,7 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                     },
 
                 ],
-                // tools and rpc only exist on an mc: this one, or a node reached via the node proxy
+                // these pages only exist on an mc: this one, or a node reached via the node proxy
                 secondaryItems: [
                     ...(isMcHost(host) ? [
                         {
@@ -118,7 +117,7 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                         {
                             title: "Apps",
                             url: `/manage/${host.id}/apps`,
-                            icon: "settings"
+                            icon: "apps"
                         },
                         {
                             title: "Settings",
@@ -209,7 +208,7 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                                           aria-label="Connected"/>}
                                             </div>
                                         </CollapsibleTrigger>
-                                        {item.secondaryItems && <DropdownMenu>
+                                        {item.secondaryItems?.length ? <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <MoreHorizontal className="ml-auto"/>
                                             </DropdownMenuTrigger>
@@ -218,14 +217,14 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                                 align={isMobile ? "end" : "start"}
                                                 className="min-w-56 rounded-lg"
                                             >
-                                                {item.secondaryItems.map((sec) => <DropdownMenuItem asChild>
-                                                    <span>
+                                                {item.secondaryItems.map((sec) => <DropdownMenuItem key={sec.url} asChild>
+                                                    <NavLink to={sec.url}>
                                                         <AppIcon icon={sec?.icon}/>
-                                                        <NavLink to={sec.url}>{sec.title}</NavLink>
-                                                    </span>
+                                                        {sec.title}
+                                                    </NavLink>
                                                 </DropdownMenuItem>)}
                                             </DropdownMenuContent>
-                                        </DropdownMenu>}
+                                        </DropdownMenu> : null}
                                     </SidebarMenuButton>
                                     {item.items?.length ? (
                                         <CollapsibleContent>

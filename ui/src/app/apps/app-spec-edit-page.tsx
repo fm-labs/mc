@@ -32,8 +32,6 @@ import {
     validateNetworks,
     validateVolumes,
 } from "@/features/apps/apps-validation.ts";
-import {ContainerHostsProvider} from "@/app/containers/components/container-hosts-provider.tsx";
-import ContainersLayout from "@/components/layout/containers-layout.tsx";
 
 const COMPOSE_TEMPLATE = `services:
   app:
@@ -47,7 +45,7 @@ const APP_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,62}$/;
 type AppSource = "compose" | "bundle";
 
 /**
- * Create (/manage/${hostId}/apps/new, ?source=bundle) or edit (/manage/${hostId}/apps/:appId) an app spec.
+ * Create (/manage/:hostId/apps/new, ?source=bundle) or edit (/manage/:hostId/apps/:appId) an app spec.
  */
 const AppSpecEditPageView = ({hostId}: {hostId?: string}) => {
     const { appId } = useParams();
@@ -351,11 +349,7 @@ const AppSpecEditPage = () => {
         return <div className={"p-4"}>Host ID missing</div>;
     }
 
-    return <ContainerHostsProvider>
-        <ContainersLayout>
-            <AppSpecEditPageView />
-        </ContainersLayout>
-    </ContainerHostsProvider>;
+    return <AppSpecEditPageView hostId={hostId} />;
 };
 
 export default AppSpecEditPage;

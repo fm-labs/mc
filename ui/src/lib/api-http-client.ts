@@ -2,7 +2,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 
-export const buildApiHttpClient = (baseURL: string) => {
+export const buildApiHttpClient = (baseURL: string, defaultHeaders: Record<string, string> = {}) => {
 
     const http = axios.create({
         baseURL: baseURL,
@@ -19,6 +19,7 @@ export const buildApiHttpClient = (baseURL: string) => {
         headers: {
             "Content-Type": "application/json",
             "Accept": "application/json",
+            ...defaultHeaders,
         },
     });
 
