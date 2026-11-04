@@ -11,13 +11,8 @@ from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
 
-from mc.docker.compose_runner import (
-    DockerComposeArgs,
-    DockerComposeDownArgs,
-    DockerComposeStopArgs,
-    DockerComposeUpArgs,
-)
 from mc.plugin.apps.apps_helper import (
+    AppAction,
     AppNetworkSpec,
     AppRoutingSpec,
     AppSpec,
@@ -243,19 +238,8 @@ def apps_compiled(app_id: str) -> CompiledAppSpec:
 # Line-based, uncolored compose output for streaming
 STREAM_GLOBAL_ARGS = ["--progress", "plain", "--ansi", "never"]
 
-AppAction = Literal["up", "down", "stop", "restart"]
-
-
 def _action_cmd(spec: AppSpec, action: AppAction) -> tuple[list[str], dict[str, str]]:
-    runner = spec.compose_runner(global_args=STREAM_GLOBAL_ARGS)
-    if action == "up":
-        # always detach: an attached `up` never exits, and a client disconnect would stop the containers
-        return runner.up_cmd(DockerComposeUpArgs(detach=True, remove_orphans=True, yes=True, no_color=True))
-    if action == "down":
-        return runner.compose_cmd("down", **DockerComposeDownArgs().model_dump())
-    if action == "stop":
-        return runner.compose_cmd("stop", **DockerComposeStopArgs().model_dump())
-    return runner.compose_cmd("restart", **DockerComposeArgs().model_dump())
+    return spec.action_cmd(action, global_args=STREAM_GLOBAL_ARGS)
 
 
 @router.post("/apps/{app_id}/action/{action}")
