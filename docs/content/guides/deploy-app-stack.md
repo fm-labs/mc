@@ -1,5 +1,7 @@
 # Deploy an app stack
 
+> **Obsolete.** App stacks are replaced by apps, see [Deploy an app](deploy-app.md).
+
 An app stack is a docker compose project from a git repository. mc copies it, adds your settings, and runs it.
 
 ## 1. Prepare the repository

@@ -43,9 +43,10 @@ The healthcheck calls `GET /api/health` on port 3080.
 |---|---|---|---|
 | Data | `MC_HOME` | `/mc` | Everything persistent (mounted as a volume, `mc_data` by default) |
 | Data on host | `MC_HOST_HOME` | `$DOCKER_HOME/volumes/$MC_DATA_VOLUME/_data` | Where `MC_HOME` lives **on the host**. Needed for bind mounts mc starts (e.g. `mc-traefik-start.sh`). `DOCKER_HOME` defaults to `/var/lib/docker`, `MC_DATA_VOLUME` to `mc_data`. Set it when the data is a bind mount or the volume has another name |
-| Config | `MC_CONFIG_DIR` | `/mc/etc` | `mc.conf.json`, `users.json`, `ssh_config`, `ssl/`, `ssh_keys/`, `inventory/` (user types), `inventory.toml` |
+| Config | `MC_CONFIG_DIR` | `/mc/etc` | `mc.conf.json`, `users.json`, `ssh_config`, `ssl/`, `ssh_keys/`, `apps/` (app specs), `inventory/` (user types), `inventory.toml` |
 | Inventory | | `$MC_HOME/inventory` | Stored items |
-| Apps | | `$MC_HOME/apps/<stack id>` | Working dir of each app stack |
+| App specs | | `$MC_CONFIG_DIR/apps/<id>.yaml` | One spec per app (see [Apps](apps.md)) |
+| Apps | | `$MC_HOME/apps/<id>` | Project folder of each app (and of each obsolete app stack) |
 | Repo cache | | `$MC_HOME/cache/repos` | Git checkouts of stack repositories |
 | Bin | `MC_BIN_DIR` | `/app/bin` (local: `./scripts`) | Helper scripts used by tools (`mc-docker-volume-*.sh`, `mc-traefik-*.sh`) |
 | Tools | | `/etc/mc/tools`, `$MC_HOME/tools` | Tool definitions (`*.json`), see [API](api.md#tools) |
@@ -90,7 +91,7 @@ for development.
 | `MC_MCP_ENABLED` | `true` | MCP server accepts tokens. `false` denies every request |
 | `MC_MCP_TOKEN` | random per start | Bearer token for the MCP server. With `MC_DEV_MODE`, any token starting with `dev-` works |
 | `MCP_TRANSPORT`, `MCP_HOST`, `MCP_PORT`, `MCP_PATH` | `stdio`, `127.0.0.1`, `5001`, `/mcp` | MCP server; the entrypoint's `mcp-server-http` sets `streamable-http` on `0.0.0.0` |
-| `DOCKER_HOST` | `unix:///var/run/docker.sock` | Target of app stack deploys |
+| `DOCKER_HOST` | `unix:///var/run/docker.sock` | Target of app stack deploys. Apps ignore it and use the local socket |
 
 The `*_WRITABLE` flags are read from the real process env only, so `mc.conf.json` can't grant itself write access.
 

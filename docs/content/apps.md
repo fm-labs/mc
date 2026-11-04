@@ -1,177 +1,163 @@
-# App Stacks
+# App specification
 
+An app is a docker compose project that mc manages. You write the `compose.yaml`; the app spec adds what
+changes per install: volumes, networks, routing and environment variables. mc turns the spec into compose
+override files every time you save.
 
-## App Stack Specification (Container)
+Create and edit apps under **Admin → Apps**, or with the CLI (see [CLI](#cli)).
+For a walkthrough, see [Deploy an app](guides/deploy-app.md).
 
-```json
-{
-  "id": "my-redis-container",
-  "type": "container",
-  "label": "My Redis Container",
-  "image": "redis:latest",
-  "env": {
-    "REDIS_ADMIN_USER": "",
-    "REDIS_ADMIN_PASSWORD": ""
-  },
-  "ports": [
-    "6379/tcp"
-  ],
-  "volumes": [
-    {
-      "name": "redis-data",
-      "persistent": true,
-      "container": "/data"
-    }
-  ],
-  "networks": [
-    "my-custom-network"
-  ]
-}
+## Files
+
+| File | Written by | Contents |
+|---|---|---|
+| `$MC_CONFIG_DIR/apps/<id>.yaml` | you (editor, CLI, API) | The app spec |
+| `$MC_HOME/apps/<id>/compose.yaml` | you | The compose file |
+| `$MC_HOME/apps/<id>/compose.override.yaml` | mc, on save | Volumes and networks from the spec |
+| `$MC_HOME/apps/<id>/compose.traefik.yaml` | mc, on save | Routing from the spec |
+
+Don't edit the two generated files; they're overwritten on every save. `docker compose` gets all three
+compose files, in the order above.
+
+## Spec
+
+```yaml
+# $MC_CONFIG_DIR/apps/wordpress.yaml
+id: wordpress
+type: compose
+title: WordPress
+description: Blog with a MySQL database
+stackfile: compose.yaml
+volumes:
+  - volume_name: wp-data
+    container_path: /var/www/html
+    bind: true
+    host_path: ./data/wp
+  - volume_name: db-data
+    container_path: /var/lib/mysql
+networks:
+  - network_name: backend
+    external: true
+routing:
+  - service_name: wordpress
+    service_port: 80
+    mode: https
+    domain_names: [blog.example.com, www.blog.example.com]
+environment:
+  WORDPRESS_DB_PASSWORD: supersecret
 ```
 
+| Field | Notes |
+|---|---|
+| `id` | Lowercase letters, digits, `-` and `_`, up to 63 chars. Also the compose project name and the folder name. `new` is reserved. Taken from the file name; it can't be changed |
+| `type` | `compose`. (`container` is reserved for single-container apps, not supported yet) |
+| `title`, `description` | Shown in the UI |
+| `stackfile` | Compose file name in the app folder, `compose.yaml` |
+| `volumes` | See [Volumes](#volumes) |
+| `networks` | See [Networks](#networks) |
+| `routing` | See [Routing](#routing) |
+| `environment` | See [Environment](#environment) |
 
+## Volumes
 
-## App Stack Specification (Compose)
+Each entry replaces a volume of the compose file with a named volume or a host folder.
 
-```json
-{
-  "id": "my-wordpress-stack",
-  "type": "compose",
-  "label": "My WordPress Stack",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/fm-labs/mc-templates.git",
-    "branch": "main",
-    "composefile": "stacks/wordpress/compose.yaml",
-    "private": false
-  },
-  "env": {
-    "WP_ADMIN_USER": "",
-    "WP_ADMIN_PASSWORD": ""
-  },
-  "ports": [
-    "8080/tcp"
-  ],
-  "volumes": [
-    {
-      "name": "wp-data",
-      "bind": "/mc/volumes/my-wordpress-stack-wp-data",
-      "persistent": true
-    },
-    {
-      "name": "db-data",
-      "persistent": true
-    }
-  ],
-  "networks": [
-    "my-custom-network"
-  ],
-  "domain": "my-wordpress-stack.local",
-  "proxy": {
-    "enabled": true,
-    "network": "proxy-network",
-    "http": false,
-    "https": true
-  },
-  "routes": [
-    {
-      "serviceName": "wordpress",
-      "containerPort": 8080
-    }
-  ],
-  "template": "https://github.com/fm-labs/mc-launchpacks/blob/main/stacks/wordpress/template.json"
-}
+| Field | Notes |
+|---|---|
+| `volume_name` | Name of the volume as used in `compose.yaml` (`wp-data` in `wp-data:/var/www/html`) |
+| `container_path` | Absolute path in the container |
+| `bind` | `true` mounts a host folder instead of a named volume |
+| `host_path` | Host folder, required with `bind`. A relative path is relative to the app folder. Missing folders are created |
+
+- Every service that mounts `volume_name` gets the spec's mount instead. A read-only (`:ro`) mount stays
+  read-only.
+- If no service mounts it and the compose file has only one service, the volume is added to that service.
+  Otherwise it's skipped with a warning.
+- Named volumes are declared at the top level for you.
+
+## Networks
+
+| Field | Notes |
+|---|---|
+| `network_name` | Network name |
+| `external` | `true` for a network that already exists on the Docker host. Compose won't create or remove it |
+
+Every service joins every spec network and keeps its own networks (including `default`). Services with
+`network_mode` are skipped with a warning.
+
+## Routing
+
+Routes serve a service port on one or more domains through [Traefik](https://traefik.io).
+
+| Field | Notes |
+|---|---|
+| `service_name` | Service in `compose.yaml` |
+| `service_port` | Port the service listens on inside the container (1-65535) |
+| `mode` | `http`, `https` or `http+https` |
+| `domain_names` | One or more host names. Lowercased; wildcards aren't supported |
+
+mc assumes Traefik is already running with:
+
+- the external Docker network `traefik-ssl`,
+- entrypoints `web` (HTTP) and `websecure` (HTTPS),
+- a certificate resolver named `le` (used for HTTPS).
+
+The routed service gets the Traefik labels and joins `traefik-ssl`. Each service and port can have one route;
+put all its domains in that route. A route to a service that doesn't exist, or that uses `network_mode`, is
+skipped with a warning.
+
+## Environment
+
+Name-value pairs passed to `docker compose` when it runs, so `${NAME}` in `compose.yaml` is filled in.
+They are not written to the compose files.
+
+- Names: letters, digits and `_`, not starting with a digit.
+- `DOCKER_HOST`, `COMPOSE_PROJECT_DIRECTORY` and `COMPOSE_PROJECT_NAME` are set by mc and can't be used.
+- Values are stored as plain text in the spec file.
+
+Variables only reach a container if `compose.yaml` passes them on, for example:
+
+```yaml
+services:
+  wordpress:
+    image: wordpress:${WP_VERSION:-latest}
+    environment:
+      WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
 ```
 
-## App Stack Template Specification
+## Running an app
 
-Easy to use templates for popular app stacks.
+| Action | Runs |
+|---|---|
+| Up | `docker compose up --detach --remove-orphans` |
+| Restart | `docker compose restart` |
+| Stop | `docker compose stop` |
+| Down | `docker compose down`. Removes containers and the app's networks; volumes are kept |
 
-```json
-{
-  "id": "wordpress-template",
-  "type": "compose",
-  "title": "WordPress Template",
-  "description": "A template for a WordPress stack with a MySQL database.",
-  "note": "",
-  "categories": [
-    "Blogging",
-    "CMS"
-  ],
-  "platform": "linux",
-  "logo": "",
-  "repository": {
-    "url": "https://github.com/fm-labs/mc-launchpacks",
-    "stackfile": "stacks/wordpress/compose.yaml"
-  },
-  "env": [
-    {
-      "name": "WP_ADMIN_USER",
-      "label": "WordPress admin username",
-      "default": "admin"
-    },
-    {
-      "name": "WP_ADMIN_PASSWORD",
-      "label": "WordPress admin password",
-      "secret": true
-    }
-  ],
-  "ports": [
-    "8080:8080/tcp"
-  ],
-  "volumes": [
-    {
-      "name": "wp-data",
-      "persistent": true
-    },
-    {
-      "name": "db-data",
-      "persistent": true
-    }
-  ],
-  "routes": [
-    {
-      "serviceName": "wordpress",
-      "containerPort": 8080
-    }
-  ]
-}
-```
+Apps run on the local Docker host (`unix:///var/run/docker.sock`).
 
+## CLI
 
-## Create new app stack with the CLI
+The CLI is `src/cli.py` (`mc-cli` when built with `build_bin.sh`). The examples use an alias:
 
 ```bash
-mc app create my-wordpress-stack --template "http://url-to-template.json"
+alias mc-cli="uv run python src/cli.py"   # from the repo root
 
-# configure
-mc app configure my-wordpress-stack --env WP_ADMIN_USER=admin --env WP_ADMIN_PASSWORD=supersecretpassword
-mc app configure my-wordpress-stack --port 8080:8080/tcp
-mc app configure my-wordpress-stack --volume wp-data:/mc/volumes/my-wordpress-stack-wp-data --persistent
-mc app configure my-wordpress-stack --volume db-data --persistent
-mc app configure my-wordpress-stack --network default
-mc app configure my-wordpress-stack --domain my-wordpress-stack.local
-mc app configure my-wordpress-stack --proxy --proxy-network default --proxy-http false --proxy-https true
-mc app configure my-wordpress-stack --route wordpress:8080
+mc-cli apps list
+mc-cli apps show <id>                       # env values are hidden
+mc-cli apps create <id> -f compose.yaml     # -f - reads stdin; --title, --description
+mc-cli apps edit <id>                       # edit the spec in $EDITOR, validated before saving
+mc-cli apps edit <id> --compose             # edit compose.yaml
+mc-cli apps compile <id>                    # regenerate the override files
+mc-cli apps config <id>                     # print the merged compose config
 
-# configure interactively (e.g. set environment variables)
-mc app configure --interactive my-wordpress-stack
+mc-cli apps up <id>                         # compiles first, unless --no-compile
+mc-cli apps restart|stop|down <id>
 
-# dump current configuration to a JSON file
-mc app inspect my-wordpress-stack --output json > my-wordpress-stack-config.json
-
-# sync app repository (e.g. pull latest changes from the compose file)
-mc app sync my-wordpress-stack
-
-# deploy the stack
-mc app deploy my-wordpress-stack
-
-# view logs
-mc app logs my-wordpress-stack
-
-# stop the stack
-mc app stop my-wordpress-stack
-
-# remove the stack
-mc app remove my-wordpress-stack
+mc-cli apps env list <id> [--show-values]
+mc-cli apps env set <id> NAME=VALUE ...     # NAME alone prompts for a hidden value
+mc-cli apps env unset <id> NAME ...
 ```
+
+`list` and `show` also take `--json`. The CLI reads `MC_HOME` and `MC_CONFIG_DIR` like the server, so
+run it with the same env (inside the mc container, or with `.env.local` in development).

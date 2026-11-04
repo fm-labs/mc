@@ -24,7 +24,16 @@ It runs as one container next to Docker.
 - Live Docker **events** per host.
 - **Back up, restore and clone** volumes (RPC console or Tools).
 
-## App stacks
+## Apps
+
+- Write a docker compose app in the browser (**Admin → Apps**) or with the CLI.
+- Replace volumes with named volumes or host folders, and join extra networks, without editing the compose file.
+- Set environment variables for `${VAR}` in the compose file. They're never written to the compose files.
+- Route services to domains through Traefik, over HTTP and/or HTTPS.
+- Start, restart, stop and remove the app with live `docker compose` output.
+- See the generated compose files and the merged config before you run it.
+
+## App stacks (obsolete)
 
 - Deploy docker compose projects from a git repository (public or private, HTTPS or SSH).
 - Set environment variables per stack; mc writes the `.env` file for you.

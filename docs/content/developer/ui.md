@@ -35,9 +35,10 @@ The backend serves `ui/dist` (`MC_UI_HTML_DIR`) at `/`, so after a build the UI 
 | `/containers/:hostId/:view?` | One host: `container` (default), `images`, `volumes`, `networks`, `engine`, `events` |
 | `/containers/:hostId/container/:containerId` | Container detail (inspect, logs, exec, env, mounts, ...) |
 | `/containers/stats`, `/containers/network` | Stats and network graph across connected hosts |
-| `/stacks`, `/stacks/details/:stackId` | App stacks |
+| `/stacks`, `/stacks/details/:stackId` | App stacks (obsolete) |
 | `/stacks/portainer` | Browse Portainer template lists |
 | `/settings` | Edit `mc.conf.json` and `ssh_config` |
+| `/admin/apps`, `/admin/apps/new`, `/admin/apps/:appId` | Apps: list, create, edit and run (see [Apps](apps.md#ui)) |
 | `/admin/rpc` | Run RPC methods |
 | `/admin/inventory/:itemType[/:itemId]` | Generated inventory pages (see [Inventory UI](inventory-ui.md)) |
 

@@ -1,5 +1,8 @@
 # App stacks
 
+> **Obsolete.** App stacks are replaced by [apps](apps.md). The code still exists, but the CLI no longer
+> uses it and new work goes into the apps plugin.
+
 An app stack is an inventory item (`app_stack`) that points to a compose project in a git repository.
 mc copies the project into a working dir, adds its own overrides and runs `docker compose`.
 
@@ -81,8 +84,5 @@ celery worker is disabled.
 
 ## CLI
 
-```bash
-uv run python src/cli.py apps inspect <id>
-uv run python src/cli.py apps update <id> [--check]
-uv run python src/cli.py apps deploy <id> [--dry-run]
-```
+The `apps inspect/update/deploy` commands for app stacks were removed. The `apps` CLI group now manages
+[apps](apps.md).

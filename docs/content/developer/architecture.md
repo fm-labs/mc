@@ -23,11 +23,12 @@ browser ──► nginx :3080 / :3443 (TLS)
 |---|---|
 | `src/server.py` | FastAPI app: lifespan, exception handler, router, static UI mount |
 | `src/mcp_server.py` | Standalone MCP server (separate process) |
-| `src/cli.py` | Click CLI (`version`, `apps inspect/update/deploy`) |
+| `src/cli.py` | Click CLI (`version`, `apps ...`, see [Apps](apps.md)) |
 | `src/mc/config.py` | Config file loading and env settings |
 | `src/mc/server/` | Routers (`router.py` wires them), auth (`deps.py`, `auth_helper.py`), config and RPC routes |
 | `src/mc/db.py` | Redis client (unused by default) |
 | `src/mc/plugin/containers/` | Container host clients, manager and `/api/containers` routes |
+| `src/mc/plugin/apps/` | App specs, compose override generation and `/api/apps` routes (see [Apps](apps.md)). `inventory/` holds the obsolete app stack types |
 | `src/mc/plugin/tools/` | Tool index (built-in and JSON-defined commands) and `/api/tools` routes |
 | `src/mc/inventory/` | mc's inventory setup and core item types (`app_stack`, `secret`, `ssh_key`, ...) |
 | `src/inventorydb/` | Standalone schema-driven item store (no mc imports) |
@@ -72,3 +73,4 @@ Some code exists but is not mounted or not enabled by default:
 - Celery worker, Flower and redis have supervisor programs with `autostart=false`. Deploys run synchronously
   in the request.
 - App stack `target_node` is ignored; deploys use `DOCKER_HOST` (see [App stacks](app-stacks.md)).
+  Apps always run on the local socket (see [Apps](apps.md)).
