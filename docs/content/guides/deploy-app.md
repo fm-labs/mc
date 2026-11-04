@@ -58,6 +58,26 @@ You need Traefik running on an external Docker network named `traefik-ssl`, with
 
 The `ports:` entry isn't needed for routing; you can remove it.
 
+## From a bundle
+
+To ship config files with the compose file, pack them into a bundle (see [Bundles](../apps.md#bundles)):
+
+```text
+myapp/
+  compose.yaml
+  conf/nginx.conf
+```
+
+```bash
+tar -czf myapp.tar.gz myapp
+```
+
+In **Admin → Apps**, click **From bundle**, enter the **Id**, choose the file and click **Create app**. Set up
+volumes, networks, environment and routing afterwards in the editor.
+
+For a new version, click **Upload bundle** next to the compose file in the editor. Bundle files replace the
+old ones, other files in the app folder are kept, and the spec stays the same. Run **Up** to apply it.
+
 ## From the command line
 
 The same steps with the CLI (see [CLI](../apps.md#cli)):
@@ -68,11 +88,12 @@ mc-cli apps env set whoami WHOAMI_VERSION=v1.10
 mc-cli apps up whoami
 ```
 
-For volumes, networks and routing, use `mc-cli apps edit whoami`.
+For volumes, networks and routing, use `mc-cli apps edit whoami`. For bundles, use
+`mc-cli apps create <id> -b myapp.tar.gz` and `mc-cli apps update <id> -b myapp.tar.gz`.
 
 ## Limits
 
 - Apps run on the local Docker host only.
 - Apps can't be deleted from the UI yet. Run **Down**, then remove `$MC_CONFIG_DIR/apps/<id>.yaml` and
   `$MC_HOME/apps/<id>/`.
-- Creating an app from a bundle or template isn't available yet.
+- Creating an app from a template isn't available yet.

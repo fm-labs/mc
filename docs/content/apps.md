@@ -1,7 +1,7 @@
 # App specification
 
-An app is a docker compose project that mc manages. You write the `compose.yaml`; the app spec adds what
-changes per install: volumes, networks, routing and environment variables. mc turns the spec into compose
+An app is a docker compose project that mc manages. You write the `compose.yaml` (or upload it in a
+[bundle](#bundles) with extra files); the app spec adds what changes per install: volumes, networks, routing and environment variables. mc turns the spec into compose
 override files every time you save.
 
 Create and edit apps under **Admin → Apps**, or with the CLI (see [CLI](#cli)).
@@ -13,6 +13,7 @@ For a walkthrough, see [Deploy an app](guides/deploy-app.md).
 |---|---|---|
 | `$MC_CONFIG_DIR/apps/<id>.yaml` | you (editor, CLI, API) | The app spec |
 | `$MC_HOME/apps/<id>/compose.yaml` | you | The compose file |
+| `$MC_HOME/apps/<id>/...` | you (bundle) | Extra files from a [bundle](#bundles), e.g. configs |
 | `$MC_HOME/apps/<id>/compose.override.yaml` | mc, on save | Volumes and networks from the spec |
 | `$MC_HOME/apps/<id>/compose.traefik.yaml` | mc, on save | Routing from the spec |
 
@@ -52,7 +53,7 @@ environment:
 | `id` | Lowercase letters, digits, `-` and `_`, up to 63 chars. Also the compose project name and the folder name. `new` is reserved. Taken from the file name; it can't be changed |
 | `type` | `compose`. (`container` is reserved for single-container apps, not supported yet) |
 | `title`, `description` | Shown in the UI |
-| `stackfile` | Compose file name in the app folder, `compose.yaml` |
+| `stackfile` | Compose file name in the app folder: `compose.yaml`, or the one found in a [bundle](#bundles) |
 | `volumes` | See [Volumes](#volumes) |
 | `networks` | See [Networks](#networks) |
 | `routing` | See [Routing](#routing) |
@@ -92,7 +93,7 @@ Routes serve a service port on one or more domains through [Traefik](https://tra
 | Field | Notes |
 |---|---|
 | `service_name` | Service in `compose.yaml` |
-| `service_port` | Port the service listens on inside the container (1-65535) |
+| `container_port` | Port the service listens on inside the container (1-65535) |
 | `mode` | `http`, `https` or `http+https` |
 | `domain_names` | One or more host names. Lowercased; wildcards aren't supported |
 
@@ -125,6 +126,31 @@ services:
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
 ```
 
+## Bundles
+
+A bundle is a tar archive (usually `.tar.gz`) with everything an app is launched from: a compose file and
+optional extra files such as configs or scripts. mc extracts it into the app folder, so the compose file can
+refer to the extra files with relative paths (`./conf/nginx.conf:/etc/nginx/nginx.conf:ro`).
+
+```bash
+cd myapp && tar -czf ../myapp.tar.gz .    # or: tar -czf myapp.tar.gz myapp
+```
+
+- The compose file must be at the root: `compose.yaml`, `compose.yml`, `docker-compose.yaml` or
+  `docker-compose.yml` (first match wins). If the archive holds a single folder, that folder is the root.
+- Only regular files and folders: links, absolute paths and `..` are rejected.
+- `compose.override.yaml` and `compose.traefik.yaml` are rejected, since mc generates them.
+- macOS metadata (`._*`, `.DS_Store`, `__MACOSX/`) is skipped.
+- Limits: 100 MB upload, 200 MB and 1000 entries extracted.
+
+Updating an app from a bundle extracts it over the app folder:
+
+- Files in the bundle replace the same files in the app folder; other files, like bind mount data, are kept.
+  Files dropped from a new bundle version are not removed.
+- The spec (volumes, networks, routing, environment) is kept. `stackfile` points to the bundle's compose file.
+- Nothing is written if the bundle is invalid, or if one of its files is a folder in the app folder.
+- Running containers aren't touched; run **Up** to apply the change.
+
 ## Running an app
 
 | Action | Runs |
@@ -146,6 +172,9 @@ alias mc-cli="uv run python src/cli.py"   # from the repo root
 mc-cli apps list
 mc-cli apps show <id>                       # env values are hidden
 mc-cli apps create <id> -f compose.yaml     # -f - reads stdin; --title, --description
+mc-cli apps create <id> -b myapp.tar.gz     # from a bundle
+mc-cli apps update <id> -f compose.yaml     # replace the compose file
+mc-cli apps update <id> -b myapp.tar.gz     # extract a bundle over the app folder
 mc-cli apps edit <id>                       # edit the spec in $EDITOR, validated before saving
 mc-cli apps edit <id> --compose             # edit compose.yaml
 mc-cli apps compile <id>                    # regenerate the override files

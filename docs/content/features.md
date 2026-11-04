@@ -26,7 +26,8 @@ It runs as one container next to Docker.
 
 ## Apps
 
-- Write a docker compose app in the browser (**Admin → Apps**) or with the CLI.
+- Write a docker compose app in the browser (**Admin → Apps**) or with the CLI, or upload it as a bundle
+  (tar.gz with the compose file and extra files).
 - Replace volumes with named volumes or host folders, and join extra networks, without editing the compose file.
 - Set environment variables for `${VAR}` in the compose file. They're never written to the compose files.
 - Route services to domains through Traefik, over HTTP and/or HTTPS.

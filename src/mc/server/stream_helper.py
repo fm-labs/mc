@@ -10,6 +10,7 @@ from starlette.responses import StreamingResponse
 async def starlette_subprocess_stream(
         command: list,
         env: dict | None = None,
+        cwd: str | None = None,
         terminate_timeout: int = 3,
         kill_timeout: int = 1,
         request: Request | None | None = None,
@@ -32,6 +33,7 @@ async def starlette_subprocess_stream(
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,  # Merge stderr with stdout
             env=env,
+            cwd=cwd,
             # text=True
         )
 

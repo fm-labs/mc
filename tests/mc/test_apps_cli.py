@@ -88,7 +88,7 @@ def test_env_set_list_unset(run, tmp_path):
 def test_up_compiles_and_runs_compose(run, ran, tmp_path):
     create(run)
     spec = apps_helper.load_app_spec("myapp")
-    spec.routing = [apps_helper.AppRoutingSpec(service_name="web", service_port=80, domain_names=["a.example.com"])]
+    spec.routing = [apps_helper.AppRoutingSpec(service_name="web", container_port=80, domain_names=["a.example.com"])]
     apps_helper.save_app_spec(spec)  # saved without compiling
 
     r = run("up", "myapp")
@@ -103,7 +103,7 @@ def test_up_compiles_and_runs_compose(run, ran, tmp_path):
 def test_up_no_compile(run, ran, tmp_path):
     create(run)
     spec = apps_helper.load_app_spec("myapp")
-    spec.routing = [apps_helper.AppRoutingSpec(service_name="web", service_port=80, domain_names=["a.example.com"])]
+    spec.routing = [apps_helper.AppRoutingSpec(service_name="web", container_port=80, domain_names=["a.example.com"])]
     apps_helper.save_app_spec(spec)
     run("up", "myapp", "--no-compile")
     assert "a.example.com" not in (tmp_path / "home" / "apps" / "myapp" / "compose.traefik.yaml").read_text()
@@ -134,7 +134,7 @@ def test_config_runs_compose_config(run, ran):
 def test_compile_prints_warnings(run):
     create(run)
     spec = apps_helper.load_app_spec("myapp")
-    spec.routing = [apps_helper.AppRoutingSpec(service_name="nope", service_port=80, domain_names=["a.example.com"])]
+    spec.routing = [apps_helper.AppRoutingSpec(service_name="nope", container_port=80, domain_names=["a.example.com"])]
     apps_helper.save_app_spec(spec)
     r = run("compile", "myapp")
     assert r.exit_code == 0

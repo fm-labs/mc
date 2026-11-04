@@ -1,5 +1,5 @@
 """
-`mc apps`: manage app specs ($MC_CONFIG_DIR/apps/<id>.yaml) and run their compose stacks.
+`mc-cli apps`: manage app specs ($MC_CONFIG_DIR/apps/<id>.yaml) and run their compose stacks.
 """
 import json
 import os
@@ -84,7 +84,7 @@ def list_apps(as_json: bool):
         click.echo(json.dumps([s.model_dump(mode="json") for s in specs], indent=2))
         return
     if not specs:
-        click.echo("No apps. Create one with: mc apps create <id> -f compose.yaml")
+        click.echo("No apps. Create one with: mc-cli apps create <id> -f compose.yaml")
         return
     width = max(len(s.id) for s in specs)
     for s in specs:
@@ -109,21 +109,60 @@ def show_app(app_id: str, as_json: bool):
     click.echo(yaml.safe_dump(data, sort_keys=False).rstrip())
 
 
+def _one_source(compose_file, bundle) -> None:
+    if bool(compose_file) == bool(bundle):
+        raise click.UsageError("Pass either -f/--file (compose.yaml) or -b/--bundle (tar.gz)")
+
+
+_file_option = click.option("-f", "--file", "compose_file", type=click.File("r"),
+                            help="compose.yaml ('-' for stdin)")
+_bundle_option = click.option("-b", "--bundle", type=click.File("rb"),
+                              help="Bundle: tar.gz with a compose file at its root and optional extra files")
+
+
 @apps.command("create")
 @click.argument("app_id")
-@click.option("-f", "--file", "compose_file", type=click.File("r"), required=True,
-              help="compose.yaml to start from ('-' for stdin)")
+@_file_option
+@_bundle_option
 @click.option("--title", help="Display title")
 @click.option("--description", help="Description")
-def create_app(app_id: str, compose_file, title: str | None, description: str | None):
-    """Create a compose app from a compose.yaml."""
+def create_app(app_id: str, compose_file, bundle, title: str | None, description: str | None):
+    """Create a compose app from a compose.yaml or a bundle."""
+    _one_source(compose_file, bundle)
     with _errors():
         validate_app_id(app_id)
         if app_spec_exists(app_id):
             raise click.ClickException(f"App '{app_id}' already exists")
-        spec = AppSpec.create_from_string(app_id, compose_file.read(), title=title, description=description)
+        if bundle:
+            spec = AppSpec.create_from_bundle(app_id, bundle, title=title, description=description)
+        else:
+            spec = AppSpec.create_from_string(app_id, compose_file.read(), title=title, description=description)
     _compile(spec)
     click.echo(f"Created {get_appspec_path(spec.id)}")
+
+
+@apps.command("update")
+@click.argument("app_id")
+@_file_option
+@_bundle_option
+def update_app(app_id: str, compose_file, bundle):
+    """
+    Replace an app's compose.yaml, or extract a bundle over its folder.
+
+    Bundle files replace existing ones; other files in the app folder are kept. The spec is kept too.
+    Run `up` afterwards to apply the change.
+    """
+    _one_source(compose_file, bundle)
+    spec = _load(app_id)
+    with _errors():
+        if bundle:
+            spec = spec.update_from_bundle(bundle)
+        else:
+            contents = compose_file.read()
+            validate_compose_stackfile(contents)
+            spec.write_stackfile(contents)
+    _compile(spec)
+    click.echo(f"Updated {spec.project_dir}")
 
 
 @apps.command("edit")

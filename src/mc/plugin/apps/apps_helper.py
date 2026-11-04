@@ -1,7 +1,7 @@
 import os
 import re
 import tempfile
-from typing import Literal, Any
+from typing import Any, BinaryIO, Literal
 
 import pydantic
 import yaml
@@ -14,6 +14,8 @@ from mc.docker.compose_runner import (
     DockerComposeUpArgs,
     LocalDockerComposeStackRunner,
 )
+from mc.plugin.apps.apps_bundle import ExtractedBundle
+from mc.plugin.apps.apps_template import AppTemplate
 from mc.plugin.apps.compose_override import build_override, build_traefik_override, dump_override
 
 
@@ -178,7 +180,7 @@ DOMAIN_NAME_PATTERN = re.compile(r"^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-
 
 class AppRoutingSpec(pydantic.BaseModel):
     service_name: str
-    service_port: int = pydantic.Field(ge=1, le=65535)
+    container_port: int = pydantic.Field(ge=1, le=65535)
     mode: Literal["http", "https", "http+https"] = "http"
     domain_names: list[str] = pydantic.Field(default_factory=list)
 
@@ -262,7 +264,7 @@ class AppSpec(pydantic.BaseModel):
             dupes = sorted({n for n in names if names.count(n) > 1})
             if dupes:
                 raise ValueError(f"Duplicate {kind} names: {', '.join(dupes)}")
-        targets = [f"{r.service_name}:{r.service_port}" for r in self.routing]
+        targets = [f"{r.service_name}:{r.container_port}" for r in self.routing]
         dupes = sorted({t for t in targets if targets.count(t) > 1})
         if dupes:
             raise ValueError(f"Duplicate routes to {', '.join(dupes)}. Put all domains of a port in one route.")
@@ -372,6 +374,35 @@ class AppSpec(pydantic.BaseModel):
         spec.write_stackfile(contents)
         save_app_spec(spec)
         return spec
+
+    @staticmethod
+    def create_from_bundle(name: str, fileobj: BinaryIO, **kwargs) -> "AppSpec":
+        """Create a compose app from a bundle (tar archive). Extracts it into the app folder and saves the spec."""
+        validate_app_id(name)
+        with ExtractedBundle(fileobj) as bundle:
+            validate_compose_stackfile(bundle.read_stackfile())
+            spec = AppSpec(id=name, type="compose", stackfile=bundle.stackfile, **kwargs)
+            bundle.install(spec.project_dir)
+        save_app_spec(spec)
+        return spec
+
+    def update_from_bundle(self, fileobj: BinaryIO) -> "AppSpec":
+        """
+        Extract a bundle over the app folder and save the spec, pointing at the bundle's compose file.
+        Files that aren't in the bundle (e.g. bind mount data) are kept. Returns the updated spec.
+        """
+        if self.type != "compose":
+            raise ValueError("Only compose apps can be updated from a bundle")
+        with ExtractedBundle(fileobj) as bundle:
+            validate_compose_stackfile(bundle.read_stackfile())
+            spec = AppSpec.model_validate({**self.model_dump(), "stackfile": bundle.stackfile})
+            bundle.install(spec.project_dir)
+        save_app_spec(spec)
+        return spec
+
+    @staticmethod
+    def create_from_template(template: AppTemplate) -> "AppSpec":
+        raise NotImplementedError()
 
 
 def app_spec_exists(app_id: str) -> bool:

@@ -1,5 +1,5 @@
 import React from "react";
-import { useLoaderData, useNavigate, useParams, useRevalidator } from "react-router";
+import { useLoaderData, useNavigate, useParams, useRevalidator, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useApi } from "@/context/api-context.tsx";
 import MainContent from "@/components/layout/main-content.tsx";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Label } from "@/components/ui/label.tsx";
 import { Textarea } from "@/components/ui/textarea.tsx";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group.tsx";
 import { AppSpecDetails } from "@/features/apps/apps.types.ts";
 import AppActionsPanel from "@/app/apps/components/app-actions-panel.tsx";
 import CompiledSpecDialog from "@/app/apps/components/compiled-spec-dialog.tsx";
@@ -16,6 +17,8 @@ import AppVolumesEditor from "@/app/apps/components/app-volumes-editor.tsx";
 import AppNetworksEditor from "@/app/apps/components/app-networks-editor.tsx";
 import AppEnvironmentEditor from "@/app/apps/components/app-environment-editor.tsx";
 import AppRoutingEditor from "@/app/apps/components/app-routing-editor.tsx";
+import AppBundleUploadDialog, { BUNDLE_ACCEPT } from "@/app/apps/components/app-bundle-upload-dialog.tsx";
+import { apiErrorMessage } from "@/features/apps/apps-errors.ts";
 import {
     composeVariableRefs,
     envToRows,
@@ -38,20 +41,11 @@ const COMPOSE_TEMPLATE = `services:
 
 const APP_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,62}$/;
 
-const errorMessage = (error: any) => {
-    const detail = error?.response?.data?.detail;
-    // FastAPI validation errors: [{loc: ["body", "volumes", 0, "container_path"], msg: "..."}]
-    if (Array.isArray(detail)) {
-        return detail.map((d: any) => {
-            const loc = (d.loc || []).filter((part: any) => part !== "body").join(".");
-            return loc ? `${loc}: ${d.msg}` : d.msg;
-        }).join("; ");
-    }
-    return detail ?? error?.message ?? String(error);
-};
+// new apps start from a hand-written compose.yaml or from a bundle (tar.gz)
+type AppSource = "compose" | "bundle";
 
 /**
- * Create (/admin/apps/new) or edit (/admin/apps/:appId) an app spec with a hand-written compose.yaml.
+ * Create (/admin/apps/new, ?source=bundle) or edit (/admin/apps/:appId) an app spec.
  */
 const AppSpecEditPage = () => {
     const { appId } = useParams();
@@ -60,6 +54,12 @@ const AppSpecEditPage = () => {
     const { api } = useApi();
     const navigate = useNavigate();
     const revalidator = useRevalidator();
+    const [searchParams] = useSearchParams();
+    const [source, setSource] = React.useState<AppSource>(
+        isNew && searchParams.get("source") === "bundle" ? "bundle" : "compose",
+    );
+    const [bundleFile, setBundleFile] = React.useState<File | null>(null);
+    const fromBundle = isNew && source === "bundle";
 
     const initial = React.useMemo(() => ({
         id: details?.spec.id ?? "",
@@ -93,12 +93,24 @@ const AppSpecEditPage = () => {
     const idError = isNew && form.id && !APP_ID_PATTERN.test(form.id)
         ? "Use lowercase letters, digits, '-' and '_'."
         : null;
-    const canSave = isDirty && !saving && !idError && !hasOverrideErrors && !!form.id && !!form.stackfile.trim();
+    const canSave = fromBundle
+        ? !saving && !idError && !!form.id && !!bundleFile
+        : isDirty && !saving && !idError && !hasOverrideErrors && !!form.id && !!form.stackfile.trim();
 
     const handleSave = async () => {
         setSaving(true);
         try {
-            if (isNew) {
+            if (fromBundle && bundleFile) {
+                const created = await api.createAppFromBundle({
+                    id: form.id,
+                    title: form.title || null,
+                    description: form.description || null,
+                    bundle: bundleFile,
+                });
+                toast.success(`Created app ${created.spec.id} from ${bundleFile.name}`);
+                created.compile_warnings?.forEach((w: string) => toast.warning(w));
+                navigate(`/admin/apps/${encodeURIComponent(created.spec.id)}`, { replace: true });
+            } else if (isNew) {
                 const created = await api.createAppFromScratch({
                     id: form.id,
                     title: form.title || null,
@@ -127,7 +139,7 @@ const AppSpecEditPage = () => {
                 revalidator.revalidate();
             }
         } catch (error) {
-            toast.error(`Save failed: ${errorMessage(error)}`);
+            toast.error(`Save failed: ${apiErrorMessage(error)}`);
         } finally {
             setSaving(false);
         }
@@ -141,7 +153,7 @@ const AppSpecEditPage = () => {
         <MainContent>
             <Header
                 title={details ? (details.spec.title || details.spec.id) : "New app"}
-                subtitle={details ? details.spec_path : "Create an app from a hand-written compose.yaml."}
+                subtitle={details ? details.spec_path : "Create an app from a compose.yaml or a bundle."}
             >
                 <div className="flex gap-2">
                     {details && <CompiledSpecDialog appId={details.spec.id} unsaved={isDirty} />}
@@ -177,50 +189,100 @@ const AppSpecEditPage = () => {
                 </div>
             </SectionCard>
 
-            <SectionCard headerEl={
-                <div>
-                    <h2 className="text-lg font-semibold">compose.yaml</h2>
-                    {details?.stackfile_path &&
-                        <p className="text-xs text-muted-foreground font-mono mt-1">{details.stackfile_path}</p>}
-                    {details && details.stackfile_content == null &&
-                        <p className="text-xs text-destructive mt-1">Compose file is missing on disk. Saving will create it.</p>}
-                </div>
-            }>
-                <Textarea
-                    className="font-mono text-xs min-h-96 max-h-[70vh] overflow-auto"
-                    value={form.stackfile}
-                    onChange={set("stackfile")}
-                    spellCheck={false}
-                />
-            </SectionCard>
+            {isNew && (
+                <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    className="self-start"
+                    value={source}
+                    onValueChange={(v) => v && setSource(v as AppSource)}
+                >
+                    <ToggleGroupItem value="compose" className="px-3">Write compose.yaml</ToggleGroupItem>
+                    <ToggleGroupItem value="bundle" className="px-3">Upload bundle</ToggleGroupItem>
+                </ToggleGroup>
+            )}
 
-            <AppVolumesEditor
-                value={form.volumes}
-                onChange={(volumes) => setForm((f) => ({ ...f, volumes }))}
-                errors={volumeErrors}
-                suggestions={details?.compose_volumes}
-            />
+            {fromBundle ? (
+                <SectionCard headerEl={
+                    <div>
+                        <h2 className="text-lg font-semibold">Bundle</h2>
+                        <p className="text-sm text-muted-foreground">
+                            A tar.gz with a compose file at its root (compose.yaml, compose.yml, docker-compose.yaml
+                            or docker-compose.yml) and optional extra files. It's extracted into the app folder.
+                        </p>
+                    </div>
+                }>
+                    <div className="flex flex-col gap-2">
+                        <Input
+                            type="file"
+                            accept={BUNDLE_ACCEPT}
+                            onChange={(e) => setBundleFile(e.target.files?.[0] ?? null)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Set up volumes, networks, environment and routing after the app is created.
+                        </p>
+                    </div>
+                </SectionCard>
+            ) : (
+                <>
+                    <SectionCard headerEl={
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                                <h2 className="text-lg font-semibold">{details?.spec.stackfile ?? "compose.yaml"}</h2>
+                                {details?.stackfile_path &&
+                                    <p className="text-xs text-muted-foreground font-mono mt-1">{details.stackfile_path}</p>}
+                                {details && details.stackfile_content == null &&
+                                    <p className="text-xs text-destructive mt-1">Compose file is missing on disk. Saving will create it.</p>}
+                            </div>
+                            {details && (
+                                <AppBundleUploadDialog
+                                    appId={details.spec.id}
+                                    disabledReason={isDirty ? "Save or revert your changes first." : null}
+                                    onUploaded={(updated) => {
+                                        setCompileWarnings(updated.compile_warnings ?? []);
+                                        revalidator.revalidate();
+                                    }}
+                                />
+                            )}
+                        </div>
+                    }>
+                        <Textarea
+                            className="font-mono text-xs min-h-96 max-h-[70vh] overflow-auto"
+                            value={form.stackfile}
+                            onChange={set("stackfile")}
+                            spellCheck={false}
+                        />
+                    </SectionCard>
 
-            <AppNetworksEditor
-                value={form.networks}
-                onChange={(networks) => setForm((f) => ({ ...f, networks }))}
-                errors={networkErrors}
-                suggestions={details?.compose_networks}
-            />
+                    <AppVolumesEditor
+                        value={form.volumes}
+                        onChange={(volumes) => setForm((f) => ({ ...f, volumes }))}
+                        errors={volumeErrors}
+                        suggestions={details?.compose_volumes}
+                    />
 
-            <AppEnvironmentEditor
-                value={form.environment}
-                onChange={(environment) => setForm((f) => ({ ...f, environment }))}
-                errors={envErrors}
-                suggestions={envSuggestions}
-            />
+                    <AppNetworksEditor
+                        value={form.networks}
+                        onChange={(networks) => setForm((f) => ({ ...f, networks }))}
+                        errors={networkErrors}
+                        suggestions={details?.compose_networks}
+                    />
 
-            <AppRoutingEditor
-                value={form.routing}
-                onChange={(routing) => setForm((f) => ({ ...f, routing }))}
-                errors={routingErrors}
-                services={details?.compose_services}
-            />
+                    <AppEnvironmentEditor
+                        value={form.environment}
+                        onChange={(environment) => setForm((f) => ({ ...f, environment }))}
+                        errors={envErrors}
+                        suggestions={envSuggestions}
+                    />
+
+                    <AppRoutingEditor
+                        value={form.routing}
+                        onChange={(routing) => setForm((f) => ({ ...f, routing }))}
+                        errors={routingErrors}
+                        services={details?.compose_services}
+                    />
+                </>
+            )}
 
             {details && (
                 <SectionCard headerEl={
@@ -263,10 +325,10 @@ const AppSpecEditPage = () => {
                 <Button onClick={handleSave} disabled={!canSave}>
                     {saving ? "Saving..." : (isNew ? "Create app" : "Save")}
                 </Button>
-                <Button variant="outline" onClick={() => setForm(initial)} disabled={!isDirty || saving}>
+                <Button variant="outline" onClick={() => setForm(initial)} disabled={!isDirty || saving || fromBundle}>
                     Revert
                 </Button>
-                {hasOverrideErrors && (
+                {hasOverrideErrors && !fromBundle && (
                     <span className="text-sm text-destructive">Fix the errors above to save.</span>
                 )}
             </div>

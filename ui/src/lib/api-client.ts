@@ -7,6 +7,7 @@ import {
     AppSpec,
     AppSpecDetails,
     CompiledAppSpec,
+    CreateAppFromBundleRequest,
     CreateAppFromScratchRequest,
     UpdateAppSpecRequest,
 } from "@/features/apps/apps.types.ts";
@@ -179,6 +180,29 @@ export const buildApiClient = (baseURL: string) => {
         return response.data;
     };
 
+    // uploads can take longer than the default timeout
+    const BUNDLE_UPLOAD_CONFIG: AxiosRequestConfig = {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 5 * 60 * 1000,
+    };
+
+    const createAppFromBundle = async (data: CreateAppFromBundleRequest, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
+        const form = new FormData();
+        form.append("id", data.id);
+        if (data.title) form.append("title", data.title);
+        if (data.description) form.append("description", data.description);
+        form.append("bundle", data.bundle);
+        const response = await apiHttpClient.post(`api/apps/new/bundle`, form, { ...BUNDLE_UPLOAD_CONFIG, ...config });
+        return response.data;
+    };
+
+    const updateAppFromBundle = async (appId: string, bundle: File, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
+        const form = new FormData();
+        form.append("bundle", bundle);
+        const response = await apiHttpClient.put(`api/apps/${encodeURIComponent(appId)}/bundle`, form, { ...BUNDLE_UPLOAD_CONFIG, ...config });
+        return response.data;
+    };
+
     const getCompiledAppSpec = async (appId: string, config?: AxiosRequestConfig): Promise<CompiledAppSpec> => {
         const response = await apiHttpClient.get(`api/apps/${encodeURIComponent(appId)}/compiled`, config);
         return response.data;
@@ -316,7 +340,9 @@ export const buildApiClient = (baseURL: string) => {
         getAppSpecs,
         getAppSpec,
         createAppFromScratch,
+        createAppFromBundle,
         updateAppSpec,
+        updateAppFromBundle,
         getCompiledAppSpec,
         streamAppAction,
         // Streaming

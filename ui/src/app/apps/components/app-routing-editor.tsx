@@ -39,7 +39,7 @@ const AppRoutingEditor = ({ value, onChange, errors, services = {} }: Props) => 
         const ports = services[service] ?? [];
         onChange([...value, {
             service_name: service,
-            service_port: ports.length > 0 ? String(ports[0]) : "",
+            container_port: ports.length > 0 ? String(ports[0]) : "",
             mode: "https",
             domains: "",
         }]);
@@ -97,8 +97,8 @@ const AppRoutingEditor = ({ value, onChange, errors, services = {} }: Props) => 
                                         className="font-mono"
                                         inputMode="numeric"
                                         list={portsListId}
-                                        value={r.service_port}
-                                        onChange={(e) => update(i, { service_port: e.target.value })}
+                                        value={r.container_port}
+                                        onChange={(e) => update(i, { container_port: e.target.value })}
                                         placeholder="80"
                                         autoComplete="off"
                                     />

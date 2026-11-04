@@ -40,7 +40,7 @@ curl -H "Authorization: Bearer $TOKEN" localhost:3080/api/containers/hosts
 | `/api/inventory/...` | `inventorydb/routes.py` | Item types, schema/meta, CRUD, actions, views (see [inventorydb](inventorydb.md#api)) |
 | `/api/rpc` | `server/routes_rpc.py` | JSON-RPC (below) |
 | `/api/tools`, `/api/tools/{name}` | `plugin/tools/routes.py` | List, describe, run (`POST`) and stream (`POST .../stream`) tools (below) |
-| `/api/apps/...` | `plugin/apps/routes.py` | App specs: CRUD, compiled files, streamed compose actions (see [Apps](apps.md#api)) |
+| `/api/apps/...` | `plugin/apps/routes.py` | App specs: CRUD, bundle upload, compiled files, streamed compose actions (see [Apps](apps.md#api)) |
 | `/api/config?conf=mc\|ssh` | `server/routes_config.py` | Read and (if enabled) write config files |
 
 ## Errors

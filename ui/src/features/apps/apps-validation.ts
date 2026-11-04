@@ -86,7 +86,7 @@ const SERVICE_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
 const DOMAIN_NAME_PATTERN = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/;
 
 /** One editor row. Port and domains stay text while typing. */
-export type RouteRow = { service_name: string; service_port: string; mode: AppRoutingMode; domains: string };
+export type RouteRow = { service_name: string; container_port: string; mode: AppRoutingMode; domains: string };
 
 /** Domains are separated by commas, spaces or new lines. */
 export const parseDomains = (domains: string): string[] => [
@@ -96,7 +96,7 @@ export const parseDomains = (domains: string): string[] => [
 export const routingToRows = (routing: AppRoutingSpec[] | null | undefined): RouteRow[] =>
     (routing ?? []).map((r) => ({
         service_name: r.service_name,
-        service_port: String(r.service_port),
+        container_port: String(r.container_port),
         mode: r.mode,
         domains: r.domain_names.join(", "),
     }));
@@ -104,19 +104,19 @@ export const routingToRows = (routing: AppRoutingSpec[] | null | undefined): Rou
 export const rowsToRouting = (rows: RouteRow[]): AppRoutingSpec[] =>
     rows.map((r) => ({
         service_name: r.service_name.trim(),
-        service_port: Number(r.service_port),
+        container_port: Number(r.container_port),
         mode: r.mode,
         domain_names: parseDomains(r.domains),
     }));
 
 /** One error message (or null) per route row. */
 export const validateRouting = (rows: RouteRow[]): (string | null)[] => {
-    const targets = rows.map((r) => `${r.service_name.trim()}:${r.service_port.trim()}`);
+    const targets = rows.map((r) => `${r.service_name.trim()}:${r.container_port.trim()}`);
     const dupes = duplicates(targets);
     return rows.map((r, i) => {
         if (!SERVICE_NAME_PATTERN.test(r.service_name.trim())) return "Service: letters, digits, '_', '.' and '-'.";
-        const port = Number(r.service_port);
-        if (!/^\d+$/.test(r.service_port.trim()) || port < 1 || port > 65535) return "Port must be 1-65535.";
+        const port = Number(r.container_port);
+        if (!/^\d+$/.test(r.container_port.trim()) || port < 1 || port > 65535) return "Port must be 1-65535.";
         const domains = parseDomains(r.domains);
         if (domains.length === 0) return "At least one domain name is required.";
         const bad = domains.find((d) => !DOMAIN_NAME_PATTERN.test(d));

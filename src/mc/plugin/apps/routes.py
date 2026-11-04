@@ -2,11 +2,11 @@ import json
 import logging
 import os
 import subprocess
-from typing import AsyncGenerator, Literal
+from typing import Annotated, AsyncGenerator, Literal
 
 import pydantic
 import yaml
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 from starlette.requests import Request
 from starlette.responses import StreamingResponse
@@ -148,10 +148,33 @@ def create_app_from_scratch(body: CreateAppFromScratchRequest) -> AppSpecDetails
     return _details(spec, _compile(spec))
 
 
+MAX_BUNDLE_UPLOAD = 100 * 1024 * 1024
+
+
+def _check_upload(bundle: UploadFile) -> None:
+    if bundle.size is not None and bundle.size > MAX_BUNDLE_UPLOAD:
+        raise HTTPException(status_code=413, detail=f"Bundle is larger than {MAX_BUNDLE_UPLOAD // (1024 * 1024)} MB")
+
+
 @router.post("/apps/new/bundle")
-def create_app_from_bundle():
-    """New app from a tar bundle file"""
-    raise HTTPException(status_code=501, detail="Not implemented")
+def create_app_from_bundle(
+        id: Annotated[str, Form()],
+        bundle: Annotated[UploadFile, File(description="tar.gz with a compose file at its root")],
+        title: Annotated[str | None, Form()] = None,
+        description: Annotated[str | None, Form()] = None,
+) -> AppSpecDetails:
+    """New compose app from a bundle: a tar.gz with a compose file and optional extra files."""
+    _check_upload(bundle)
+    try:
+        validate_app_id(id)
+        if app_spec_exists(id):
+            raise HTTPException(status_code=409, detail=f"App '{id}' already exists")
+        spec = AppSpec.create_from_bundle(id, bundle.file, title=title or None, description=description or None)
+    except pydantic.ValidationError as e:
+        raise _validation_error(e) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return _details(spec, _compile(spec))
 
 
 @router.get("/apps/{app_id}")
@@ -182,6 +205,26 @@ def apps_update(app_id: str, body: UpdateAppRequest) -> AppSpecDetails:
         spec.write_stackfile(body.stackfile_content)
     save_app_spec(spec)
     return _details(spec, _compile(spec) if spec.type == "compose" else None)
+
+
+@router.put("/apps/{app_id}/bundle")
+def apps_update_from_bundle(
+        app_id: str,
+        bundle: Annotated[UploadFile, File(description="tar.gz with a compose file at its root")],
+) -> AppSpecDetails:
+    """
+    Extract a bundle over the app folder. Bundle files replace existing ones; other files are kept.
+    The spec (volumes, networks, routing, environment) is kept.
+    """
+    spec = _load_or_404(app_id)
+    _check_upload(bundle)
+    try:
+        spec = spec.update_from_bundle(bundle.file)
+    except pydantic.ValidationError as e:
+        raise _validation_error(e) from e
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return _details(spec, _compile(spec))
 
 
 class CompiledFile(BaseModel):
@@ -259,11 +302,14 @@ async def apps_action_stream(request: Request, app_id: str, action: AppAction,
         if spec.stackfile and not os.path.isfile(spec.stackfile_path):
             raise ValueError(f"Compose file not found: {spec.stackfile_path}")
         cmd, env = _action_cmd(spec, action)
+        env["BUILDX_BAKE_ENTITLEMENTS_FS"] = "0"
+
+        print("action", spec.project_dir, cmd, env)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     async def _stream_process_async() -> AsyncGenerator[str]:
-        async for line in starlette_subprocess_stream(cmd, env=env, request=request):
+        async for line in starlette_subprocess_stream(cmd, env=env, request=request, cwd=spec.project_dir):
             split = line.split(":", 1)
             if len(split) < 2:
                 print("WARN: Unknown subprocess stream output: ", line)

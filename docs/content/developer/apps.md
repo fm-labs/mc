@@ -6,6 +6,7 @@ obsolete. The user-facing format is in the [App specification](../apps.md).
 | Code | Contents |
 |---|---|
 | `src/mc/plugin/apps/apps_helper.py` | `AppSpec` and its parts, validation, load/save/list, `compile()`, compose commands |
+| `src/mc/plugin/apps/apps_bundle.py` | `ExtractedBundle`: checks and extracts a bundle to a temp folder, installs it into the app folder |
 | `src/mc/plugin/apps/compose_override.py` | `build_override` (volumes, networks) and `build_traefik_override` (routing) |
 | `src/mc/plugin/apps/routes.py` | `/api/apps` routes |
 | `src/mc/cli/apps.py` | `apps` CLI group |
@@ -18,7 +19,23 @@ obsolete. The user-facing format is in the [App specification](../apps.md).
 - Spec: `$MC_CONFIG_DIR/apps/<id>.yaml`, written by `save_app_spec()` with `exclude_none`. `load_app_spec()`
   takes the id from the file name. `list_app_specs()` skips files that don't validate.
 - Project folder: `$MC_HOME/apps/<id>/` with the stackfile and the generated files.
-- All writes go through `write_file_atomic()` (temp file in the same folder, then `os.replace`).
+- Bundles: `AppSpec.create_from_bundle()` and `update_from_bundle()` (below).
+- All spec and compose file writes go through `write_file_atomic()` (temp file in the same folder, then `os.replace`).
+
+## Bundles
+
+`ExtractedBundle(fileobj)` opens the tar (`r:*`, so gzip, bzip2, xz or plain), skips macOS metadata, then
+rejects anything but regular files and folders, `..` and absolute names, and archives over `MAX_BUNDLE_FILES`
+entries or `MAX_BUNDLE_SIZE` bytes. It extracts to a temp folder with `filter="data"` as a second line of
+defense. A single top-level folder becomes the root; the root must hold a compose file
+(`BUNDLE_STACKFILE_NAMES`) and must not hold the generated files.
+
+`install(app_dir)` copies the files over the app folder without deleting anything. It checks every target first
+(no symlinks, no folder where a file goes), so a conflict writes nothing. Symlinks are rejected in bundles so
+an update can't write through a link left in the app folder.
+
+The spec methods validate the compose file before installing, then save the spec with `stackfile` set to the
+bundle's compose file name. The API and CLI compile afterwards like on any save.
 
 ## Compile
 
@@ -66,14 +83,15 @@ All routes need auth, like the other routers.
 |---|---|
 | `GET /api/apps` | List specs |
 | `POST /api/apps/new/scratch` | Create from a compose file: `id`, `title`, `description`, `stackfile_content`, `volumes`, `networks`, `environment`, `routing`. Compiles. `409` if the id exists |
-| `POST /api/apps/new/bundle` | Not implemented (`501`) |
+| `POST /api/apps/new/bundle` | Create from a bundle. Multipart form: `id`, `bundle` (file), optional `title`, `description`. Compiles. `409` if the id exists, `413` over 100 MB |
 | `GET /api/apps/{id}` | Spec, compose file, generated files and editor hints (below) |
 | `PUT /api/apps/{id}` | Update. Omitted fields keep their value; `stackfile_content` rewrites the compose file. Compiles |
+| `PUT /api/apps/{id}/bundle` | Extract a bundle over the app folder. Multipart form: `bundle`. Keeps the spec. Compiles |
 | `GET /api/apps/{id}/compiled` | The compose files in order, and the `docker compose config` output (or `merged_error`) |
 | `POST /api/apps/{id}/action/{action}` | Run `up`, `down`, `stop` or `restart`, streamed |
 
 Create and update return `compile_warnings`. Invalid specs return `422` with pydantic's error list (without
-input values); a bad compose file or id returns `400`.
+input values); a bad compose file, bundle or id returns `400`.
 
 Editor hints in the details: `compose_volumes` and `compose_networks` (top-level names in the compose file) and
 `compose_services` (service name to the container ports in `ports` and `expose`).
@@ -84,8 +102,9 @@ so the output is line-based. If the client disconnects, the subprocess is termin
 
 ## UI
 
-`/admin/apps` lists the specs, `/admin/apps/new` and `/admin/apps/:appId` open the editor
-(`app-spec-edit-page.tsx`). Each spec section has its own component in `components/`; they get rows and per-row
+`/admin/apps` lists the specs, `/admin/apps/new` (`?source=bundle` preselects the bundle upload) and
+`/admin/apps/:appId` open the editor (`app-spec-edit-page.tsx`). Updating from a bundle is
+`app-bundle-upload-dialog.tsx`, disabled while the editor has unsaved changes. Each spec section has its own component in `components/`; they get rows and per-row
 errors from `apps-validation.ts`. The editor keeps form state as rows (env and routes as strings while typing)
 and converts them on save.
 
@@ -95,5 +114,6 @@ The service and port hints come from the last saved compose file; the UI doesn't
 
 - Deleting an app (API, UI, CLI).
 - `container` apps (`type: container`, `image`).
-- Creating from a bundle or template.
+- Creating from a template, or from a bundle URL.
+- Removing files that a new bundle version dropped.
 - Remote Docker hosts: apps always use the local socket.

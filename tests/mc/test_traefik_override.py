@@ -42,7 +42,7 @@ def spec(routing=(), networks=()) -> AppSpec:
 
 
 def route(service="web", port=80, mode="http", domains=("example.com",)) -> AppRoutingSpec:
-    return AppRoutingSpec(service_name=service, service_port=port, mode=mode, domain_names=list(domains))
+    return AppRoutingSpec(service_name=service, container_port=port, mode=mode, domain_names=list(domains))
 
 
 def test_no_routes_is_empty():

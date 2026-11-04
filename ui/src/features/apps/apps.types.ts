@@ -16,7 +16,7 @@ export type AppRoutingMode = "http" | "https" | "http+https";
 
 export type AppRoutingSpec = {
     service_name: string;
-    service_port: number;
+    container_port: number;
     mode: AppRoutingMode;
     domain_names: string[];
 };
@@ -62,6 +62,14 @@ export type CreateAppFromScratchRequest = {
     networks?: AppNetworkSpec[];
     environment?: Record<string, string>;
     routing?: AppRoutingSpec[];
+};
+
+export type CreateAppFromBundleRequest = {
+    id: string;
+    title?: string | null;
+    description?: string | null;
+    // tar.gz with a compose file at its root and optional extra files
+    bundle: File;
 };
 
 export type UpdateAppSpecRequest = {

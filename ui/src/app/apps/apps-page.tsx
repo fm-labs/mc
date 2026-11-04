@@ -13,11 +13,14 @@ const AppsPage = () => {
     return (
         <MainContent>
             <Header title="Apps" subtitle="App specs stored in the mc config dir.">
-                <Button onClick={() => navigate("/admin/apps/new")}>New app</Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => navigate("/admin/apps/new?source=bundle")}>From bundle</Button>
+                    <Button onClick={() => navigate("/admin/apps/new")}>New app</Button>
+                </div>
             </Header>
             {apps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                    No apps yet. <Link to="/admin/apps/new" className="text-primary hover:underline">Create one</Link> from a compose.yaml.
+                    No apps yet. <Link to="/admin/apps/new" className="text-primary hover:underline">Create one</Link> from a compose.yaml or <Link to="/admin/apps/new?source=bundle" className="text-primary hover:underline">a bundle</Link>.
                 </p>
             ) : (
                 <Table>

@@ -189,13 +189,13 @@ def build_traefik_override(spec: "AppSpec", stack: dict[str, Any]) -> tuple[dict
             )
             continue
 
-        key = traefik_key(spec.id, route.service_name, route.service_port)
+        key = traefik_key(spec.id, route.service_name, route.container_port)
         rule = " || ".join(f"Host(`{d}`)" for d in route.domain_names)
         labels = labels_by_service.setdefault(route.service_name, {
             "traefik.enable": "true",
             "traefik.docker.network": TRAEFIK_NETWORK_NAME,
         })
-        labels[f"traefik.http.services.{key}.loadbalancer.server.port"] = str(route.service_port)
+        labels[f"traefik.http.services.{key}.loadbalancer.server.port"] = str(route.container_port)
         if route.mode in ("http", "http+https"):
             router = f"traefik.http.routers.{key}-http"
             labels[f"{router}.rule"] = rule
