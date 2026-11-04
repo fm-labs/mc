@@ -1,6 +1,6 @@
 import os
 
-from mc.config import get_env_var
+from mc.config import env_var
 from mc.util.awscli_helper import awscli_ecr_login
 from mc.util.dockercli_helper import dockercli_login
 
@@ -21,16 +21,16 @@ def get_container_registry_credentials(
         registry_host = registry_host.split("://", 1)[1].split("/", 1)[0]
 
     if registry_host in ["docker.io", "index.docker.io", ""]:
-        username = username or get_env_var("DOCKERHUB_USERNAME", "")
-        password = password or get_env_var("DOCKERHUB_TOKEN", "")
+        username = username or env_var("DOCKERHUB_USERNAME", "")
+        password = password or env_var("DOCKERHUB_TOKEN", "")
         return username, password
     elif registry_host in ["ghcr.io"]:
-        username = username or get_env_var("GHCR_USERNAME")
-        password = password or get_env_var("GHCR_TOKEN", "")
+        username = username or env_var("GHCR_USERNAME")
+        password = password or env_var("GHCR_TOKEN", "")
         return username, password
     elif registry_host.endswith("azurecr.io"):
-        username = username or get_env_var("ACR_USERNAME", "")
-        password = password or get_env_var("ACR_PASSWORD", "")
+        username = username or env_var("ACR_USERNAME", "")
+        password = password or env_var("ACR_PASSWORD", "")
         return username, password
     elif registry_host.endswith("amazonaws.com"):
         print("Warning: AWS ECR registry detected. Attempting AWS ECR login ...")
@@ -42,8 +42,8 @@ def get_container_registry_credentials(
         # The username field is used to specify the AWS CLI profile name
         # profile = username
 
-        access_key = username or get_env_var("AWS_ACCESS_KEY_ID", None)
-        secret_key = password or get_env_var("AWS_SECRET_ACCESS_KEY", None)
+        access_key = username or env_var("AWS_ACCESS_KEY_ID", None)
+        secret_key = password or env_var("AWS_SECRET_ACCESS_KEY", None)
         try:
             ecr_url, ecr_username, ecr_password = awscli_ecr_login(
                 ecr_url=registry_host,

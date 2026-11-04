@@ -1,6 +1,6 @@
 import re
 
-from mc.config import get_env_var
+from mc.config import env_var
 from mc.vault2 import vault_get_value
 
 
@@ -13,7 +13,7 @@ def replace_env_vars_in_string(s: str) -> str:
 
     def replacer(match):
         var_name = match.group(1)
-        return get_env_var(var_name, "")
+        return env_var(var_name, "")
 
     return pattern.sub(replacer, s)
 
@@ -48,7 +48,7 @@ def get_placeholder_var(name: str, default=None) -> str | None:
     if prefix == "env":
         # if "environment" in CONFIG and name in CONFIG["environment"]:
         #   return CONFIG["environment"][name]
-        return get_env_var(name, default)
+        return env_var(name, default)
     if prefix == "var":
         # if "vars" in CONFIG and name in CONFIG["vars"]:
         #   return CONFIG["vars"][name]

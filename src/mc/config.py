@@ -120,7 +120,7 @@ def load_config():
 
 CONFIG = load_config()
 
-def get_env_var(name: str, default=None) -> str:
+def env_var(name: str, default=None) -> str | None:
     global CONFIG
     if "environment" in CONFIG and name in CONFIG["environment"]:
         return CONFIG["environment"][name]
@@ -130,17 +130,32 @@ def get_env_var(name: str, default=None) -> str:
         print(f"Warning: Environment variable {name} is not set and no default value provided.")
     return value
 
+def env_var_bool(name: str, default: bool = False) -> bool:
+    val = env_var(name, None)
+    if val is None:
+        return default
+    return val.lower() == "true" or val == "1"
+
 def generate_random_secret(length: int = 32) -> str:
     return secrets.token_urlsafe(length)
 
+
+def get_node_proxy_config(node_name: str) -> tuple[str, str] | None:
+    """Get node proxy config from docker hosts config"""
+    node = CONFIG.get("docker_hosts", {}).get(node_name)
+    if node and node.get("url", "").startswith("node+http"):
+        base_url = node.get("url")[len("node+"):].rstrip("/")
+        api_key = node.get("api_key")
+        return base_url, api_key
+    return None
 
 
 # Additional paths
 
 # Inventory storage: directory (one JSON file per item), file (one JSON file per type) or sqlite
-INVENTORY_STORAGE = get_env_var("INVENTORY_STORAGE", "directory")
+INVENTORY_STORAGE = env_var("INVENTORY_STORAGE", "directory")
 # Inventory: load the Python modules of user item types in $MC_CONFIG_DIR/inventory (schema-only types always load)
-INVENTORY_USER_CODE = get_env_var("INVENTORY_USER_CODE", "false").lower() == "true"
+INVENTORY_USER_CODE = env_var("INVENTORY_USER_CODE", "false").lower() == "true"
 # SSH_CONFIG = get_env_var("SSH_CONFIG", f"{MC_HOME}/etc/ssh_config")
 # HOST_DATA_DIR = get_env_var("HOST_DATA_DIR", "/mc") # deprecated
 # HOST_MC_CONFIG_DIR = get_env_var("HOST_MC_CONFIG_DIR", "/mc/etc") # deprecated
@@ -149,24 +164,24 @@ INVENTORY_USER_CODE = get_env_var("INVENTORY_USER_CODE", "false").lower() == "tr
 USERS_FILE = f"{MC_CONFIG_DIR}/users.json"
 
 # Api Key auth
-MC_API_KEY = get_env_var("MC_API_KEY", None)
+MC_API_KEY = env_var("MC_API_KEY", None)
 
 # Mongodb connection settings
-MONGODB_URL = get_env_var("MONGODB_URL", "")
+MONGODB_URL = env_var("MONGODB_URL", "")
 
 # Redis connection settings
 # REDIS_URL is preferred if set
-REDIS_URL = get_env_var("REDIS_URL", "")
+REDIS_URL = env_var("REDIS_URL", "")
 # or
-REDIS_HOST = get_env_var("REDIS_HOST", "")
-REDIS_PORT = int(get_env_var("REDIS_PORT", "6379"))
-REDIS_DB = int(get_env_var("REDIS_DB", "0"))
-REDIS_PASSWORD = get_env_var("REDIS_PASSWORD", "")
+REDIS_HOST = env_var("REDIS_HOST", "")
+REDIS_PORT = int(env_var("REDIS_PORT", "6379"))
+REDIS_DB = int(env_var("REDIS_DB", "0"))
+REDIS_PASSWORD = env_var("REDIS_PASSWORD", "")
 
 # Vault settings
-VAULT_ENABLED = get_env_var("VAULT_ENABLED", "false").lower() == "true"
-VAULT_FILE = get_env_var("VAULT_FILE", f"{MC_CONFIG_DIR}/credentials.vault")
-VAULT_PASS_FILE = get_env_var("VAULT_PASS_FILE", f"{MC_CONFIG_DIR}/credentials.vault.pass")
+VAULT_ENABLED = env_var("VAULT_ENABLED", "false").lower() == "true"
+VAULT_FILE = env_var("VAULT_FILE", f"{MC_CONFIG_DIR}/credentials.vault")
+VAULT_PASS_FILE = env_var("VAULT_PASS_FILE", f"{MC_CONFIG_DIR}/credentials.vault.pass")
 
 # JWT settings
 JWT_ISSUER = "mc"
@@ -179,13 +194,15 @@ JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", default=generate_random_secret
 JWT_REFRESH_SECRET_KEY = os.environ.get("JWT_REFRESH_SECRET_KEY", default=generate_random_secret(32))
 
 # CORS
-MC_CORS_ENABLED = get_env_var("MC_CORS_ENABLED", "true").lower() == "true"
-MC_CORS_ALLOWED_ORIGINS = get_env_var("MC_CORS_ALLOWED_ORIGINS", "*")
+MC_CORS_ENABLED = env_var_bool("MC_CORS_ENABLED", True)
+MC_CORS_ALLOWED_ORIGINS = env_var("MC_CORS_ALLOWED_ORIGINS", "*")
 
 # MCP
-MC_MCP_ENABLED = get_env_var("MC_MCP_ENABLED", "true").lower() == "true"
-MC_MCP_TOKEN = get_env_var("MC_MCP_TOKEN", default=generate_random_secret(32))
+MC_MCP_ENABLED = env_var_bool("MC_MCP_ENABLED", True)
+MC_MCP_TOKEN = env_var("MC_MCP_TOKEN", default=generate_random_secret(32))
 
+# NODE PROXY
+MC_NODE_PROXY_ENABLED = env_var_bool("MC_NODE_PROXY_ENABLED", False)
 
 # Github personal access token
 # GITHUB_TOKEN = get_env_var("GITHUB_TOKEN", "")
@@ -194,6 +211,7 @@ MC_MCP_TOKEN = get_env_var("MC_MCP_TOKEN", default=generate_random_secret(32))
 # GITHUB_CLIENT_ID = get_env_var("GITHUB_CLIENT_ID")
 # GITHUB_CLIENT_SECRET = get_env_var("GITHUB_CLIENT_SECRET")
 # GITHUB_CALLBACK_URL = get_env_var("GITHUB_CALLBACK_URL")
+
 
 
 # def set_dotenv_var(key: str, value: str):
