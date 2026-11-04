@@ -46,6 +46,7 @@ export type CreateAppFromScratchRequest = {
     stackfile_content: string;
     volumes?: AppVolumeSpec[];
     networks?: AppNetworkSpec[];
+    environment?: Record<string, string>;
 };
 
 export type UpdateAppSpecRequest = {
@@ -54,6 +55,7 @@ export type UpdateAppSpecRequest = {
     stackfile_content?: string | null;
     volumes?: AppVolumeSpec[];
     networks?: AppNetworkSpec[];
+    environment?: Record<string, string>;
 };
 
 // POST /apps/{id}/action/{action}

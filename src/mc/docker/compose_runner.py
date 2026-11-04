@@ -145,6 +145,7 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         stackfiles: str | list = "compose.yaml",
         executor: Callable | None = None,
         global_args: list[str] | None = None,
+        env: dict[str, str] | None = None,
     ):
         super().__init__(project_name, executor=executor)
         self.docker_host = docker_host
@@ -155,6 +156,8 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         self.stackfiles = stackfiles
         # flags placed before the subcommand, e.g. ["--progress", "plain", "--ansi", "never"]
         self.global_args = global_args or []
+        # extra environment for the compose subprocess, e.g. for variable interpolation
+        self.env = env or {}
 
 
     def up(self, args: DockerComposeUpArgs) -> tuple[bytes, bytes, int]:
@@ -180,6 +183,7 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         project_dir = self.project_dir # real project dir path!
 
         env = os.environ.copy()
+        env.update(self.env)
         env["DOCKER_HOST"] = self.docker_host
         env["COMPOSE_PROJECT_DIRECTORY"] = project_dir
         env["COMPOSE_PROJECT_NAME"] = self.project_name

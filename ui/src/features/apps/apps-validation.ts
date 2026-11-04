@@ -41,3 +41,42 @@ export const normalizeVolumes = (volumes: AppVolumeSpec[]): AppVolumeSpec[] =>
 
 export const normalizeNetworks = (networks: AppNetworkSpec[]): AppNetworkSpec[] =>
     networks.map((n) => ({ network_name: n.network_name.trim(), external: !!n.external }));
+
+// Environment variables, mirrors ENV_NAME_PATTERN / RESERVED_ENV_NAMES in apps_helper.py
+const ENV_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const RESERVED_ENV_NAMES = new Set(["DOCKER_HOST", "COMPOSE_PROJECT_DIRECTORY", "COMPOSE_PROJECT_NAME"]);
+
+/** One editor row. A list (not a map) so rows keep their order and can be blank while typing. */
+export type EnvVarRow = { name: string; value: string };
+
+const isBlankRow = (r: EnvVarRow) => !r.name.trim() && !r.value;
+
+export const envToRows = (env: Record<string, string> | null | undefined): EnvVarRow[] =>
+    Object.entries(env ?? {}).map(([name, value]) => ({ name, value }));
+
+/** Blank rows are dropped. Values are kept as typed (whitespace can matter). */
+export const rowsToEnv = (rows: EnvVarRow[]): Record<string, string> =>
+    Object.fromEntries(rows.filter((r) => !isBlankRow(r)).map((r) => [r.name.trim(), r.value]));
+
+/** One error message (or null) per row. */
+export const validateEnvironment = (rows: EnvVarRow[]): (string | null)[] => {
+    const dupes = duplicates(rows.map((r) => r.name.trim()));
+    return rows.map((r) => {
+        if (isBlankRow(r)) return null;
+        const name = r.name.trim();
+        if (!name) return "Variable name is required.";
+        if (!ENV_NAME_PATTERN.test(name)) return "Name: letters, digits and '_', not starting with a digit.";
+        if (RESERVED_ENV_NAMES.has(name)) return `${name} is set by mc and can't be overridden.`;
+        if (dupes.has(name)) return `Duplicate variable '${name}'.`;
+        return null;
+    });
+};
+
+/** Variable names referenced in a compose file as ${NAME} or $NAME (not $$ escapes). */
+export const composeVariableRefs = (compose: string): string[] => {
+    const names = new Set<string>();
+    for (const m of compose.matchAll(/(\$+)\{?([A-Za-z_][A-Za-z0-9_]*)/g)) {
+        if (m[1].length % 2 === 1) names.add(m[2]);
+    }
+    return [...names].sort();
+};

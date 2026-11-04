@@ -131,6 +131,19 @@ class AppNetworkSpec(pydantic.BaseModel):
     def _check_network_name(cls, v: str) -> str:
         return _validate_resource_name("network", v)
 
+# Environment variable names, and the ones mc sets for docker compose itself
+ENV_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+RESERVED_ENV_NAMES = {"DOCKER_HOST", "COMPOSE_PROJECT_DIRECTORY", "COMPOSE_PROJECT_NAME"}
+
+
+def _env_value(v: Any) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, bool):
+        return str(v).lower()
+    return str(v)
+
+
 class AppSpec(pydantic.BaseModel):
     id: str
     type: Literal["container", "compose"]
@@ -140,7 +153,26 @@ class AppSpec(pydantic.BaseModel):
     stackfile: str | None = None # only compose
     volumes: list[AppVolumeSpec] | None = pydantic.Field(default_factory=list) # overrides
     networks: list[AppNetworkSpec] | None = pydantic.Field(default_factory=list) # overrides
-    environment: dict[str, str] | None = pydantic.Field(default_factory=dict) # overrides
+    # injected into the docker compose subprocess (variable interpolation), never written to compose files
+    environment: dict[str, str] | None = pydantic.Field(default_factory=dict)
+
+    @pydantic.field_validator("environment", mode="before")
+    @classmethod
+    def _coerce_environment(cls, v: Any) -> Any:
+        # hand-edited specs may hold numbers, booleans or empty values
+        if isinstance(v, dict):
+            return {str(k).strip(): _env_value(val) for k, val in v.items()}
+        return v
+
+    @pydantic.field_validator("environment")
+    @classmethod
+    def _check_environment(cls, v: dict[str, str] | None) -> dict[str, str] | None:
+        for name in v or {}:
+            if not ENV_NAME_PATTERN.match(name):
+                raise ValueError(f"Invalid variable name '{name}'. Use letters, digits and '_', not starting with a digit.")
+            if name in RESERVED_ENV_NAMES:
+                raise ValueError(f"Variable '{name}' is set by mc and can't be overridden.")
+        return v
 
     @pydantic.model_validator(mode="after")
     def _check_unique_names(self) -> "AppSpec":
@@ -216,6 +248,7 @@ class AppSpec(pydantic.BaseModel):
             self.real_project_dir,
             stackfiles=self.stackfile_paths(),
             global_args=global_args,
+            env=self.environment,
         )
 
     def run(self) -> None:

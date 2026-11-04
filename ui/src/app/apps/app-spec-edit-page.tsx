@@ -14,8 +14,13 @@ import AppActionsPanel from "@/app/apps/components/app-actions-panel.tsx";
 import CompiledSpecDialog from "@/app/apps/components/compiled-spec-dialog.tsx";
 import AppVolumesEditor from "@/app/apps/components/app-volumes-editor.tsx";
 import AppNetworksEditor from "@/app/apps/components/app-networks-editor.tsx";
+import AppEnvironmentEditor from "@/app/apps/components/app-environment-editor.tsx";
 import {
+    composeVariableRefs,
+    envToRows,
     normalizeNetworks,
+    rowsToEnv,
+    validateEnvironment,
     normalizeVolumes,
     validateNetworks,
     validateVolumes,
@@ -59,6 +64,7 @@ const AppSpecEditPage = () => {
         stackfile: details ? (details.stackfile_content ?? "") : COMPOSE_TEMPLATE,
         volumes: details?.spec.volumes ?? [],
         networks: details?.spec.networks ?? [],
+        environment: envToRows(details?.spec.environment),
     }), [details]);
 
     const [form, setForm] = React.useState(initial);
@@ -75,7 +81,9 @@ const AppSpecEditPage = () => {
     const isDirty = JSON.stringify(form) !== JSON.stringify(initial);
     const volumeErrors = React.useMemo(() => validateVolumes(form.volumes), [form.volumes]);
     const networkErrors = React.useMemo(() => validateNetworks(form.networks), [form.networks]);
-    const hasOverrideErrors = [...volumeErrors, ...networkErrors].some(Boolean);
+    const envErrors = React.useMemo(() => validateEnvironment(form.environment), [form.environment]);
+    const envSuggestions = React.useMemo(() => composeVariableRefs(form.stackfile), [form.stackfile]);
+    const hasOverrideErrors = [...volumeErrors, ...networkErrors, ...envErrors].some(Boolean);
     const idError = isNew && form.id && !APP_ID_PATTERN.test(form.id)
         ? "Use lowercase letters, digits, '-' and '_'."
         : null;
@@ -92,6 +100,7 @@ const AppSpecEditPage = () => {
                     stackfile_content: form.stackfile,
                     volumes: normalizeVolumes(form.volumes),
                     networks: normalizeNetworks(form.networks),
+                    environment: rowsToEnv(form.environment),
                 });
                 toast.success(`Created app ${created.spec.id}`);
                 created.compile_warnings?.forEach((w: string) => toast.warning(w));
@@ -103,6 +112,7 @@ const AppSpecEditPage = () => {
                     stackfile_content: form.stackfile !== initial.stackfile ? form.stackfile : undefined,
                     volumes: normalizeVolumes(form.volumes),
                     networks: normalizeNetworks(form.networks),
+                    environment: rowsToEnv(form.environment),
                 });
                 toast.success(`Saved app ${details.spec.id}`);
                 setCompileWarnings(updated.compile_warnings ?? []);
@@ -190,6 +200,13 @@ const AppSpecEditPage = () => {
                 suggestions={details?.compose_networks}
             />
 
+            <AppEnvironmentEditor
+                value={form.environment}
+                onChange={(environment) => setForm((f) => ({ ...f, environment }))}
+                errors={envErrors}
+                suggestions={envSuggestions}
+            />
+
             {details && (
                 <SectionCard headerEl={
                     <div>
@@ -224,7 +241,7 @@ const AppSpecEditPage = () => {
                     Revert
                 </Button>
                 {hasOverrideErrors && (
-                    <span className="text-sm text-destructive">Fix the volume and network errors above to save.</span>
+                    <span className="text-sm text-destructive">Fix the errors above to save.</span>
                 )}
             </div>
 

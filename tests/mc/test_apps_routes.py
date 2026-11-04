@@ -257,3 +257,59 @@ def test_compiled_reports_compose_errors(client, monkeypatch):
     monkeypatch.setattr(routes.subprocess, "run", missing)
     assert client.get("/api/apps/myapp/compiled").json()["merged_error"] == "docker CLI not found"
     assert client.get("/api/apps/missing/compiled").status_code == 404
+
+
+def test_environment_is_saved_and_injected_not_written_to_compose_files(client, tmp_path):
+    r = create(client, environment={"NGINX_PORT": "8080", "EMPTY": ""})
+    assert r.status_code == 200, r.text
+    assert r.json()["spec"]["environment"] == {"NGINX_PORT": "8080", "EMPTY": ""}
+    saved = yaml.safe_load((tmp_path / "etc" / "apps" / "myapp.yaml").read_text())
+    assert saved["environment"] == {"NGINX_PORT": "8080", "EMPTY": ""}
+
+    app_dir = tmp_path / "home" / "apps" / "myapp"
+    for f in app_dir.iterdir():
+        assert "NGINX_PORT" not in f.read_text(), f.name
+
+    _, env = routes._action_cmd(apps_helper.load_app_spec("myapp"), "up")
+    assert env["NGINX_PORT"] == "8080"
+    assert env["EMPTY"] == ""
+
+
+def test_update_environment(client):
+    create(client, environment={"A": "1"})
+    # omitted keeps the variables
+    assert client.put("/api/apps/myapp", json={"title": "x"}).json()["spec"]["environment"] == {"A": "1"}
+    r = client.put("/api/apps/myapp", json={"environment": {"B": "2"}})
+    assert r.json()["spec"]["environment"] == {"B": "2"}
+    r = client.put("/api/apps/myapp", json={"environment": {}})
+    assert r.json()["spec"]["environment"] == {}
+
+
+@pytest.mark.parametrize("environment", [
+    {"1BAD": "x"},
+    {"has space": "x"},
+    {"": "x"},
+    {"COMPOSE_PROJECT_NAME": "other"},
+    {"DOCKER_HOST": "tcp://evil"},
+])
+def test_invalid_environment_is_rejected(client, environment):
+    assert create(client, environment=environment).status_code == 422
+    create(client)
+    assert client.put("/api/apps/myapp", json={"environment": environment}).status_code == 422
+
+
+def test_hand_edited_environment_values_are_coerced(client, tmp_path):
+    create(client)
+    path = tmp_path / "etc" / "apps" / "myapp.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["environment"] = {"PORT": 8080, "DEBUG": True, "EMPTY": None}
+    path.write_text(yaml.safe_dump(data))
+    assert apps_helper.load_app_spec("myapp").environment == {"PORT": "8080", "DEBUG": "true", "EMPTY": ""}
+
+
+def test_mc_compose_env_wins_over_spec(client):
+    create(client)
+    spec = apps_helper.load_app_spec("myapp")
+    spec.environment = {"COMPOSE_PROJECT_NAME": "other"}  # bypasses validation
+    _, env = routes._action_cmd(spec, "up")
+    assert env["COMPOSE_PROJECT_NAME"] == "myapp"

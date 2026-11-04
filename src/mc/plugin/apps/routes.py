@@ -44,6 +44,7 @@ class CreateAppFromScratchRequest(BaseModel):
     stackfile_content: str  # compose.yaml body
     volumes: list[AppVolumeSpec] = []
     networks: list[AppNetworkSpec] = []
+    environment: dict[str, str] = {}
 
 
 class UpdateAppRequest(BaseModel):
@@ -52,6 +53,7 @@ class UpdateAppRequest(BaseModel):
     stackfile_content: str | None = None  # compose.yaml body; omit to keep the current file
     volumes: list[AppVolumeSpec] | None = None  # omit to keep the current list
     networks: list[AppNetworkSpec] | None = None  # omit to keep the current list
+    environment: dict[str, str] | None = None  # omit to keep the current variables
 
 
 class AppSpecDetails(BaseModel):
@@ -129,7 +131,7 @@ def create_app_from_scratch(body: CreateAppFromScratchRequest) -> AppSpecDetails
             raise HTTPException(status_code=409, detail=f"App '{body.id}' already exists")
         spec = AppSpec.create_from_string(
             body.id, body.stackfile_content, title=body.title, description=body.description,
-            volumes=body.volumes, networks=body.networks,
+            volumes=body.volumes, networks=body.networks, environment=body.environment,
         )
     except pydantic.ValidationError as e:
         raise _validation_error(e) from e
