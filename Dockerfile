@@ -36,7 +36,7 @@ RUN pnpm run build
 #    bash /builder/build_bin.sh
 
 
-FROM ${PYTHON_IMAGE} as app-builder
+FROM ${PYTHON_IMAGE} AS app-builder
 
 # Install python dependencies
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -53,7 +53,7 @@ COPY ./src /app/src
 RUN uv sync --no-cache-dir --no-dev --locked --no-editable
 
 
-FROM ${PYTHON_IMAGE} as final
+FROM ${PYTHON_IMAGE} AS final
 
 RUN apk update  \
  && apk upgrade --no-cache \

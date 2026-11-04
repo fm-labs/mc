@@ -4,6 +4,7 @@ from inventorydb.routes import router as objbase_router
 from mc.config import API_VERSION
 from mc.plugin.containers.routes import router as containers_router
 from mc.server.deps import dep_auth_user
+from mc.server.routes_auth import router as auth_router
 from mc.server.routes_config import router as config_router
 from mc.server.routes_rpc import router as rpc_router
 from mc.plugin.tools.routes import router as tools_router
@@ -16,6 +17,8 @@ app_router = APIRouter()
 # app_router.include_router(
 #     inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)]
 # )
+app_router.include_router(auth_router, prefix="/api", tags=["auth"],
+                          dependencies=[])
 app_router.include_router(objbase_router, prefix="/api", tags=["inventory"],
                           dependencies=[Security(dep_auth_user)])
 app_router.include_router(rpc_router, prefix="/api", tags=["rpc"],

@@ -10,7 +10,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from mc import config, users
-from mc.server import deps, router
+from mc.server import deps
+from mc.server import routes_auth
 from mc.server.auth_helper import create_jwt_access_token
 
 API_KEY = "auth-test-api-key"
@@ -22,12 +23,12 @@ def client(tmp_path, monkeypatch) -> TestClient:
     users.create_user_file(users_file)
     users.add_user("operator", "secret-pw", users_file)
     monkeypatch.setattr(
-        router, "authenticate_user", lambda username, password: users.authenticate_user(username, password, users_file)
+        routes_auth, "authenticate_user", lambda username, password: users.authenticate_user(username, password, users_file)
     )
     monkeypatch.setattr(deps, "MC_API_KEY", API_KEY)
 
     app = FastAPI()
-    app.include_router(router.app_router)
+    app.include_router(routes_auth.router, prefix="/api")
     return TestClient(app)
 
 

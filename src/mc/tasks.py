@@ -2,7 +2,8 @@ import logging
 import os
 
 from mc import logs
-from mc.docker.compose_runner import LocalDockerComposeStackRunner, RemoteDockerComposeStackRunner
+from mc.docker.compose_runner import LocalDockerComposeStackRunner, \
+    DockerComposeUpArgs
 from mc.util.gitcli_util import git_clone, git_update
 
 logger = logging.getLogger(__name__)
@@ -65,19 +66,19 @@ def clone_or_update_git_repo(repo_url: str, checkout_dir: str, private_key_file=
 def get_compose_runner(project_name: str, project_dir: str, stackfile: str | list, host_url: str):
     if host_url.startswith("unix://"):
         return LocalDockerComposeStackRunner(
-            project_name=project_name, local_dir=project_dir, stackfile=stackfile, docker_host=host_url
+            project_name=project_name, local_dir=project_dir, stackfiles=stackfile, docker_host=host_url
         )
     elif host_url.startswith("ssh://"):
-        return RemoteDockerComposeStackRunner(
-            project_name=project_name, local_dir=project_dir, stackfile=stackfile, docker_host=host_url
-        )
+        #return RemoteDockerComposeStackRunner(
+        #    project_name=project_name, local_dir=project_dir, stackfile=stackfile, docker_host=host_url
+        #)
+        return None
     return None
 
 
 # @celery.task(bind=True)
 def task_deploy_compose_project(
-    project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs
-) -> dict:
+    project_name: str, project_dir: str, stackfile: str | list, host_url: str, **kwargs) -> dict:
     """
     Deploy a Docker Compose project to a specified host.
 
@@ -97,15 +98,16 @@ def task_deploy_compose_project(
     compose_runner.stop()
     compose_runner.sync()
 
-    up_args = {
-        "detach": True,  # always detach!
-        "build": kwargs.get("build", False),
-        "remove_orphans": kwargs.get("remove_orphans", False),
-        "force_recreate": kwargs.get("force_recreate", False),
-        # "quiet_pull": kwargs.get("quiet_pull", True),
-        # "yes": kwargs.get("yes", True),
-    }
-    stdout, stderr, rc = compose_runner.up(**up_args)
+    up_args = DockerComposeUpArgs(
+        detach=True,  # always detach!
+        build=kwargs.get("build", False),
+        remove_orphans=kwargs.get("remove_orphans", False),
+        force_recreate=kwargs.get("force_recreate", False),
+        no_color=kwargs.get("no_color", True),
+        yes=kwargs.get("yes", True),
+        quiet_pull=kwargs.get("quiet_pull", True),
+    )
+    stdout, stderr, rc = compose_runner.up(up_args)
     return {
         "status": "success",
         "message": f"App {project_name} deployed to {host_url}",
