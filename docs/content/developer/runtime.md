@@ -88,6 +88,7 @@ for development.
 | `MC_API_CONF_MC_WRITABLE` | unset | `1` allows editing `mc.conf.json` from the Settings page |
 | `MC_API_CONF_SSH_WRITABLE` | unset | `1` allows editing `ssh_config` from the Settings page |
 | `MC_CORS_ENABLED` / `MC_CORS_ALLOWED_ORIGINS` | `true` / `*` | CORS middleware on the API |
+| `MC_NODE_PROXY_ENABLED` | `false` | Forward requests with an `x-mc-node` header to that node. While off, they return `404` (see [Node proxy](container-hosts.md#node-proxy-experimental)) |
 | `MC_MCP_ENABLED` | `true` | MCP server accepts tokens. `false` denies every request |
 | `MC_MCP_TOKEN` | random per start | Bearer token for the MCP server. With `MC_DEV_MODE`, any token starting with `dev-` works |
 | `MCP_TRANSPORT`, `MCP_HOST`, `MCP_PORT`, `MCP_PATH` | `stdio`, `127.0.0.1`, `5001`, `/mcp` | MCP server; the entrypoint's `mcp-server-http` sets `streamable-http` on `0.0.0.0` |

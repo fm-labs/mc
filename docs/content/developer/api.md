@@ -12,6 +12,10 @@ The routers depend on `mc.server.deps.dep_auth_user`, which accepts either:
 
 Missing or invalid credentials return `401`.
 
+A request with an `x-mc-node: <alias>` header is checked before the routers and, with `MC_NODE_PROXY_ENABLED`, sent
+to that node (`404` while it's off). It needs a bearer JWT; `x-api-key` isn't accepted. See
+[Node proxy](container-hosts.md#node-proxy-experimental).
+
 | Module | Role |
 |---|---|
 | `mc/server/deps.py` | `dep_auth_user`: reads the bearer token or API key, returns the user dict |

@@ -7,7 +7,7 @@ import sys
 
 from fastmcp import FastMCP
 
-from mc.config import get_env_var
+from mc.config import env_var
 
 sys.path.append(".")
 
@@ -42,11 +42,11 @@ async def init_mcp() -> "FastMCP":
 
 
 async def main():
-    transport = get_env_var("MCP_TRANSPORT", "stdio")
-    host = get_env_var("MCP_HOST", "127.0.0.1")
-    port = int(get_env_var("MCP_PORT", "5001"))
-    path = get_env_var("MCP_PATH", "/mcp")
-    log_level = get_env_var("MCP_LOG_LEVEL", "info")
+    transport = env_var("MCP_TRANSPORT", "stdio")
+    host = env_var("MCP_HOST", "127.0.0.1")
+    port = int(env_var("MCP_PORT", "5001"))
+    path = env_var("MCP_PATH", "/mcp")
+    log_level = env_var("MCP_LOG_LEVEL", "info")
 
     available_transports = ["streamable-http", "sse", "http", "stdio"]
     if transport not in available_transports:

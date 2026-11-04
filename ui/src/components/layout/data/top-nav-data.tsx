@@ -7,7 +7,12 @@ export const topNav = [
     {
         title: "Containers",
         href: "/containers",
-        isActive: true,
+        isActive: false,
+    },
+    {
+        title: "Apps",
+        href: "/admin/apps",
+        isActive: false,
     },
     // {
     //     title: 'Sec',

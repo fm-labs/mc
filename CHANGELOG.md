@@ -8,6 +8,7 @@
 - `mc-traefik-start.sh` uses the generated config files from `$MC_HOME/etc/traefik`
 - Helper scripts moved to `/app/bin` (outside the data volume)
 - UI uses a monospace font
+- Added experimental node proxy: requests with an `x-mc-node` header are forwarded to that node (`MC_NODE_PROXY_ENABLED`)
 
 ## v2.3.1
 

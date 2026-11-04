@@ -10,6 +10,8 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "react-toastify";
 import { useApi } from "@/context/api-context.tsx";
 import { getToolTarget, getToolType, isCmdTool } from "@/app/tools/components/tool-utils.ts";
+import { useTools } from "@/app/tools/components/tools-provider.tsx";
+import { LOCAL_NODE, NodeSelect, nodeHeaders } from "@/components/node-select.tsx";
 
 type ExecOutput = {
     rc: number | null
@@ -50,6 +52,8 @@ const OutputBlock = ({ label, children, tone = "default", innerRef }: {
 
 export function ToolDetails({ tool }: { tool: Tool }) {
     const { api } = useApi();
+    const { targetNode, setTargetNode } = useTools();
+    const onNode = targetNode !== LOCAL_NODE ? ` on ${targetNode}` : "";
 
     const [formData, setFormData] = React.useState<any>({});
     const [running, setRunning] = React.useState(false);
@@ -75,12 +79,12 @@ export function ToolDetails({ tool }: { tool: Tool }) {
         setOutput(null);
         setStreamLines(null);
         setRunning(true);
-        const p = api.execTool(tool.name, params || {})
+        const p = api.execTool(tool.name, params || {}, { headers: nodeHeaders(targetNode) })
             .then((result: ToolExecResult) => setOutput(toExecOutput(result)))
             .finally(() => setRunning(false));
         await toast.promise(p, {
-            pending: `Running ${tool.name}...`,
-            success: `${tool.name} finished`,
+            pending: `Running ${tool.name}${onNode}...`,
+            success: `${tool.name} finished${onNode}`,
             error: {
                 render: ({ data }: any) => data?.response?.data?.detail || `Error running ${tool.name}`,
             },
@@ -102,7 +106,7 @@ export function ToolDetails({ tool }: { tool: Tool }) {
                 }
                 const line = ev.event === "STDOUT" ? ev.data : `[${ev.event}] ${ev.data}`;
                 setStreamLines((prev) => [...(prev || []), line]);
-            }, controller.signal);
+            }, controller.signal, nodeHeaders(targetNode));
             setOutput({ rc, stdout: "", stderr: "" });
         } catch (error: any) {
             if (error?.name !== "AbortError") {
@@ -152,6 +156,7 @@ export function ToolDetails({ tool }: { tool: Tool }) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                        <NodeSelect value={targetNode} onChange={setTargetNode} disabled={running} />
                         <Button form={FORM_ID} type="submit" disabled={running}
                                 onClick={() => { submitModeRef.current = "run"; }}>
                             <IconPlayerPlay size={16} /> Run

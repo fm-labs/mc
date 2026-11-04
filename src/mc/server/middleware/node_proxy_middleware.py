@@ -33,10 +33,11 @@ class NodeProxyMiddleware:
         app.add_middleware(NodeProxyMiddleware, timeout=30.0)
     """
 
-    def __init__(self, app, timeout: float = 30.0, follow_redirects: bool = False):
+    def __init__(self, app, timeout: float = 30.0, follow_redirects: bool = False, enabled: bool = True):
         self.app = app
         self.timeout = timeout
         self.follow_redirects = follow_redirects
+        self.enabled = enabled
         self._client: httpx.AsyncClient | None = None
 
     @property
@@ -59,7 +60,7 @@ class NodeProxyMiddleware:
         if scope["type"] == "http":
             request = Request(scope, receive)
             node_name = request.headers.get("x-mc-node")
-            if node_name and node_name != "localhost":
+            if node_name and node_name != "localhost" and node_name != "default":
                 response = await self.proxy_request(request, node_name)
                 await response(scope, receive, send)
                 return
@@ -84,6 +85,7 @@ class NodeProxyMiddleware:
             token = authorization_header[len("bearer "):].strip()
             try:
                 verify_jwt_access_token(token)
+                return True
             except Exception:
                 pass
         return False
@@ -99,6 +101,9 @@ class NodeProxyMiddleware:
         return url.copy_with(query=query) if query else url
 
     async def proxy_request(self, request: Request, node_name: str):
+        if not self.enabled:
+            return PlainTextResponse("Node not found", status_code=404)
+
         # Validate the request first!
         if not self._validate_request(request):
             logger.warning("Unauthorized proxy request for node %s", node_name)
@@ -116,8 +121,9 @@ class NodeProxyMiddleware:
             (k, v) for k, v in request.headers.raw
             if k.lower() not in _EXCLUDED_REQUEST_HEADERS
         ]
-        # Inject api key
-        headers.append((b"x-api-key", api_key.encode()))
+        # Inject api key. Without one the node decides; if it requires a key, its 401 becomes a 502 below.
+        if api_key:
+            headers.append((b"x-api-key", api_key.encode()))
 
         logger.debug("Proxying %s %s to node %s", request.method, request.url.path, node_name)
 

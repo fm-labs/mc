@@ -104,6 +104,69 @@ e.g. `Node https://node1:3080: (404) No such container`. A `401` from the node (
 as `400`, because a `401` would log you out of the local UI.
 
 
+### Node proxy (experimental)
+
+The node proxy forwards any HTTP request to a node, not only the `/api/containers` routes. A request with an
+`x-mc-node: <alias>` header is sent to that node's URL with the same method, path, query string and body.
+The UI's RPC page uses it to run RPC methods on a node.
+
+Code: `src/mc/server/middleware/node_proxy_middleware.py`. Tests: `tests/mc/test_node_proxy_middleware.py`.
+
+It's off by default. Set `MC_NODE_PROXY_ENABLED=true` on the primary mc to turn it on. The node doesn't need it.
+The middleware is always loaded. While it's off, requests for a node return `404` and are never handled locally,
+so a command meant for a node can't run on the primary mc by mistake.
+
+```bash
+curl -X POST https://mc:3443/api/rpc \
+  -H "Authorization: Bearer <login token>" \
+  -H "x-mc-node: node1" \
+  -d '{"jsonrpc": "2.0", "method": "test.ping", "id": 1}'
+```
+
+How a request is handled:
+
+1. No `x-mc-node` header, an empty one, `localhost` or `default`: the local mc handles the request as usual.
+2. The proxy must be on (`MC_NODE_PROXY_ENABLED`), else `404`.
+3. The request must have a valid login token (`Authorization: Bearer <JWT>`), else `401`. `x-api-key` is not
+   accepted for proxied requests.
+4. The alias must be a `docker_hosts` entry with a `node+http://` or `node+https://` URL, else `404`.
+   Without an `api_key` the request is sent with no key; if the node needs one, its `401` becomes a `502`.
+5. The request is sent to the node. The path and query string are kept as sent (encoding, repeated keys, empty values),
+   and the body is streamed.
+6. The node's response is streamed back with its status code and headers. The body isn't decoded, so compressed
+   responses stay valid.
+
+Headers sent to the node:
+
+- `x-api-key` is set to the entry's `api_key` (if set), so the node authenticates the primary mc, not the user.
+- Removed: `authorization`, `cookie`, the client's `x-api-key`, `x-mc-node` (so the node doesn't proxy the request
+  again), `host`, `content-length` and hop-by-hop headers (`connection`, `keep-alive`, `te`, `trailer`,
+  `transfer-encoding`, `upgrade`, `proxy-authorization`).
+- All other headers are sent, including repeated ones.
+
+Headers returned from the node drop `set-cookie`, `content-length`, `proxy-authenticate` and hop-by-hop headers.
+Node cookies are never stored, because one HTTP client is shared by all users.
+
+Errors:
+
+| Status | Cause |
+|---|---|
+| `401` `Unauthorized` | No valid login token |
+| `404` `Node not found` | Proxy off, unknown alias, or not a `node+http(s)://` host |
+| `502` `Proxy authentication error` | The node returned `401`, e.g. a wrong `api_key`. Not passed on as `401`, which would log you out of the local UI |
+| `502` `Upstream node unreachable` | Connection error |
+| `504` `Upstream node timed out` | No response within the timeout (30 s) |
+
+Other node errors keep their status code and body.
+
+Limits:
+
+- HTTP only. WebSocket requests are always handled locally.
+- The timeout is 30 s for every node. The entry's `timeout` field isn't used.
+- Redirects from the node are returned to the client, not followed.
+- The HTTP client is created on the first proxied request and closed when the server shuts down.
+
+
 ## Migrating from the `nodes` section
 
 The `nodes` section and the `localdocker` alias were replaced:

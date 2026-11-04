@@ -10,6 +10,6 @@ How Mission Control (mc) works inside. For setup, tests and lint, see [DEVELOPER
 | [Apps](apps.md) | App specs, compiling the compose overrides, API, CLI |
 | [App stacks](app-stacks.md) | Obsolete: how a stack is synced, prepared and deployed |
 | [UI](ui.md) | React app structure, routing, API client |
-| [Container hosts](container-hosts.md) | Docker/podman/node hosts and client loading |
+| [Container hosts](container-hosts.md) | Docker/podman/node hosts, client loading, node proxy |
 | [Inventory (inventorydb)](inventorydb.md) | Schema-driven item store, item types, storage |
 | [Inventory UI](inventory-ui.md) | Generated inventory pages |

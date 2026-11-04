@@ -92,8 +92,7 @@ if config.MC_CORS_ENABLED:
         allow_credentials=False,
     )
 
-if config.MC_NODE_PROXY_ENABLED:
-    app.add_middleware(NodeProxyMiddleware)
+app.add_middleware(NodeProxyMiddleware, enabled=config.MC_NODE_PROXY_ENABLED)
 
 
 # Global exception handlers that emit Problem JSON responses

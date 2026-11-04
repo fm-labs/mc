@@ -16,27 +16,27 @@ import { StreamEvent } from "@/features/stream/stream.types.ts";
 
 export const buildApiClient = (baseURL: string) => {
 
-    const apiHttpClient = buildApiHttpClient(baseURL);
+    const http = buildApiHttpClient(baseURL);
 
 /////////// Basic HTTP Methods //////////////
 
     const get = async (url: string, config?: AxiosRequestConfig) => {
-        return apiHttpClient.get(url, config).then(response => response.data);
+        return http.get(url, config).then(response => response.data);
     };
 
     const post = async (url: string, data?: any, config?: AxiosRequestConfig) => {
-        return apiHttpClient.post(url, data, config).then(response => response.data);
+        return http.post(url, data, config).then(response => response.data);
     };
 
 
 /////////// Auth //////////////
 
     const authLogin = async (data: any, config?: AxiosRequestConfig) => {
-        return apiHttpClient.post("api/auth/login", data, config).then(response => response.data);
+        return http.post("api/auth/login", data, config).then(response => response.data);
     };
 
     const authLoginFormData = async (formData: FormData, config?: AxiosRequestConfig) => {
-        return apiHttpClient.post("api/auth/login", formData, {
+        return http.post("api/auth/login", formData, {
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
             },
@@ -45,7 +45,7 @@ export const buildApiClient = (baseURL: string) => {
     };
 
     const authLogout = async (config?: AxiosRequestConfig) => {
-        return apiHttpClient.post("api/auth/logout", {}, config).then(response => response.data);
+        return http.post("api/auth/logout", {}, config).then(response => response.data);
     };
 
 // const authRegister = (data: any, config?: AxiosRequestConfig) => {
@@ -55,48 +55,48 @@ export const buildApiClient = (baseURL: string) => {
 /////////// Configuration & Integrations //////////////
 
     const getConfiguration = (config?: AxiosRequestConfig) => async (): Promise<any> => {
-        const response = await apiHttpClient.get(`api/configuration`, config);
+        const response = await http.get(`api/configuration`, config);
         return response.data;
     };
 
     const getConnectedAccounts = (config?: AxiosRequestConfig) => async (): Promise<any> => {
-        const response = await apiHttpClient.get(`api/integrations`, config);
+        const response = await http.get(`api/integrations`, config);
         return response.data;
     };
 
     const connectAccount = async (provider: string, data: any, config?: AxiosRequestConfig): Promise<any> => {
-        const response = await apiHttpClient.post(`api/integrations/${provider}`, data, config);
+        const response = await http.post(`api/integrations/${provider}`, data, config);
         return response.data;
     };
 
 /////////// Inventory //////////////
 
     const getInventoryItems = async (itemType: string, config?: AxiosRequestConfig): Promise<InventoryItem<any>> => {
-        const response = await apiHttpClient.get(`api/inventory/${itemType}`, config);
+        const response = await http.get(`api/inventory/${itemType}`, config);
         return response.data;
     };
 
     const createInventoryItem = async (itemType: string, item: InventoryItem<any>, config?: AxiosRequestConfig): Promise<InventoryItem<any>> => {
-        const response = await apiHttpClient.post(`api/inventory/${itemType}`, item, config);
+        const response = await http.post(`api/inventory/${itemType}`, item, config);
         return response.data;
     };
 
     const getInventoryItem = async (itemType: string, itemId: string, config?: AxiosRequestConfig): Promise<InventoryItem<any>> => {
-        const response = await apiHttpClient.get(`api/inventory/${itemType}/${itemId}`, config);
+        const response = await http.get(`api/inventory/${itemType}/${itemId}`, config);
         return response.data;
     };
 
     const updateInventoryItem = async (itemType: string, item: InventoryItem<any>, config?: AxiosRequestConfig): Promise<InventoryItem<any>> => {
-        const response = await apiHttpClient.put(`api/inventory/${itemType}/${item.id}`, item, config);
+        const response = await http.put(`api/inventory/${itemType}/${item.id}`, item, config);
         return response.data;
     };
 
     const deleteInventoryItem = async (itemType: string, item: InventoryItem<any>, config?: AxiosRequestConfig): Promise<any> => {
-        const response = await apiHttpClient.delete(`api/inventory/${itemType}/${item.id}`, config);
+        const response = await http.delete(`api/inventory/${itemType}/${item.id}`, config);
         return response.data;
     };
     const submitInventoryItemAction = async (itemType: string, item: InventoryItem<any>, action_name: string, action_args?: any, config?: AxiosRequestConfig): Promise<TaskSubmissionResponse> => {
-        const response = await apiHttpClient.post(`api/inventory/${itemType}/${item.id}/action/${action_name}`, action_args || {}, config);
+        const response = await http.post(`api/inventory/${itemType}/${item.id}/action/${action_name}`, action_args || {}, config);
         return response.data;
     };
 
@@ -105,7 +105,7 @@ export const buildApiClient = (baseURL: string) => {
      * @deprecated Use submitInventoryItemAction with action_name 'scan' instead
      */
     const createInventoryScan = (config?: AxiosRequestConfig) => async (item: InventoryItem<any>): Promise<any> => {
-        const response = await apiHttpClient.post(`api/inventory/${item.type}/${item.id}/action/scan`, {}, config);
+        const response = await http.post(`api/inventory/${item.type}/${item.id}/action/scan`, {}, config);
         return response.data;
     };
 
@@ -113,7 +113,7 @@ export const buildApiClient = (baseURL: string) => {
      * @deprecated Use submitInventoryItemAction with itemType 'dns-domain' instead
      */
     const submitDomainAction = (config?: AxiosRequestConfig) => async (item: InventoryItem<any>, action_name: string, action_args?: any): Promise<TaskSubmissionResponse> => {
-        const response = await apiHttpClient.post(`api/inventory/dns-domain/${item.id}/action/${action_name}`, action_args || {}, config);
+        const response = await http.post(`api/inventory/dns-domain/${item.id}/action/${action_name}`, action_args || {}, config);
         return response.data;
     };
 
@@ -131,7 +131,7 @@ export const buildApiClient = (baseURL: string) => {
                 },
             };
         }
-        const response = await apiHttpClient.get(`api/findings`, config);
+        const response = await http.get(`api/findings`, config);
         return response.data;
     };
 
@@ -139,12 +139,12 @@ export const buildApiClient = (baseURL: string) => {
 
     const createScan = (config?: AxiosRequestConfig) => async (data: any): Promise<any> => {
         //const response = await mcHttpClient.post(`api/xscan/run/`, data, config);
-        const response = await apiHttpClient.post(`api/xscan/scan`, data, config);
+        const response = await http.post(`api/xscan/scan`, data, config);
         return response.data;
     };
 
     const getScanResults = (config?: AxiosRequestConfig) => async (scanId: string): Promise<any> => {
-        const response = await apiHttpClient.get(`api/xscan/results/${scanId}`, config);
+        const response = await http.get(`api/xscan/results/${scanId}`, config);
         return response.data;
     };
 
@@ -152,13 +152,13 @@ export const buildApiClient = (baseURL: string) => {
 
 
     const submitCeleryTask = async (data?: any, config?: AxiosRequestConfig): Promise<any> => {
-        const response = await apiHttpClient.post(`api/celery/tasks`, data || {}, config);
+        const response = await http.post(`api/celery/tasks`, data || {}, config);
         return response.data;
     };
 
 
     const getCeleryTaskStatus = async (taskId: string, config?: AxiosRequestConfig): Promise<TaskStatusResponse> => {
-        const response = await apiHttpClient.get(`api/celery/tasks/${taskId}`, config);
+        const response = await http.get(`api/celery/tasks/${taskId}`, config);
         return response.data;
     };
 
@@ -166,17 +166,17 @@ export const buildApiClient = (baseURL: string) => {
 /////////// Apps //////////////
 
     const getAppSpecs = async (config?: AxiosRequestConfig): Promise<AppSpec[]> => {
-        const response = await apiHttpClient.get(`api/apps`, config);
+        const response = await http.get(`api/apps`, config);
         return response.data;
     };
 
     const getAppSpec = async (appId: string, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
-        const response = await apiHttpClient.get(`api/apps/${encodeURIComponent(appId)}`, config);
+        const response = await http.get(`api/apps/${encodeURIComponent(appId)}`, config);
         return response.data;
     };
 
     const createAppFromScratch = async (data: CreateAppFromScratchRequest, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
-        const response = await apiHttpClient.post(`api/apps/new/scratch`, data, config);
+        const response = await http.post(`api/apps/new/scratch`, data, config);
         return response.data;
     };
 
@@ -192,24 +192,24 @@ export const buildApiClient = (baseURL: string) => {
         if (data.title) form.append("title", data.title);
         if (data.description) form.append("description", data.description);
         form.append("bundle", data.bundle);
-        const response = await apiHttpClient.post(`api/apps/new/bundle`, form, { ...BUNDLE_UPLOAD_CONFIG, ...config });
+        const response = await http.post(`api/apps/new/bundle`, form, { ...BUNDLE_UPLOAD_CONFIG, ...config });
         return response.data;
     };
 
     const updateAppFromBundle = async (appId: string, bundle: File, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
         const form = new FormData();
         form.append("bundle", bundle);
-        const response = await apiHttpClient.put(`api/apps/${encodeURIComponent(appId)}/bundle`, form, { ...BUNDLE_UPLOAD_CONFIG, ...config });
+        const response = await http.put(`api/apps/${encodeURIComponent(appId)}/bundle`, form, { ...BUNDLE_UPLOAD_CONFIG, ...config });
         return response.data;
     };
 
     const getCompiledAppSpec = async (appId: string, config?: AxiosRequestConfig): Promise<CompiledAppSpec> => {
-        const response = await apiHttpClient.get(`api/apps/${encodeURIComponent(appId)}/compiled`, config);
+        const response = await http.get(`api/apps/${encodeURIComponent(appId)}/compiled`, config);
         return response.data;
     };
 
     const updateAppSpec = async (appId: string, data: UpdateAppSpecRequest, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
-        const response = await apiHttpClient.put(`api/apps/${encodeURIComponent(appId)}`, data, config);
+        const response = await http.put(`api/apps/${encodeURIComponent(appId)}`, data, config);
         return response.data;
     };
 
@@ -217,17 +217,17 @@ export const buildApiClient = (baseURL: string) => {
 /////////// Tools //////////////
 
     const getToolList = async (config?: AxiosRequestConfig): Promise<Tool[]> => {
-        const response = await apiHttpClient.get<ToolIndex>(`api/tools`, config);
+        const response = await http.get<ToolIndex>(`api/tools`, config);
         return Object.values(response.data || {});
     };
 
     const getTool = async (tool_name: string, config?: AxiosRequestConfig): Promise<Tool> => {
-        const response = await apiHttpClient.get(`api/tools/${tool_name}`, config);
+        const response = await http.get(`api/tools/${tool_name}`, config);
         return response.data;
     };
 
     const execTool = async (tool_name: string, params?: any, config?: AxiosRequestConfig): Promise<ToolExecResult> => {
-        const response = await apiHttpClient.post(`api/tools/${tool_name}`, params || {}, config);
+        const response = await http.post(`api/tools/${tool_name}`, params || {}, config);
         return response.data;
     };
 
@@ -240,6 +240,7 @@ export const buildApiClient = (baseURL: string) => {
         body: any,
         onEvent: (event: StreamEvent) => void,
         signal?: AbortSignal,
+        headers?: Record<string, string>,
     ): Promise<void> => {
         const token = localStorage.getItem("authToken");
         const url = new URL(path, new URL(baseURL, window.location.href));
@@ -249,6 +250,7 @@ export const buildApiClient = (baseURL: string) => {
                 "Accept": "application/x-ndjson",
                 "Content-Type": "application/json",
                 ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+                ...headers,
             },
             body: JSON.stringify(body ?? {}),
             signal,
@@ -294,8 +296,9 @@ export const buildApiClient = (baseURL: string) => {
         params: any,
         onEvent: (event: ToolStreamEvent) => void,
         signal?: AbortSignal,
+        headers?: Record<string, string>,
     ): Promise<void> => {
-        return streamPost(`api/tools/${tool_name}/stream?format=json`, params || {}, onEvent, signal);
+        return streamPost(`api/tools/${tool_name}/stream?format=json`, params || {}, onEvent, signal, headers);
     };
 
     /**
