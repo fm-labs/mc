@@ -25,6 +25,8 @@ const PortainerTemplatesPage = await import('@/app/app-stacks/portainer-template
 const AppStacksPage = await import('@/app/app-stacks/app-stacks-page.tsx').then(mod => mod.default);
 const AppStackDetailsPage = await import('@/app/app-stacks/app-stack-details-page.tsx').then(mod => mod.default);
 const RpcPage = await import('@/app/rpc/rpc-page.tsx').then(mod => mod.default);
+const AppsPage = await import('@/app/apps/apps-page.tsx').then(mod => mod.default);
+const AppSpecEditPage = await import('@/app/apps/app-spec-edit-page.tsx').then(mod => mod.default);
 const SettingsPage = await import('@/app/settings/page.tsx').then(mod => mod.default);
 
 
@@ -133,6 +135,27 @@ const AppRouter = () => {
                                             Component: SettingsPage,
                                         }
                                     ]
+                                },
+                                {
+                                    path: "apps",
+                                    children: [
+                                        {
+                                            index: true,
+                                            Component: AppsPage,
+                                            loader: () => apiClient.getAppSpecs(),
+                                        },
+                                        {
+                                            path: "new",
+                                            Component: AppSpecEditPage,
+                                        },
+                                        {
+                                            path: ":appId",
+                                            Component: AppSpecEditPage,
+                                            // the page shows "not found" for a missing app
+                                            loader: ({params}) => apiClient.getAppSpec(params.appId!)
+                                                .catch(() => null),
+                                        },
+                                    ],
                                 },
                                 {
                                     path: "rpc",

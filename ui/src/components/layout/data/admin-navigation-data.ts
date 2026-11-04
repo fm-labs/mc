@@ -3,6 +3,11 @@ import {AdminNavigationData} from "@/components/layout/data/types.ts";
 export const adminNavigationData: AdminNavigationData = {
     navAdmin: [
         {
+            title: "Apps",
+            url: "/admin/apps",
+            iconName: "apps",
+        },
+        {
             title: "Settings",
             url: "/admin/settings",
             iconName: "settings",

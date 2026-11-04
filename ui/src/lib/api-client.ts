@@ -2,6 +2,15 @@ import { AxiosRequestConfig } from "axios";
 import { InventoryItem } from "@/features/inventory/inventory.types.ts";
 import { TaskStatusResponse, TaskSubmissionResponse } from "@/features/tasks/tasks.types.ts";
 import { buildApiHttpClient } from "@/lib/api-http-client.ts";
+import {
+    AppAction,
+    AppSpec,
+    AppSpecDetails,
+    CompiledAppSpec,
+    CreateAppFromScratchRequest,
+    UpdateAppSpecRequest,
+} from "@/features/apps/apps.types.ts";
+import { StreamEvent } from "@/features/stream/stream.types.ts";
 
 
 export const buildApiClient = (baseURL: string) => {
@@ -153,6 +162,34 @@ export const buildApiClient = (baseURL: string) => {
     };
 
 
+/////////// Apps //////////////
+
+    const getAppSpecs = async (config?: AxiosRequestConfig): Promise<AppSpec[]> => {
+        const response = await apiHttpClient.get(`api/apps`, config);
+        return response.data;
+    };
+
+    const getAppSpec = async (appId: string, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
+        const response = await apiHttpClient.get(`api/apps/${encodeURIComponent(appId)}`, config);
+        return response.data;
+    };
+
+    const createAppFromScratch = async (data: CreateAppFromScratchRequest, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
+        const response = await apiHttpClient.post(`api/apps/new/scratch`, data, config);
+        return response.data;
+    };
+
+    const getCompiledAppSpec = async (appId: string, config?: AxiosRequestConfig): Promise<CompiledAppSpec> => {
+        const response = await apiHttpClient.get(`api/apps/${encodeURIComponent(appId)}/compiled`, config);
+        return response.data;
+    };
+
+    const updateAppSpec = async (appId: string, data: UpdateAppSpecRequest, config?: AxiosRequestConfig): Promise<AppSpecDetails> => {
+        const response = await apiHttpClient.put(`api/apps/${encodeURIComponent(appId)}`, data, config);
+        return response.data;
+    };
+
+
 /////////// Tools //////////////
 
     const getToolList = async (config?: AxiosRequestConfig): Promise<Tool[]> => {
@@ -171,16 +208,17 @@ export const buildApiClient = (baseURL: string) => {
     };
 
     /**
-     * Run a tool and stream its output (ndjson). Resolves when the stream ends.
+     * POST to a streaming endpoint and read its ndjson output, one event per line.
+     * Resolves when the stream ends. Rejects with the server's error detail on a non-2xx response.
      */
-    const execToolStream = async (
-        tool_name: string,
-        params: any,
-        onEvent: (event: ToolStreamEvent) => void,
+    const streamPost = async (
+        path: string,
+        body: any,
+        onEvent: (event: StreamEvent) => void,
         signal?: AbortSignal,
     ): Promise<void> => {
         const token = localStorage.getItem("authToken");
-        const url = new URL(`api/tools/${tool_name}/stream?format=json`, new URL(baseURL, window.location.href));
+        const url = new URL(path, new URL(baseURL, window.location.href));
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -188,11 +226,18 @@ export const buildApiClient = (baseURL: string) => {
                 "Content-Type": "application/json",
                 ...(token ? { "Authorization": `Bearer ${token}` } : {}),
             },
-            body: JSON.stringify(params || {}),
+            body: JSON.stringify(body ?? {}),
             signal,
         });
         if (!response.ok || !response.body) {
-            throw new Error(`Stream failed: ${response.status} ${response.statusText}`);
+            let detail = `${response.status} ${response.statusText}`;
+            try {
+                const data = await response.json();
+                if (data?.detail) detail = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+            } catch {
+                // not JSON, keep the status text
+            }
+            throw new Error(`Stream failed: ${detail}`);
         }
 
         const reader = response.body.getReader();
@@ -215,6 +260,30 @@ export const buildApiClient = (baseURL: string) => {
             lines.forEach(emit);
         }
         emit(buffer + decoder.decode());
+    };
+
+    /**
+     * Run a tool and stream its output (ndjson). Resolves when the stream ends.
+     */
+    const execToolStream = async (
+        tool_name: string,
+        params: any,
+        onEvent: (event: ToolStreamEvent) => void,
+        signal?: AbortSignal,
+    ): Promise<void> => {
+        return streamPost(`api/tools/${tool_name}/stream?format=json`, params || {}, onEvent, signal);
+    };
+
+    /**
+     * Run a docker compose action for an app and stream its output (ndjson).
+     */
+    const streamAppAction = async (
+        appId: string,
+        action: AppAction,
+        onEvent: (event: StreamEvent) => void,
+        signal?: AbortSignal,
+    ): Promise<void> => {
+        return streamPost(`api/apps/${encodeURIComponent(appId)}/action/${action}?format=json`, {}, onEvent, signal);
     };
 
     return {
@@ -243,6 +312,15 @@ export const buildApiClient = (baseURL: string) => {
         // Tasks
         submitCeleryTask,
         getCeleryTaskStatus,
+        // Apps
+        getAppSpecs,
+        getAppSpec,
+        createAppFromScratch,
+        updateAppSpec,
+        getCompiledAppSpec,
+        streamAppAction,
+        // Streaming
+        streamPost,
         // Tools
         getToolList,
         getTool,
