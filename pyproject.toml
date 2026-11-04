@@ -1,6 +1,6 @@
 [project]
 name = "mc"
-version = "2.4.1"
+version = "2.4.2"
 description = "MissionControl - Launch and manage your containers with ease."
 requires-python = ">=3.14"
 dependencies = [
