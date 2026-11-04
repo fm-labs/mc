@@ -24,6 +24,7 @@ class DockerComposeUpArgs(pydantic.BaseModel):
     quiet_pull: bool = False # Pull without printing progress information
     no_color: bool = False # Produce monochrome output
     yes: bool = False # Assume "yes" as answer to all prompts and run non-interactively
+    wait: bool = False # Wait for services to be running|healthy. Implies detached mode.
 
 class DockerComposeSyncArgs(pydantic.BaseModel):
     timeout: int = DEFAULT_TIMEOUT_SECONDS
@@ -76,18 +77,7 @@ class DockerComposeStackRunner(abc.ABC):
         https://docs.docker.com/reference/cli/docker/compose/up/
         """
         logger.info(f"Starting project {self.project_name}")
-
-        #kwargs = args.model_dump(mode='python')
-        kwargs = dict()
-        kwargs["detach"] = args.detach
-        kwargs["build"] = args.build
-        kwargs["force_recreate"] = args.force_recreate
-        kwargs["remove_orphans"] = args.remove_orphans
-        kwargs["quiet_pull"] = args.quiet_pull
-        kwargs["no_color"] = args.no_color
-        kwargs["yes"] = args.yes
-
-        return self._compose("up", **kwargs)
+        return self._compose("up", **args.model_dump(mode="python"))
 
     def down(self, args: DockerComposeDownArgs) -> tuple[bytes, bytes, int]:
         """
@@ -154,6 +144,7 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         docker_host: str="unix:///var/run/docker.sock",
         stackfiles: str | list = "compose.yaml",
         executor: Callable | None = None,
+        global_args: list[str] | None = None,
     ):
         super().__init__(project_name, executor=executor)
         self.docker_host = docker_host
@@ -162,6 +153,8 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         if isinstance(stackfiles, str):
             stackfiles = [stackfiles]
         self.stackfiles = stackfiles
+        # flags placed before the subcommand, e.g. ["--progress", "plain", "--ansi", "never"]
+        self.global_args = global_args or []
 
 
     def up(self, args: DockerComposeUpArgs) -> tuple[bytes, bytes, int]:
@@ -175,13 +168,14 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         """
         return b"", b"", 0
 
-    def _compose(self, cmd, **kwargs) -> tuple[bytes, bytes, int]:
+    def compose_cmd(self, cmd: str, **kwargs) -> tuple[list[str], dict[str, str]]:
         """
-        Run a docker compose command locally
+        Build a docker compose command without running it.
+        Use this to run the command elsewhere, e.g. as a streamed subprocess.
 
-        :param cmd: Command to run
-        :param kwargs: Additional arguments to pass to docker compose
-        :return:
+        :param cmd: Compose subcommand (up/down/etc.)
+        :param kwargs: Additional arguments to pass to the subcommand
+        :return: (command args, environment)
         """
         project_dir = self.project_dir # real project dir path!
 
@@ -195,9 +189,23 @@ class LocalDockerComposeStackRunner(DockerComposeStackRunner):
         # _cmd.extend(["--project-name", self.project_name])
         for cf in self.stackfiles:
             _cmd.extend(["--file", cf])
+        _cmd.extend(self.global_args)
         _cmd.append(cmd)  # up/down/etc.
         _cmd.extend(kwargs_to_cmdargs(kwargs))
+        return _cmd, env
 
+    def up_cmd(self, args: DockerComposeUpArgs) -> tuple[list[str], dict[str, str]]:
+        return self.compose_cmd("up", **args.model_dump(mode="python"))
+
+    def _compose(self, cmd, **kwargs) -> tuple[bytes, bytes, int]:
+        """
+        Run a docker compose command locally
+
+        :param cmd: Command to run
+        :param kwargs: Additional arguments to pass to docker compose
+        :return:
+        """
+        _cmd, env = self.compose_cmd(cmd, **kwargs)
         return self.executor(cmd=_cmd, env=env)
 
 

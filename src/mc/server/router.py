@@ -2,6 +2,7 @@ from fastapi import APIRouter, Security
 
 from inventorydb.routes import router as objbase_router
 from mc.config import API_VERSION
+from mc.plugin.apps.routes import router as apps_router
 from mc.plugin.containers.routes import router as containers_router
 from mc.server.deps import dep_auth_user
 from mc.server.routes_auth import router as auth_router
@@ -28,6 +29,8 @@ app_router.include_router(containers_router, prefix="/api", tags=["container"],
 app_router.include_router(config_router, prefix="/api", tags=["config"],
                           dependencies=[Security(dep_auth_user)])
 app_router.include_router(tools_router, prefix="/api", tags=["tools"],
+                          dependencies=[Security(dep_auth_user)])
+app_router.include_router(apps_router, prefix="/api", tags=["apps"],
                           dependencies=[Security(dep_auth_user)])
 
 # for plugin_name in PLUGINS_ENABLED:
