@@ -102,8 +102,9 @@ so the output is line-based. If the client disconnects, the subprocess is termin
 
 ## UI
 
-`/admin/apps` lists the specs, `/admin/apps/new` (`?source=bundle` preselects the bundle upload) and
-`/admin/apps/:appId` open the editor (`app-spec-edit-page.tsx`). Updating from a bundle is
+`/manage/:hostId/apps` lists the specs, `/manage/:hostId/apps/new` (`?source=bundle` preselects the bundle upload) and
+`/manage/:hostId/apps/:appId` open the editor (`app-spec-edit-page.tsx`). All calls go to that host
+(see [host-scoped pages](ui.md#host-scoped-pages-managehostid)). Updating from a bundle is
 `app-bundle-upload-dialog.tsx`, disabled while the editor has unsaved changes. Each spec section has its own component in `components/`; they get rows and per-row
 errors from `apps-validation.ts`. The editor keeps form state as rows (env and routes as strings while typing)
 and converts them on save.

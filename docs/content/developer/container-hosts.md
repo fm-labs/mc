@@ -108,7 +108,7 @@ as `400`, because a `401` would log you out of the local UI.
 
 The node proxy forwards any HTTP request to a node, not only the `/api/containers` routes. A request with an
 `x-mc-node: <alias>` header is sent to that node's URL with the same method, path, query string and body.
-The UI's RPC page uses it to run RPC methods on a node.
+The UI's host pages (`/manage/:hostId`: tools, RPC, apps, settings) use it to work on a node.
 
 Code: `src/mc/server/middleware/node_proxy_middleware.py`. Tests: `tests/mc/test_node_proxy_middleware.py`.
 

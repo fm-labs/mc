@@ -93,7 +93,7 @@ the event loop. The generator stops when the client disconnects.
 RPC handlers use `docker.from_env()`, so they act on the local docker engine, not on a container host alias.
 
 To add a method, write `rpc_<name>(..., **kwargs) -> dict` in `src/mc/rpc.py` and register it in `RPC_HANDLERS`.
-The UI's RPC page builds its form from the generated schema.
+The UI's RPC page (`/manage/:hostId/rpc`) builds its form from the generated schema.
 
 ## Tools
 
@@ -109,7 +109,7 @@ optional `input_schema` (`plugin/tools/toolindex.py`). They come from:
 - `POST /api/tools/{name}` with params as JSON body returns `[returncode, stdout, stderr]`.
 - `POST /api/tools/{name}/stream?format=json|sse` streams the output line by line.
 
-The UI's Tools page (`/admin/tools`) lists them and builds a form from `input_schema`.
+The UI's Tools page (`/manage/:hostId/tools`) lists them and builds a form from `input_schema`.
 
 ## MCP
 
