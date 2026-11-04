@@ -2,20 +2,18 @@ import React from "react";
 import { useSelectedSearchParam } from "@/hooks/use-selected-search-param.ts";
 
 type ToolsContextType = {
+    // host the tools are listed from and run on (sent as x-mc-node)
+    hostId: string
     tools: Tool[]
     currentTool: Tool | null
     setCurrentTool: (tool: Tool | null) => void
-    // node the tools run on (sent as x-mc-node), kept when switching tools
-    targetNode: string
-    setTargetNode: (node: string) => void
 }
 
 const ToolsContext = React.createContext<ToolsContextType | null>(null);
 
 // The selected tool lives in the URL (?tool=name) so it survives reloads and can be linked to.
-export function ToolsProvider({ children, tools, targetNode }: { children: React.ReactNode, tools: Tool[], targetNode: string }) {
+export function ToolsProvider({ children, tools, hostId }: { children: React.ReactNode, tools: Tool[], hostId: string }) {
     const [selectedName, setSelectedName] = useSelectedSearchParam("tool");
-    const [_targetNode, setTargetNode] = React.useState<string>(targetNode);
 
     const currentTool = React.useMemo(
         () => tools.find((t) => t.name === selectedName) || null,
@@ -28,7 +26,7 @@ export function ToolsProvider({ children, tools, targetNode }: { children: React
     );
 
     return (
-        <ToolsContext value={{ currentTool, setCurrentTool, tools, targetNode: _targetNode, setTargetNode }}>
+        <ToolsContext value={{ hostId, currentTool, setCurrentTool, tools }}>
             {children}
         </ToolsContext>
     );

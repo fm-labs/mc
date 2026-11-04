@@ -10,6 +10,7 @@ import Header from "@/components/header.tsx";
 import {ContainerHostsProvider} from "@/app/containers/components/container-hosts-provider.tsx";
 import ContainersLayout from "@/components/layout/containers-layout.tsx";
 import {useParams} from "react-router";
+import { nodeHeaders } from "@/lib/node-headers.ts";
 
 
 const RpcView = ({hostId}: {hostId: string}) => {
@@ -24,8 +25,9 @@ const RpcView = ({hostId}: {hostId: string}) => {
     );
 
     const fetchCommands = React.useCallback(async () => {
+        setCommands([]);
         try {
-            const response = await api.get("/api/rpc", { headers: { "x-mc-node": hostId }});
+            const response = await api.get("/api/rpc", { headers: nodeHeaders(hostId) });
             setCommands(response || []);
         } catch (error) {
             console.error("Failed to fetch RPC commands:", error);
@@ -49,9 +51,9 @@ const RpcView = ({hostId}: {hostId: string}) => {
                 list={<SearchableList items={items} selectedId={selectedMethod} onSelect={setSelectedMethod} noun="commands" />}
             >
                 {rpcCommand
-                    // key resets form/result state when switching commands
-                    ? <RpcCommandProvider key={rpcCommand.method} command={rpcCommand}>
-                        <RpcCommand />
+                    // key resets form/result state when switching commands or hosts
+                    ? <RpcCommandProvider key={`${hostId}/${rpcCommand.method}`} command={rpcCommand}>
+                        <RpcCommand hostId={hostId} />
                     </RpcCommandProvider>
                     : <DetailEmpty icon={<IconTerminal size={32} stroke={1.5} />}>
                         Select a command from the list to see its parameters and run it.
@@ -62,15 +64,15 @@ const RpcView = ({hostId}: {hostId: string}) => {
 };
 
 const RpcPage = () => {
-    const {hostId, view} = useParams<{ hostId: string, view: string }>();
+    const {hostId} = useParams<{ hostId: string }>();
     if (!hostId) {
-        return <div>Host ID missing</div>
+        return <div className={"p-4"}>Host ID missing</div>;
     }
 
     return <ContainerHostsProvider>
         <ContainersLayout>
             <MainContent>
-                <Header title={"Admin RPC"} subtitle={"Run admin RPC commands against your server."} />
+                <Header title={"Admin RPC"} subtitle={`Run admin RPC commands on ${hostId}.`} />
                 <RpcView hostId={hostId} />
             </MainContent>
         </ContainersLayout>

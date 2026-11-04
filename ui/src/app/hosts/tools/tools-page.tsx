@@ -1,25 +1,24 @@
-import {useLoaderData, useParams} from "react-router";
-import {IconTool} from "@tabler/icons-react";
-import {ToolsProvider, useTools} from "@/app/hosts/tools/components/tools-provider.tsx";
+import { useLoaderData, useParams } from "react-router";
+import { IconTool } from "@tabler/icons-react";
+import { ToolsProvider, useTools } from "@/app/hosts/tools/components/tools-provider.tsx";
 import MainContent from "@/components/layout/main-content.tsx";
-import {DetailEmpty, ListDetailLayout} from "@/components/layout/list-detail-layout.tsx";
+import { DetailEmpty, ListDetailLayout } from "@/components/layout/list-detail-layout.tsx";
 import ToolList from "@/app/hosts/tools/components/tool-list.tsx";
-import {ToolDetails} from "@/app/hosts/tools/components/tool-details.tsx";
-import {FEAT_TOOLS_ENABLED} from "@/constants.ts";
+import { ToolDetails } from "@/app/hosts/tools/components/tool-details.tsx";
+import { FEAT_TOOLS_ENABLED } from "@/constants.ts";
 import Header from "@/components/header.tsx";
-import React from "react";
-import {ContainerHostsProvider} from "@/app/containers/components/container-hosts-provider.tsx";
+import { ContainerHostsProvider } from "@/app/containers/components/container-hosts-provider.tsx";
 import ContainersLayout from "@/components/layout/containers-layout.tsx";
 
-const ToolsLayout = ({hostId}: {hostId?: string}) => {
-    const {currentTool} = useTools();
+const ToolsLayout = () => {
+    const { hostId, currentTool } = useTools();
 
     return (
-        <ListDetailLayout list={<ToolList/>}>
+        <ListDetailLayout list={<ToolList />}>
             {currentTool
-                // key resets form/output state when switching tools
-                ? <ToolDetails key={currentTool.name} tool={currentTool}/>
-                : <DetailEmpty icon={<IconTool size={32} stroke={1.5}/>}>
+                // key resets form/output state when switching tools or hosts
+                ? <ToolDetails key={`${hostId}/${currentTool.name}`} tool={currentTool} />
+                : <DetailEmpty icon={<IconTool size={32} stroke={1.5} />}>
                     Select a tool from the list to see its details and run it.
                 </DetailEmpty>}
         </ListDetailLayout>
@@ -27,23 +26,22 @@ const ToolsLayout = ({hostId}: {hostId?: string}) => {
 };
 
 const ToolsPage = () => {
-    if (!FEAT_TOOLS_ENABLED) {
-        return <div className={"p-4"}>Tools feature is disabled.</div>
-    }
-
-    const {hostId} = useParams<{ hostId: string, view: string }>();
-    if (!hostId) {
-        return <div>Host ID missing</div>
-    }
-
+    const { hostId } = useParams<{ hostId: string }>();
     const data = useLoaderData() as Tool[];
+
+    if (!FEAT_TOOLS_ENABLED) {
+        return <div className={"p-4"}>Tools feature is disabled.</div>;
+    }
+    if (!hostId) {
+        return <div className={"p-4"}>Host ID missing</div>;
+    }
 
     return <ContainerHostsProvider>
         <ContainersLayout>
             <MainContent>
-                <Header title={"Tools"} subtitle={"Available tools. Manage in mc.conf.json"}/>
-                <ToolsProvider tools={data || []}>
-                    <ToolsLayout/>
+                <Header title={"Tools"} subtitle={`Tools available on ${hostId}. Manage in mc.conf.json`} />
+                <ToolsProvider tools={data || []} hostId={hostId}>
+                    <ToolsLayout />
                 </ToolsProvider>
             </MainContent>
         </ContainersLayout>

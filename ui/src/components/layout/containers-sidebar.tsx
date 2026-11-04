@@ -1,3 +1,4 @@
+import { LOCAL_NODE } from "@/lib/node-headers.ts";
 import * as React from "react"
 import {Minus, Plus} from "lucide-react"
 
@@ -48,6 +49,9 @@ const ENGINE_COLORS: Record<string, string> = {
 const engineColor = (icon?: React.ReactNode | string) =>
     (typeof icon === "string" && ENGINE_COLORS[icon]) || "text-green-600 dark:text-green-400"
 
+const isMcHost = (host: { id: string, properties?: { engine?: string } }) =>
+    host.id === LOCAL_NODE || host.properties?.engine === "node"
+
 export function ContainersSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
     const {hosts, isHostEnabled} = useContainerHosts()
     const navigate = useNavigate()
@@ -93,16 +97,19 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                     url: `/containers/${host.id}/events`,
                     icon: "container-events"
                 },
-                {
-                    title: "Manage",
-                    url: `/manage/${host.id}/tools`,
-                    icon: "gear"
-                },
-                {
-                    title: "RPC",
-                    url: `/manage/${host.id}/rpc`,
-                    icon: "gear"
-                },
+                // tools and rpc only exist on an mc: this one, or a node reached via the node proxy
+                ...(isMcHost(host) ? [
+                    {
+                        title: "Tools",
+                        url: `/manage/${host.id}/tools`,
+                        icon: "tool"
+                    },
+                    {
+                        title: "RPC",
+                        url: `/manage/${host.id}/rpc`,
+                        icon: "settings"
+                    },
+                ] : []),
             ],
         }
         })

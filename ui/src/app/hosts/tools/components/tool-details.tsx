@@ -11,7 +11,7 @@ import { toast } from "react-toastify";
 import { useApi } from "@/context/api-context.tsx";
 import { getToolTarget, getToolType, isCmdTool } from "@/app/hosts/tools/components/tool-utils.ts";
 import { useTools } from "@/app/hosts/tools/components/tools-provider.tsx";
-import { LOCAL_NODE, NodeSelect, nodeHeaders } from "@/components/node-select.tsx";
+import { LOCAL_NODE, nodeHeaders } from "@/lib/node-headers.ts";
 
 type ExecOutput = {
     rc: number | null
@@ -52,8 +52,8 @@ const OutputBlock = ({ label, children, tone = "default", innerRef }: {
 
 export function ToolDetails({ tool }: { tool: Tool }) {
     const { api } = useApi();
-    const { targetNode, setTargetNode } = useTools();
-    const onNode = targetNode !== LOCAL_NODE ? ` on ${targetNode}` : "";
+    const { hostId } = useTools();
+    const onNode = hostId !== LOCAL_NODE ? ` on ${hostId}` : "";
 
     const [formData, setFormData] = React.useState<any>({});
     const [running, setRunning] = React.useState(false);
@@ -79,7 +79,7 @@ export function ToolDetails({ tool }: { tool: Tool }) {
         setOutput(null);
         setStreamLines(null);
         setRunning(true);
-        const p = api.execTool(tool.name, params || {}, { headers: nodeHeaders(targetNode) })
+        const p = api.execTool(tool.name, params || {}, { headers: nodeHeaders(hostId) })
             .then((result: ToolExecResult) => setOutput(toExecOutput(result)))
             .finally(() => setRunning(false));
         await toast.promise(p, {
@@ -106,7 +106,7 @@ export function ToolDetails({ tool }: { tool: Tool }) {
                 }
                 const line = ev.event === "STDOUT" ? ev.data : `[${ev.event}] ${ev.data}`;
                 setStreamLines((prev) => [...(prev || []), line]);
-            }, controller.signal, nodeHeaders(targetNode));
+            }, controller.signal, nodeHeaders(hostId));
             setOutput({ rc, stdout: "", stderr: "" });
         } catch (error: any) {
             if (error?.name !== "AbortError") {
@@ -156,7 +156,6 @@ export function ToolDetails({ tool }: { tool: Tool }) {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        <NodeSelect value={targetNode} onChange={setTargetNode} disabled={running} />
                         <Button form={FORM_ID} type="submit" disabled={running}
                                 onClick={() => { submitModeRef.current = "run"; }}>
                             <IconPlayerPlay size={16} /> Run

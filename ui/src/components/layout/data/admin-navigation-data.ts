@@ -12,17 +12,17 @@ export const adminNavigationData: AdminNavigationData = {
             url: "/admin/settings",
             iconName: "settings",
         },
-        {
-            title: "RPC",
-            url: "/admin/rpc",
-            //icon: IconDashboard,
-            iconName: "xterm",
-        },
-        {
-            title: "Tools",
-            url: "/admin/tools",
-            //icon: IconTool,
-            iconName: "tool",
-        },
+        // {
+        //     title: "RPC",
+        //     url: "/admin/rpc",
+        //     //icon: IconDashboard,
+        //     iconName: "xterm",
+        // },
+        // {
+        //     title: "Tools",
+        //     url: "/admin/tools",
+        //     //icon: IconTool,
+        //     iconName: "tool",
+        // },
     ],
 };

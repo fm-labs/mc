@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card.tsx";
 import { Separator } from "@/components/ui/separator.tsx";
-import { LOCAL_NODE, NodeSelect, nodeHeaders } from "@/components/node-select.tsx";
+import { nodeHeaders } from "@/lib/node-headers.ts";
 
 const generateJsonRpcRequestId = () => {
     return (new Date().getTime() * 1000).toString();
@@ -47,14 +47,13 @@ const JsonBlock = ({ label, src }: { label: string, src: object }) => (
     </div>
 );
 
-const RpcCommand = () => {
+const RpcCommand = ({ hostId }: { hostId: string }) => {
     const { command } = useRpcCommand();
     const { api } = useApi();
 
     const [jsonRpcRequest, setJsonRpcRequest] = useState<JsonRpcRequest>();
     const [jsonRpcResponse, setJsonRpcResponse] = useState<JsonRpcResponse>();
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    const [targetNode, setTargetNode] = useState<string>(LOCAL_NODE);
 
     const isNotification = command?.type === "notification";
     const formId = `rpc-action-form-${command.method}`;
@@ -73,7 +72,7 @@ const RpcCommand = () => {
         setJsonRpcRequest(jsonRpcReq);
         setJsonRpcResponse(undefined);
         setIsSubmitting(true);
-        api.post("/api/rpc", jsonRpcReq, {timeout: 120000, headers: nodeHeaders(targetNode)})
+        api.post("/api/rpc", jsonRpcReq, {timeout: 120000, headers: nodeHeaders(hostId)})
             .then((response: JsonRpcResponse) => {
             if (isNotification) {
                 toast.success("Notification successfully sent.");
@@ -112,7 +111,6 @@ const RpcCommand = () => {
                             id={formId}
                             onSubmit={handleSubmit}>
                         <div className="flex flex-wrap gap-2 pt-2">
-                            <NodeSelect value={targetNode} onChange={setTargetNode} disabled={isSubmitting} />
                             <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting
                                     ? <IconLoader2 size={16} className="animate-spin" />

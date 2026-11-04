@@ -9,6 +9,7 @@ import {NotFoundError} from "@/features/errors/not-found-error.tsx";
 import AuthenticatedRoute from "@/components/authenticated-route.tsx";
 import ContainerHostsStatsPage from "@/app/containers/container-hosts-stats-page.tsx";
 import ContainerHostsNetworkPage from "@/app/containers/container-hosts-network-page.tsx";
+import { nodeHeaders } from "@/lib/node-headers.ts";
 
 // lazy load pages
 const StartPage = await import('@/app/start-page.tsx').then(mod => mod.default);
@@ -124,8 +125,8 @@ const AppRouter = () => {
                                 {
                                     path: "tools",
                                     Component: ToolsPage,
-                                    loader: () => {
-                                        return apiClient.getToolList();
+                                    loader: ({ params }) => {
+                                        return apiClient.getToolList({ headers: nodeHeaders(params.hostId) });
                                     },
                                 },
                             ]
