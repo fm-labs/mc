@@ -22,7 +22,7 @@ Re-run `install.sh` to apply.
 mc serves HTTPS on port 3443 with a self-signed certificate. To use your own, mount it in `/etc/mc/install.env`:
 
 ```bash
-MC_EXTRA_VOLUMES="-v /etc/mc/tls/fullchain.pem:/etc/nginx/ssl/cert.pem:ro -v /etc/mc/tls/privkey.pem:/etc/nginx/ssl/key.pem:ro"
+MC_DOCKER_EXTRA_VOLUMES="-v /etc/mc/tls/fullchain.pem:/etc/nginx/ssl/cert.pem:ro -v /etc/mc/tls/privkey.pem:/etc/nginx/ssl/key.pem:ro"
 ```
 
 Re-run `install.sh`. Then close port 3080 in your firewall or put mc behind your own reverse proxy.

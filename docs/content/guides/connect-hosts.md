@@ -31,7 +31,7 @@ mc needs an SSH key that can log in to `web1`, and the user needs access to Dock
 `/etc/mc/install.env`:
 
 ```bash
-MC_EXTRA_VOLUMES="-v /etc/mc/ssh:/home/app/.ssh"
+MC_DOCKER_EXTRA_VOLUMES="-v /etc/mc/ssh:/home/app/.ssh"
 ```
 
 Make the key file readable by uid 33333 (the container user), then re-run `install.sh`.

@@ -2,7 +2,7 @@
 
 Install mc, log in, and change the default password. Takes about five minutes.
 
-You need a Linux server with Docker.
+You need a Linux server with Docker. No Docker yet? See [Docker setup](docker-setup.md).
 
 ## 1. Install
 
@@ -49,6 +49,6 @@ so your browser will warn once). Log in as `operator`.
 | `MC_CONTAINER_NAME` | `mc` |
 | `MC_DATA_VOLUME` | `mc-data`: volume name or absolute host path, mounted at `/mc`. The script passes its host path as `MC_HOST_HOME` |
 | `MC_IMAGE` | `fmlabs/mc:latest` |
-| `MC_EXTRA_VOLUMES` | extra `-v` options (set in `install.env`) |
+| `MC_DOCKER_EXTRA_VOLUMES` | extra `-v` options (set in `install.env`) |
 
 Env vars for mc itself go in `/etc/mc/docker.env`; the script passes it with `--env-file`.

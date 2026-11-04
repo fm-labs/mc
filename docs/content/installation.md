@@ -5,6 +5,8 @@
 - Linux Host with Docker installed
 - Docker Compose installed
 
+On Ubuntu and Debian, the `install-docker.sh` script installs Docker and Docker Compose. See [Docker setup](guides/docker-setup.md).
+
 
 ## Install script
 
