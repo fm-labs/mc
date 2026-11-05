@@ -25,8 +25,8 @@ cat > "${TRAEFIK_DIR}/traefik.yml" << 'EOF'
 # Mounted at /etc/traefik/traefik.yml (Traefik's default lookup path, no CLI args needed)
 
 api:
-  dashboard: false
-  insecure: false
+  dashboard: true
+  insecure: true
 
 providers:
   docker:
@@ -119,6 +119,7 @@ exec docker container run -d \
   --network traefik \
   -p 80:80 \
   -p 443:443 \
+  -p 8080:8080 \
   -v mc_traefik_letsencrypt:/letsencrypt \
   -v /var/run/docker.sock:/var/run/docker.sock:ro \
   -v "${TRAEFIK_HOST_DIR}/traefik.yml:/etc/traefik/traefik.yml:ro" \
