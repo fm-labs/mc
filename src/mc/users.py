@@ -71,7 +71,7 @@ def remove_user(username: str, path: str = USERS_FILE) -> None:
     print(f"Removed user '{username}'")
 
 
-def authenticate_user(username: str, password: str, path: str = USERS_FILE) -> User | None:
+def validate_login_form_credentials(username: str, password: str, path: str = USERS_FILE) -> User | None:
     """Return True if username exists and password matches."""
     try:
         user = get_user(username, path)

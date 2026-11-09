@@ -23,9 +23,9 @@ def client(tmp_path, monkeypatch) -> TestClient:
     users.create_user_file(users_file)
     users.add_user("operator", "secret-pw", users_file)
     monkeypatch.setattr(
-        routes_auth, "authenticate_user", lambda username, password: users.authenticate_user(username, password, users_file)
+        routes_auth, "validate_login_form_credentials", lambda username, password: users.validate_login_form_credentials(username, password, users_file)
     )
-    monkeypatch.setattr(deps, "MC_API_KEY", API_KEY)
+    monkeypatch.setattr(config, "MC_API_KEY", API_KEY)
 
     app = FastAPI()
     app.include_router(routes_auth.router, prefix="/api")

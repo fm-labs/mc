@@ -1,6 +1,7 @@
 import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import jwt as pyjwt  # PyJWT
 
@@ -35,7 +36,7 @@ def create_jwt_access_token(data: dict) -> str:
     return token
 
 
-def verify_jwt_access_token(token: str) -> dict:
+def verify_jwt_access_token(token: str) -> dict[str, Any]:
     try:
         #headers = jwt.get_unverified_header(token)
         #kid = headers.get("kid")
