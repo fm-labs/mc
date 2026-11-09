@@ -1079,7 +1079,7 @@ wheels = [
 
 [[package]]
 name = "mc"
-version = "2.4.4"
+version = "2.5.0"
 source = { editable = "." }
 dependencies = [
     { name = "bcrypt" },
