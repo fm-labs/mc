@@ -12,14 +12,8 @@ import { IconJenkins } from "@/assets/brand-icons/icon-jenkins.tsx";
 import {
     IconBook,
     IconClock,
-    IconPlayerPause,
-    IconPlayerPlay,
-    IconPlayerSkipBack,
-    IconPlayerStop,
-    IconTrash,
     IconCamera,
     IconCloud,
-    IconContainer,
     IconDashboard,
     IconFileAi,
     IconFileDescription,
@@ -30,21 +24,21 @@ import {
     IconSettings,
     IconTool,
     IconUsers, IconSkull,
-    IconTrendingDown, IconTrendingUp, IconNetwork, IconReport, IconWebhook, IconWorldDollar, IconWorld, IconCube,
-    IconDatabase, IconCube3dSphere, IconCubeOff, IconCubeSpark, IconShieldBolt, IconAlertTriangle,
-    IconAlertTriangleFilled, IconInfoCircle, IconRocket, IconFolderCode, IconLayersOff,
-    IconServer2,
+    IconTrendingDown, IconTrendingUp, IconNetwork, IconReport, IconWebhook, IconWorld, IconCube,
+    IconDatabase, IconCube3dSphere, IconCubeSpark, IconAlertTriangle,
+    IconInfoCircle, IconRocket, IconFolderCode,
+    IconServer2
 } from "@tabler/icons-react";
 import { type SVGProps } from "react";
 import { IconPodman } from "@/assets/brand-icons/icon-podman.tsx";
 import {
     HatGlassesIcon,
     Layers2Icon,
-    LayersIcon,
+    LayersIcon, PauseIcon, PlayIcon, PowerIcon, PowerOffIcon, RotateCcw, RotateCcwIcon,
     SatelliteIcon,
     SearchCodeIcon,
     Share2Icon,
-    ShieldAlertIcon
+    ShieldAlertIcon, SquareStopIcon, StopCircleIcon, TrashIcon
 } from "lucide-react";
 
 const appIconsMap: {[key: string]: any} = {
@@ -102,12 +96,12 @@ const appIconsMap: {[key: string]: any} = {
     "jenkins": IconJenkins,
     "aws": IconCloud,
     // control icons
-    "play": IconPlayerPlay,
-    "start": IconPlayerPlay,
-    "pause": IconPlayerPause,
-    "stop": IconPlayerStop,
-    "restart": IconPlayerSkipBack,
-    "delete": IconTrash,
+    "play": PlayIcon,
+    "start": PlayIcon,
+    "pause": PauseIcon,
+    "stop": PowerIcon,
+    "restart": RotateCcwIcon,
+    "delete": TrashIcon,
     // named icons
     "clock": IconClock,
     "book": IconBook,

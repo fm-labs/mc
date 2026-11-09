@@ -1,13 +1,13 @@
 import React from "react";
 import AppIcon from "@/components/app-icon.tsx";
 import { useDockerContainer } from "@/app/containers/components/docker-container-provider.tsx";
-import { Button } from "@/components/ui/button.tsx";
 import { toast } from "react-toastify";
 import { useContainerHost } from "@/app/containers/components/container-host-provider.tsx";
 
 type IconControlProps = {
     label: string
     icon: React.FC | string
+    className?: string
     hidden?: boolean
     onClick?: () => Promise<void>
 }
@@ -29,7 +29,7 @@ const ContainerIconControls = (props: ContainerIconControlsProps) => {
         handleContainerActionClick,
     } = useDockerContainer();
 
-    const { fetchContainers } = useContainerHost()
+    const { fetchContainers, fetchSummary } = useContainerHost()
 
     const containerStatus = container?.State?.Status;
 
@@ -40,8 +40,11 @@ const ContainerIconControls = (props: ContainerIconControlsProps) => {
             success: `${action.charAt(0).toUpperCase() + action.slice(1)} executed successfully!`,
             error: `Error executing ${action}`,
         }).then(() => {
-            fetchContainers(true);
-            return;
+            // wait a little, then refetch container data
+            setTimeout(() => {
+                fetchContainers(true);
+                fetchSummary(true);
+            }, 2000)
         })
     }
 
@@ -52,6 +55,7 @@ const ContainerIconControls = (props: ContainerIconControlsProps) => {
                 label: containerStatus === "paused" ? "Unpause" : "Start",
                 icon: "start",
                 onClick: handleActionClick(containerStatus === "paused" ? "unpause" : "start"),
+                className: "text-green-500"
             });
         }
         if (containerStatus==="running" && props.showPause!==false) {
@@ -66,6 +70,7 @@ const ContainerIconControls = (props: ContainerIconControlsProps) => {
                 label: "Stop",
                 icon: "stop",
                 onClick: handleActionClick("stop"),
+                className: "text-blue-300"
             });
         }
         if (props.showRestart!==false) {
@@ -80,6 +85,7 @@ const ContainerIconControls = (props: ContainerIconControlsProps) => {
                 label: "Delete",
                 icon: "delete",
                 onClick: handleActionClick("remove"),
+                className: "text-red-400"
             });
         }
 
@@ -90,15 +96,14 @@ const ContainerIconControls = (props: ContainerIconControlsProps) => {
         <div className={"flex gap-1"}>
              {controls.map((control, idx) => {
                  return (
-                     <Button
+                     <span
                          key={idx}
-                         title={control.label}
+                         title={control.label + " " + container?.Name?.substring(1)}
                          onClick={control.onClick}
-                         size={"sm"}
-                         variant={"outline"}
+                         className={control?.className}
                      >
                          <AppIcon icon={control.icon} />
-                     </Button>
+                     </span>
                  );
              })}
         </div>

@@ -49,20 +49,23 @@ const DockerContainerUptime = () => {
         <div title={"Last Started At: " + (container?.State?.StartedAt || 'N/A')} className={"flex items-center space-x-1"}>
             {container?.State?.Status === "running" && container?.State?.StartedAt && (
                 <>
-                    <span className="text-xs text-muted-foreground">
-                        up {formatDistanceToNow(container.State.StartedAt)}
-                    </span>
                     <span>
                         {renderSignalIcon()}
                     </span>
+                    <span className="text-xs text-muted-foreground">
+                        up {formatDistanceToNow(container.State.StartedAt)}
+                    </span>
                 </>
-
             )}
-            {container?.State?.Status !== "running" && (
+            {container?.State?.Status !== "running" && container?.State?.Status !== "created" && (
                 <span className="text-xs text-muted-foreground">
                     down {formatDistanceToNow(container.State.FinishedAt)}
                 </span>
             )}
+            {/*container?.State?.Status === "created" && (
+                <span className="text-xs text-muted-foreground">
+                </span>
+            )*/}
         </div>
     );
 };

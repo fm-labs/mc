@@ -1,6 +1,6 @@
 import React from "react";
+import { Layers } from "lucide-react";
 import Data from "@/components/data.tsx";
-import { EventSourceReader } from "@/components/event-source-reader.tsx";
 import { DockerContainerStatus } from "@/app/containers/components/docker-container-status.tsx";
 import DockerContainerState from "@/app/containers/components/docker-container-state.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,12 +15,12 @@ import DockerContainerNetworksTable from "@/app/containers/components/docker-con
 import DockerContainerPathsTable from "@/app/containers/components/docker-container-paths-table.tsx";
 import DockerContainerExec from "@/app/containers/components/docker-container-exec.tsx";
 import DockerContainerTop from "@/app/containers/components/docker-container-top.tsx";
-import { Layers } from "lucide-react";
 import DockerContainerInspect from "@/app/containers/components/docker-container-inspect.tsx";
 import DockerContainerUptime from "@/app/containers/components/docker-container-uptime.tsx";
 import {EventStreamReader} from "@/components/event-stream-reader.tsx";
 import DockerHostHeader from "@/app/containers/components/docker-host-header.tsx";
-import {DockerHostError} from "@/app/containers/components/docker-host-error.tsx";
+import DockerContainerFiles from "@/app/containers/components/docker-container-files.tsx";
+import DockerComposeControlIcons from "@/app/containers/components/docker-compose-control-icons.tsx";
 
 const logMessageFormatter = (message: string) => {
     try {
@@ -46,21 +46,22 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
     }, [activeTab, container]);
 
     return <div className={showDetails ? "py-1 pl-1 bg-accent border-b":"py-1 pl-1"}>
-        <div className={"flex flex-start space-x-2"}>
-            <div className={"flex space-x-1"}>
+        <div className={"flex space-x-2 justify-between"}>
+            <div className={"flex items-center space-x-1"}>
                 <DockerContainerStatus status={container.State?.Status} />
                 <span className={showDetails ? "font-bold":""}
                       onClick={() =>  setShowDetails(!showDetails)}>
                     {container?.Name?.substring(1) || "Unknown name"}
                 </span>
-            </div>
-            <div className={"flex items-center space-x-1"}>
                 <div className={"text-muted-foreground text-xs ml-1"}>
                     {container?.Config?.Image || container?.Image}
                 </div>
                 <DockerContainerState state={container.State} />
+            </div>
+            <div className={"flex items-center space-x-1"}>
                 <DockerContainerUptime />
                 <Data data={container} />
+                <DockerContainerControlIcons />
             </div>
         </div>
         {showDetails
@@ -79,9 +80,9 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                             <TabsTrigger value="environment">Environment</TabsTrigger>
                             <TabsTrigger value="networks">Networks</TabsTrigger>
                             <TabsTrigger value="paths">Paths</TabsTrigger>
+                            <TabsTrigger value="files">Files</TabsTrigger>
                             <TabsTrigger value="exec">Exec</TabsTrigger>
                         </TabsList>
-                        <DockerContainerControlIcons />
                     </div>
                     <div className={"border border-t-0 rounded-b p-1 max-h-[400px] overflow-auto bg-background shadow"}>
                         <TabsContent value="labels">
@@ -107,6 +108,9 @@ export const DockerHostContainersListItem = ({ open }: { open?: true}) => {
                         </TabsContent>
                         <TabsContent value="top">
                             <DockerContainerTop />
+                        </TabsContent>
+                        <TabsContent value="files">
+                            <DockerContainerFiles />
                         </TabsContent>
                         <TabsContent value="logs">
                             {containerLogStreamUrl}
@@ -162,9 +166,12 @@ const DockerHostContainers = () => {
             {containers?.length === 0 && <div>No containers running.</div>}
             {Object.entries(groupedData).map(([group, _containers]: [string, any]) => {
                 return (<div key={group} className={"mb-2"}>
-                    <h3 className={"text-muted-foreground font-bold border-l-4 pl-1"}>
-                        <Layers className={"inline-block w-4 h-4 ml-1 mr-2"} />
-                        {group}
+                    <h3 className={"text-muted-foreground font-bold border-l-4 pl-1 flex flex-row items-center justify-between"}>
+                        <span>
+                            <Layers className={"inline-block w-4 h-4 ml-1 mr-2"} />
+                            {group}
+                        </span>
+                        {/*<DockerComposeControlIcons />*/}
                     </h3>
                     <ul>
                         {_containers.sort((a: any, b: any) => {

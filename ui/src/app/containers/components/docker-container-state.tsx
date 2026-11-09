@@ -67,20 +67,22 @@ const ContainerState = ({ state }: { state: any }) => {
             colorClass = "border-green-500";
             break;
         case "exited":
-            colorClass = "border-red-500";
+            colorClass = state?.ExitCode === 0 ? "border-blue-500" : "border-red-500";
             label = `${state?.Status} (${state?.ExitCode})`;
             break;
         case "created":
             colorClass = "border-blue-500";
             break;
         case "paused":
-            colorClass = "border-yellow-500";
             break;
+    }
+    if (state?.Restarting) {
+        colorClass = "border-yellow-500";
     }
     containerStateEl = <Badge {...badgeProps} className={`${colorClass}`}>{label}</Badge>;
 
     let healthStateEl;
-    if (state?.Health?.Status) {
+    if (state?.Health?.Status && state?.Running === true) {
         const healthBadgeProps: any = {
             //size: "small",
             variant: "outline",
@@ -95,7 +97,7 @@ const ContainerState = ({ state }: { state: any }) => {
                 const failingStreak = state?.Health?.FailingStreak;
                 let healthLabel = `${state?.Health?.Status}`;
                 if (failingStreak && failingStreak > 0) {
-                    healthLabel += ` (${failingStreak})`;
+                    healthLabel += ` (${failingStreak}x)`;
                 }
                 healthColor = "border-orange-500";
                 break;
@@ -113,8 +115,8 @@ const ContainerState = ({ state }: { state: any }) => {
             {state?.OOMKilled && <span title={"Out-of-Memory Killed"}>
                 <IconSkull color={"red"} size={"1em"} /></span>}
 
-            {healthStateEl}
             {containerStateEl}
+            {healthStateEl}
         </>
     );
 };
