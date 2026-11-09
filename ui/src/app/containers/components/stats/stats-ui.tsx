@@ -4,6 +4,8 @@ import {Link} from "react-router";
 import {Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import {ChartConfig} from "@/components/ui/chart.tsx";
 import {Button} from "@/components/ui/button.tsx";
+import {TableHead} from "@/components/ui/table.tsx";
+import {ArrowDown, ArrowUp, ArrowUpDown} from "lucide-react";
 import AppIcon from "@/components/app-icon.tsx";
 import {DiskUsage, diskTotal} from "@/app/containers/components/stats/host-stats.ts";
 import {formatBytes} from "@/app/containers/components/stats/format.ts";
@@ -107,6 +109,58 @@ export const useRowLimit = <T, >(rows: T[], limit = 10) => {
         </Button>
     ) : null;
     return {visible, toggle};
+};
+
+// Client-side sorting for the small stats tables.
+// `columns` maps a column key to the value it sorts by.
+export type SortDir = "asc" | "desc";
+export type SortState<K extends string> = { key: K, dir: SortDir };
+
+export const useSort = <T, K extends string>(
+    rows: T[],
+    columns: Record<K, (row: T) => string | number>,
+    initial: SortState<NoInfer<K>>,
+) => {
+    const [sort, setSort] = React.useState<SortState<K>>(initial);
+    const sorted = React.useMemo(() => {
+        const value = columns[sort.key];
+        const factor = sort.dir === "asc" ? 1 : -1;
+        return [...rows].sort((a, b) => {
+            const va = value(a), vb = value(b);
+            const cmp = typeof va === "number" && typeof vb === "number"
+                ? va - vb
+                : String(va).localeCompare(String(vb), undefined, {numeric: true, sensitivity: "base"});
+            return cmp * factor;
+        });
+    }, [rows, columns, sort]); // pass a module-level `columns` object so this stays memoized
+    // Same column flips direction; a new column starts high-to-low for numbers, A-Z for text
+    const toggleSort = (key: K) => setSort((s) => {
+        if (s.key === key) return {key, dir: s.dir === "asc" ? "desc" : "asc"};
+        const sample = rows[0] ? columns[key](rows[0]) : "";
+        return {key, dir: typeof sample === "number" ? "desc" : "asc"};
+    });
+    return {sorted, sort, toggleSort};
+};
+
+export const SortableHead = <K extends string>({column, sort, onSort, className, children}: {
+    column: NoInfer<K>
+    sort: SortState<K>
+    onSort: (key: K) => void
+    className?: string
+    children: React.ReactNode
+}) => {
+    const active = sort.key === column;
+    const Icon = !active ? ArrowUpDown : sort.dir === "asc" ? ArrowUp : ArrowDown;
+    return (
+        <TableHead className={className}
+                   aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}>
+            <button type="button" onClick={() => onSort(column)}
+                    className={`inline-flex items-center gap-1 hover:text-foreground ${className?.includes("text-right") ? "flex-row-reverse" : ""} ${active ? "text-foreground" : ""}`}>
+                {children}
+                <Icon className={`size-3.5 ${active ? "" : "opacity-40"}`} />
+            </button>
+        </TableHead>
+    );
 };
 
 // Notes which hosts a panel is based on, when the needed cache is partial
