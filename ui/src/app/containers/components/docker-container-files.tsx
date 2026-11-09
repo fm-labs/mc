@@ -13,6 +13,7 @@ import { formatBytes } from "@/app/containers/components/stats/format.ts";
 import { useApi } from "@/context/api-context.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
+import { Toggle } from "@/components/ui/toggle.tsx";
 
 type FileEntry = {
     name: string;
@@ -35,13 +36,29 @@ type DirState = {
     listing?: DirListing;
 };
 
+// `docker diff` change kinds
+type DiffKind = 0 | 1 | 2;
+type DiffEntry = { Path: string; Kind: DiffKind };
+
+const DIFF_KINDS: Record<DiffKind, { letter: string; label: string; className: string }> = {
+    0: { letter: "M", label: "changed", className: "text-amber-600 dark:text-amber-400" },
+    1: { letter: "A", label: "added", className: "text-emerald-600 dark:text-emerald-400" },
+    2: { letter: "D", label: "deleted", className: "text-red-600 dark:text-red-400" },
+};
+
 const ROOT = "/";
+
+const parentPath = (path: string) => {
+    const i = path.lastIndexOf("/");
+    return i <= 0 ? ROOT : path.slice(0, i);
+};
 
 const formatMtime = (mtime: number | null) =>
     mtime ? new Date(mtime * 1000).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" }) : "";
 
 // File tree of a running container, from GET /containers/{host}/containers/{id}/files?path=...
-// Directories are loaded when they are expanded.
+// Directories are loaded when they are expanded. Changes compared to the image (`docker diff`, from .../diff)
+// are marked in the tree, and deleted files are shown struck through.
 const DockerContainerFiles = () => {
     const { container, hostId } = useDockerContainer();
     const { api } = useApi();
@@ -51,7 +68,43 @@ const DockerContainerFiles = () => {
     const [root, setRoot] = React.useState(ROOT);
     const [rootInput, setRootInput] = React.useState(ROOT);
 
+    const [diff, setDiff] = React.useState<Map<string, DiffKind>>(new Map());
+    const [diffError, setDiffError] = React.useState<string>();
+    const [changesOnly, setChangesOnly] = React.useState(false);
+
     const isRunning = container?.State?.Running === true;
+
+    const loadDiff = React.useCallback(() => {
+        if (!container?.Id) {
+            return;
+        }
+        setDiffError(undefined);
+        api.get(`/api/containers/${hostId}/containers/${container.Id}/diff`)
+            .then((data: DiffEntry[]) => setDiff(new Map((data || []).map((d) => [d.Path, d.Kind]))))
+            .catch((err: any) => {
+                setDiff(new Map());
+                setDiffError(err?.response?.data?.detail || err?.message || "Unknown error");
+            });
+    }, [api, hostId, container?.Id]);
+
+    // directories with changes somewhere below them, and deleted entries per directory
+    const { changedDirs, deletedByDir, counts } = React.useMemo(() => {
+        const changedDirs = new Set<string>();
+        const deletedByDir = new Map<string, string[]>();
+        const counts: Record<DiffKind, number> = { 0: 0, 1: 0, 2: 0 };
+        diff.forEach((kind, path) => {
+            counts[kind]++;
+            for (let p = parentPath(path); ; p = parentPath(p)) {
+                changedDirs.add(p);
+                if (p === ROOT) break;
+            }
+            if (kind === 2) {
+                const dir = parentPath(path);
+                deletedByDir.set(dir, [...(deletedByDir.get(dir) || []), path]);
+            }
+        });
+        return { changedDirs, deletedByDir, counts };
+    }, [diff]);
 
     const loadDir = React.useCallback((path: string) => {
         if (!container?.Id) {
@@ -74,8 +127,10 @@ const DockerContainerFiles = () => {
         setExpanded(new Set([ROOT]));
         setRoot(ROOT);
         setRootInput(ROOT);
+        setDiff(new Map());
         if (isRunning) {
             loadDir(ROOT);
+            loadDiff();
         }
     }, [hostId, container?.Id, isRunning]);
 
@@ -104,6 +159,7 @@ const DockerContainerFiles = () => {
 
     // reload every open directory, drop the others
     const refresh = () => {
+        loadDiff();
         setDirs({});
         expanded.forEach((path) => loadDir(path));
         if (!expanded.has(root)) {
@@ -128,12 +184,18 @@ const DockerContainerFiles = () => {
             return <div className={"text-destructive"} style={indent}>{state.error}</div>;
         }
         const listing = state.listing!;
+        const listed = new Set(listing.entries.map((e) => e.path));
+        const deleted: FileEntry[] = (deletedByDir.get(listing.path) || [])
+            .filter((p) => !listed.has(p))
+            .map((p) => ({ name: p.slice(p.lastIndexOf("/") + 1), path: p, type: "other", is_dir: false, size: null, mtime: null }));
+        const entries = [...listing.entries, ...deleted]
+            .filter((e) => !changesOnly || diff.has(e.path) || changedDirs.has(e.path));
         return (
             <>
-                {listing.entries.length === 0 && (
-                    <div className={"text-muted-foreground"} style={indent}>Empty</div>
+                {entries.length === 0 && (
+                    <div className={"text-muted-foreground"} style={indent}>{changesOnly ? "No changes" : "Empty"}</div>
                 )}
-                {listing.entries.map((entry) => renderEntry(entry, depth))}
+                {entries.map((entry) => renderEntry(entry, depth))}
                 {listing.truncated && (
                     <div className={"text-muted-foreground"} style={indent}>
                         Showing the first {listing.entries.length} entries.
@@ -147,24 +209,36 @@ const DockerContainerFiles = () => {
         const isOpen = entry.is_dir && expanded.has(entry.path);
         const Chevron = isOpen ? IconChevronDown : IconChevronRight;
         const Icon = entry.is_dir ? (isOpen ? IconFolderOpen : IconFolder) : IconFile;
+        const kind = diff.get(entry.path);
+        const change = kind !== undefined ? DIFF_KINDS[kind] : undefined;
+        const isDeleted = kind === 2;
+        const hasChangesBelow = entry.is_dir && changedDirs.has(entry.path);
         return (
             <React.Fragment key={entry.path}>
                 <div className={"flex h-5 items-center gap-1 rounded-sm pr-1 hover:bg-muted"
                     + (entry.is_dir ? " cursor-pointer" : "")}
                      style={{ paddingLeft: `${depth * 0.875}rem` }}
-                     title={entry.path}
+                     title={change ? `${entry.path} (${change.label})` : entry.path}
                      onClick={entry.is_dir ? () => toggleDir(entry.path) : undefined}>
                     {entry.is_dir
                         ? <Chevron size={"0.9em"} className={"shrink-0 text-muted-foreground"} />
                         : <span className={"w-[0.9em] shrink-0"} />}
                     <Icon size={"1em"} className={"shrink-0 " + (entry.is_dir ? "text-primary" : "text-muted-foreground")} />
-                    <span className={"truncate"}>{entry.name}</span>
+                    <span className={"truncate " + (change ? change.className : "") + (isDeleted ? " line-through" : "")}>
+                        {entry.name}
+                    </span>
                     {entry.type === "link" && <IconLink size={"0.9em"} className={"shrink-0 text-muted-foreground"} />}
+                    {!change && hasChangesBelow && (
+                        <span className={"shrink-0 text-amber-600 dark:text-amber-400"} title={"Contains changes"}>•</span>
+                    )}
                     <span className={"ml-auto shrink-0 pl-3 text-muted-foreground tabular-nums"}>
                         {entry.type === "file" && entry.size !== null ? formatBytes(entry.size) : ""}
                     </span>
                     <span className={"hidden w-36 shrink-0 text-right text-muted-foreground tabular-nums md:inline"}>
                         {formatMtime(entry.mtime)}
+                    </span>
+                    <span className={"w-3 shrink-0 text-center font-semibold " + (change?.className ?? "")}>
+                        {change?.letter}
                     </span>
                 </div>
                 {isOpen && renderChildren(entry.path, depth + 1)}
@@ -187,6 +261,19 @@ const DockerContainerFiles = () => {
                 <Button type={"button"} variant={"outline"} size={"sm"} className={"h-7"} disabled={anyLoading} onClick={refresh}>
                     <IconRefresh size={"1em"} className={anyLoading ? "animate-spin" : ""} /> Refresh
                 </Button>
+                <Toggle variant={"outline"} size={"sm"} className={"h-7 text-xs"}
+                        pressed={changesOnly} onPressedChange={setChangesOnly}>
+                    Changes only
+                </Toggle>
+                <span className={"ml-auto flex gap-2 text-xs text-muted-foreground"}>
+                    {diffError
+                        ? <span className={"text-destructive"} title={diffError}>Changes unavailable</span>
+                        : ([1, 0, 2] as DiffKind[]).map((k) => (
+                            <span key={k} className={counts[k] ? DIFF_KINDS[k].className : ""}>
+                                {counts[k]} {DIFF_KINDS[k].label}
+                            </span>
+                        ))}
+                </span>
             </form>
 
             <div className={"rounded border px-1 py-0.5 font-mono text-xs leading-5"}>

@@ -50,6 +50,9 @@ class FakeContainer(FakeModel):
         self.calls.append(f"top {ps_args}")
         return {"Titles": ["PID", "CMD"], "Processes": [["1", "nginx"]]}
 
+    def diff(self):
+        return [{"Path": "/etc", "Kind": 0}, {"Path": "/etc/app.conf", "Kind": 1}]
+
     def logs(self, stream=False, **_):
         lines = [b"line one\n", b"line two\n"]
         return iter(lines) if stream else b"".join(lines)
@@ -252,6 +255,15 @@ def test_files_via_node_exec(node):
     result = container.exec_run(["sh", "-c", "echo hi", "sh", "/my dir"])
     assert result.output.endswith(b"sh '/my dir'")
     assert list_container_dir(container, "/")["entries"] == []
+
+
+def test_diff(node):
+    assert node.containers.get("c1").diff() == [{"Path": "/etc", "Kind": 0}, {"Path": "/etc/app.conf", "Kind": 1}]
+
+
+def test_diff_route_errors(remote_app):
+    r = remote_app.get("/api/containers/localhost/containers/missing/diff", headers={"x-api-key": API_KEY})
+    assert r.status_code == 400
 
 
 def test_logs(node):

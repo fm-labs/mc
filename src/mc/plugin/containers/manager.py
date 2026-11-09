@@ -138,6 +138,7 @@ class ContainerClientsManager:
             return True
 
     def close_all(self) -> None:
+        print("Closing all containers")
         with self._lock:
             for c in list(self._clients.values()):
                 try:

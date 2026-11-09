@@ -223,6 +223,21 @@ def get_container_files(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
+@router.get("/containers/{alias}/containers/{container_id}/diff")
+def get_container_diff(alias: str, container_id: str, client: ContainerClientDep) -> list[dict]:
+    """
+    Filesystem changes of a container compared to its image, like `docker diff`.
+    Returns [{"Path": "/etc/hosts", "Kind": 0}, ...] with Kind 0=modified, 1=added, 2=deleted.
+    """
+    try:
+        container: Container = client.containers.get(container_id)
+        return container.diff() or []
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
 @router.get("/containers/{alias}/containers/{container_id}/logs")
 def get_container_logs(
     alias: str,

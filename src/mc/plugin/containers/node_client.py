@@ -139,6 +139,10 @@ class RemoteContainer(RemoteObject):
         result: dict[str, Any] = self.client._json("GET", self._path("/top"), params=params)
         return result
 
+    def diff(self) -> list[dict[str, Any]]:
+        result: list[dict[str, Any]] = self.client._json("GET", self._path("/diff"))
+        return result
+
     def logs(
         self,
         stream: bool = False,
