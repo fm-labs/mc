@@ -7,6 +7,7 @@ import {
     IconFolderOpen,
     IconLink,
     IconRefresh,
+    IconX,
 } from "@tabler/icons-react";
 import { useDockerContainer } from "@/app/containers/components/docker-container-provider.tsx";
 import { formatBytes } from "@/app/containers/components/stats/format.ts";
@@ -34,6 +35,21 @@ type DirState = {
     loading: boolean;
     error?: string;
     listing?: DirListing;
+};
+
+type FileContent = {
+    path: string;
+    size: number;
+    content: string | null;
+    truncated: boolean;
+    binary: boolean;
+};
+
+type OpenFile = {
+    path: string;
+    loading: boolean;
+    error?: string;
+    file?: FileContent;
 };
 
 // `docker diff` change kinds
@@ -71,6 +87,7 @@ const DockerContainerFiles = () => {
     const [diff, setDiff] = React.useState<Map<string, DiffKind>>(new Map());
     const [diffError, setDiffError] = React.useState<string>();
     const [changesOnly, setChangesOnly] = React.useState(false);
+    const [openFile, setOpenFile] = React.useState<OpenFile>();
 
     const isRunning = container?.State?.Running === true;
 
@@ -121,6 +138,21 @@ const DockerContainerFiles = () => {
             });
     }, [api, hostId, container?.Id]);
 
+    const loadFile = React.useCallback((path: string) => {
+        if (!container?.Id) {
+            return;
+        }
+        setOpenFile({ path, loading: true });
+        api.get(`/api/containers/${hostId}/containers/${container.Id}/file`, { params: { path } })
+            .then((data: FileContent) => {
+                setOpenFile((prev) => (prev?.path === path ? { path, loading: false, file: data } : prev));
+            })
+            .catch((err: any) => {
+                const error = err?.response?.data?.detail || err?.message || "Unknown error";
+                setOpenFile((prev) => (prev?.path === path ? { path, loading: false, error } : prev));
+            });
+    }, [api, hostId, container?.Id]);
+
     // start over when the container changes
     React.useEffect(() => {
         setDirs({});
@@ -128,6 +160,7 @@ const DockerContainerFiles = () => {
         setRoot(ROOT);
         setRootInput(ROOT);
         setDiff(new Map());
+        setOpenFile(undefined);
         if (isRunning) {
             loadDir(ROOT);
             loadDiff();
@@ -160,6 +193,9 @@ const DockerContainerFiles = () => {
     // reload every open directory, drop the others
     const refresh = () => {
         loadDiff();
+        if (openFile) {
+            loadFile(openFile.path);
+        }
         setDirs({});
         expanded.forEach((path) => loadDir(path));
         if (!expanded.has(root)) {
@@ -213,13 +249,20 @@ const DockerContainerFiles = () => {
         const change = kind !== undefined ? DIFF_KINDS[kind] : undefined;
         const isDeleted = kind === 2;
         const hasChangesBelow = entry.is_dir && changedDirs.has(entry.path);
+        // files and links to files can be opened, deleted files can't
+        const canOpen = !entry.is_dir && !isDeleted && (entry.type === "file" || entry.type === "link");
+        const isSelected = openFile?.path === entry.path;
+        const onClick = entry.is_dir
+            ? () => toggleDir(entry.path)
+            : canOpen ? () => loadFile(entry.path) : undefined;
         return (
             <React.Fragment key={entry.path}>
                 <div className={"flex h-5 items-center gap-1 rounded-sm pr-1 hover:bg-muted"
-                    + (entry.is_dir ? " cursor-pointer" : "")}
+                    + (onClick ? " cursor-pointer" : "")
+                    + (isSelected ? " bg-muted" : "")}
                      style={{ paddingLeft: `${depth * 0.875}rem` }}
                      title={change ? `${entry.path} (${change.label})` : entry.path}
-                     onClick={entry.is_dir ? () => toggleDir(entry.path) : undefined}>
+                     onClick={onClick}>
                     {entry.is_dir
                         ? <Chevron size={"0.9em"} className={"shrink-0 text-muted-foreground"} />
                         : <span className={"w-[0.9em] shrink-0"} />}
@@ -276,13 +319,43 @@ const DockerContainerFiles = () => {
                 </span>
             </form>
 
-            <div className={"rounded border px-1 py-0.5 font-mono text-xs leading-5"}>
-                <div className={"flex h-5 items-center gap-1 px-1 font-semibold"}>
-                    <IconFolderOpen size={"1em"} className={"shrink-0 text-primary"} />
-                    {dirs[root]?.listing?.path ?? root}
+            <div className={"grid items-start gap-2" + (openFile ? " md:grid-cols-2" : "")}>
+                <div className={"min-w-0 rounded border px-1 py-0.5 font-mono text-xs leading-5"}>
+                    <div className={"flex h-5 items-center gap-1 px-1 font-semibold"}>
+                        <IconFolderOpen size={"1em"} className={"shrink-0 text-primary"} />
+                        {dirs[root]?.listing?.path ?? root}
+                    </div>
+                    {renderChildren(root, 1)}
                 </div>
-                {renderChildren(root, 1)}
+                {openFile && <FileViewer openFile={openFile} onClose={() => setOpenFile(undefined)} />}
             </div>
+        </div>
+    );
+};
+
+const FileViewer = ({ openFile, onClose }: { openFile: OpenFile; onClose: () => void }) => {
+    const { file } = openFile;
+    return (
+        <div className={"min-w-0 rounded border text-xs md:sticky md:top-2"}>
+            <div className={"flex h-7 items-center gap-2 border-b px-2"}>
+                <span className={"truncate font-mono font-semibold"} title={openFile.path}>{openFile.path}</span>
+                {file && (
+                    <span className={"shrink-0 text-muted-foreground tabular-nums"}>
+                        {formatBytes(file.size)}{file.truncated && " · first 1 MiB"}
+                    </span>
+                )}
+                <Button variant={"ghost"} size={"icon"} className={"ml-auto size-5 shrink-0"}
+                        title={"Close"} onClick={onClose}>
+                    <IconX size={"1em"} />
+                </Button>
+            </div>
+            {openFile.loading && <div className={"p-2 text-muted-foreground"}>Loading ...</div>}
+            {openFile.error && <div className={"p-2 text-destructive"}>{openFile.error}</div>}
+            {file && !openFile.loading && (file.binary
+                ? <div className={"p-2 text-muted-foreground"}>Binary file, not shown.</div>
+                : file.content === ""
+                    ? <div className={"p-2 text-muted-foreground"}>Empty file.</div>
+                    : <pre className={"max-h-[70vh] overflow-auto p-2 font-mono leading-5"}>{file.content}</pre>)}
         </div>
     );
 };

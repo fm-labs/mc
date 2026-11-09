@@ -257,6 +257,18 @@ def test_files_via_node_exec(node):
     assert list_container_dir(container, "/")["entries"] == []
 
 
+def test_file_route(remote_app, remote_docker):
+    headers = {"x-api-key": API_KEY}
+    remote_docker.container.exec_run = lambda cmd, **_: type("R", (), {"exit_code": 0, "output": b"5\nhello"})()
+    r = remote_app.get("/api/containers/localhost/containers/c1/file", params={"path": "/etc/x"}, headers=headers)
+    assert r.status_code == 200
+    assert r.json() == {"path": "/etc/x", "size": 5, "content": "hello", "truncated": False, "binary": False}
+    r = remote_app.get("/api/containers/localhost/containers/missing/file", params={"path": "/x"}, headers=headers)
+    assert r.status_code == 400
+    r = remote_app.get("/api/containers/localhost/containers/c1/file", headers=headers)
+    assert r.status_code == 422
+
+
 def test_diff(node):
     assert node.containers.get("c1").diff() == [{"Path": "/etc", "Kind": 0}, {"Path": "/etc/app.conf", "Kind": 1}]
 

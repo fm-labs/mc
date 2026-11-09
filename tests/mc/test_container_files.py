@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from mc.plugin.containers.docker_helper import list_container_dir, normalize_container_path
+from mc.plugin.containers.docker_helper import list_container_dir, normalize_container_path, read_container_file
 
 
 class LocalShellContainer:
@@ -86,3 +86,50 @@ def test_no_shell():
 )
 def test_normalize_path(path, expected):
     assert normalize_container_path(path) == expected
+
+
+def test_read_file(tree):
+    result = read_container_file(LocalShellContainer(), str(tree / "a-file.txt"))
+    assert result == {
+        "path": f"{tree}/a-file.txt",
+        "size": 5,
+        "content": "hello",
+        "truncated": False,
+        "binary": False,
+    }
+
+
+def test_read_file_truncated(tree):
+    result = read_container_file(LocalShellContainer(), str(tree / "a-file.txt"), max_bytes=2)
+    assert result["content"] == "he"
+    assert result["size"] == 5
+    assert result["truncated"] is True
+
+
+def test_read_empty_and_odd_names(tree):
+    result = read_container_file(LocalShellContainer(), str(tree / "with space|pipe"))
+    assert result["content"] == "" and result["size"] == 0 and not result["truncated"]
+
+
+def test_read_binary_file(tmp_path):
+    (tmp_path / "bin").write_bytes(b"ab\0cd")
+    result = read_container_file(LocalShellContainer(), str(tmp_path / "bin"))
+    assert result["binary"] is True
+    assert result["content"] is None
+    assert result["size"] == 5
+
+
+def test_read_file_errors(tree):
+    with pytest.raises(ValueError, match="Not a file"):
+        read_container_file(LocalShellContainer(), str(tree / "b-dir"))
+    with pytest.raises(ValueError, match="Not a file"):
+        read_container_file(LocalShellContainer(), str(tree / "missing"))
+    with pytest.raises(ValueError, match="Not a file"):
+        read_container_file(LocalShellContainer(), "/")
+    with pytest.raises(ValueError, match="no shell"):
+        read_container_file(FakeOutputContainer(127), "/etc/hosts")
+
+
+def test_read_file_follows_links(tree):
+    os.symlink(tree / "a-file.txt", tree / "file-link")
+    assert read_container_file(LocalShellContainer(), str(tree / "file-link"))["content"] == "hello"

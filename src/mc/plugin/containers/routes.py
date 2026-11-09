@@ -17,8 +17,13 @@ from starlette.responses import StreamingResponse
 from mc.cache import cached_fn, clear_cache
 from mc.docker.helper import docker_prune
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
-from mc.plugin.containers.docker_helper import list_container_dir, redact_container_envvars, _PRUNE_CACHE_KEYS, \
-    _END_OF_STREAM
+from mc.plugin.containers.docker_helper import (
+    _END_OF_STREAM,
+    _PRUNE_CACHE_KEYS,
+    list_container_dir,
+    read_container_file,
+    redact_container_envvars,
+)
 from mc.plugin.containers.manager import ContainerHost, enumerate_configured_container_hosts, connect_container_host
 from mc.rpc import PruneScopeLiteral
 
@@ -218,6 +223,27 @@ def get_container_files(
     try:
         container: Container = client.containers.get(container_id)
         return list_container_dir(container, path)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/containers/{alias}/containers/{container_id}/file")
+def get_container_file(
+    alias: str,
+    container_id: str,
+    client: ContainerClientDep,
+    path: Annotated[str, Query()],
+) -> dict:
+    """
+    Content of one file in a container (the first 1 MiB).
+    Returns {"path", "size", "content", "truncated", "binary"}; content is None for binary files.
+    The container must be running and have a shell (sh).
+    """
+    try:
+        container: Container = client.containers.get(container_id)
+        return read_container_file(container, path)
     except HTTPException:
         raise
     except Exception as e:
