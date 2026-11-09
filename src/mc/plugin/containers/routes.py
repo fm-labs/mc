@@ -80,7 +80,7 @@ def get_engine_df(alias: str, client: ContainerClientDep) -> dict:
         return jsonable_encoder(summary)
 
     try:
-        return cached_fn(f"containers_{alias}_df", fetch_df, ttl=CACHE_TTL * 2)()
+        return cached_fn(f"containers_{alias}_df", fetch_df, ttl=CACHE_TTL)()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
@@ -141,6 +141,8 @@ def post_container_action(alias: str, container_id: str, action: str, client: Co
 
         # reset relevant caches
         cache_key = f"containers_{alias}_container_{container_id}"
+        clear_cache(cache_key)
+        cache_key = f"containers_{alias}_df"
         clear_cache(cache_key)
         cache_key = f"containers_{alias}_containers"
         clear_cache(cache_key)

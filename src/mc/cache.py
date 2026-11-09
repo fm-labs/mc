@@ -1,3 +1,5 @@
+import logging
+
 from mc.cached import default_cache_store
 
 # cache = {}
@@ -28,15 +30,15 @@ def cached_fn(cache_key, func, ttl=30):
         key = cache_key
         _cached = cache_store.read_cache(key)
         if _cached is not None:
-            print(f"Cache hit for key {key}")
+            logging.debug(f"Cache hit for key {key}")
             return _cached
         try:
             result = func(*args, **kwargs)
             cache_store.write_cache(key, result, ttl=ttl)
-            print(f"Cache set for key {key} with ttl {ttl}")
+            logging.info(f"Cache miss for key {key}. wrote value with ttl {ttl}")
             return result
         except Exception as e:
-            print(f"Cache: function threw an exception: {e}. Skip cache")
+            logging.debug(f"Cache: function threw an exception: {e}. Skip cache")
             raise e from e
 
     return wrapper
@@ -44,3 +46,4 @@ def cached_fn(cache_key, func, ttl=30):
 
 def clear_cache(cache_key):
     cache_store.write_cache(cache_key, None, ttl=0)
+    logging.debug(f"Cache cleared for key {cache_key}")
