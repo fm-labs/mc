@@ -17,7 +17,8 @@ from starlette.responses import StreamingResponse
 from mc.cache import cached_fn, clear_cache
 from mc.docker.helper import docker_prune
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
-from mc.plugin.containers.docker_helper import list_container_dir
+from mc.plugin.containers.docker_helper import list_container_dir, redact_container_envvars, _PRUNE_CACHE_KEYS, \
+    _END_OF_STREAM
 from mc.plugin.containers.manager import ContainerHost, enumerate_configured_container_hosts, connect_container_host
 from mc.rpc import PruneScopeLiteral
 
@@ -93,7 +94,7 @@ def list_containers(alias: str, client: ContainerClientDep) -> list[dict]:
         print("Containers", collection)
         _containers = []
         for c in collection:
-            _containers.append(c.attrs)
+            _containers.append(redact_container_envvars(c.attrs))
         return jsonable_encoder(_containers)
 
     try:
@@ -106,7 +107,7 @@ def list_containers(alias: str, client: ContainerClientDep) -> list[dict]:
 def get_container(alias: str, container_id: str, client: ContainerClientDep) -> dict:
     def fetch_container():
         _container: Container = client.containers.get(container_id)
-        return jsonable_encoder(_container.attrs)
+        return jsonable_encoder(redact_container_envvars(_container.attrs))
 
     try:
         return cached_fn(f"containers_{alias}_container_{container_id}", fetch_container, ttl=CACHE_TTL)()
@@ -430,15 +431,6 @@ def list_networks(alias: str, client: ContainerClientDep) -> list[dict]:
 
 
 # Cached list endpoints affected by each prune scope ("info" and "df" are always cleared)
-_PRUNE_CACHE_KEYS: dict[str, list[str]] = {
-    "containers": ["containers"],
-    "images": ["images"],
-    "volumes": ["volumes"],
-    "networks": ["networks"],
-    "buildcache": [],
-    "buildx": [],
-    "system": ["containers", "images", "volumes", "networks"],
-}
 
 
 @router.get("/containers/{alias}/prune/{scope}")
@@ -452,9 +444,6 @@ def prune_resources(alias: str,
     finally:
         for name in ["info", "df", *_PRUNE_CACHE_KEYS.get(scope, [])]:
             clear_cache(f"containers_{alias}_{name}")
-
-
-_END_OF_STREAM = object()
 
 
 def _next_event(events: Iterator[Any]) -> Any:

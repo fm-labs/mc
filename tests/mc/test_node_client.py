@@ -266,6 +266,15 @@ def test_diff_route_errors(remote_app):
     assert r.status_code == 400
 
 
+def test_container_route_redacts_secrets(remote_app, remote_docker):
+    remote_docker.container.attrs["Config"] = {"Env": ["DB_PASSWORD=hunter2", "PATH=/usr/bin"]}
+    r = remote_app.get("/api/containers/localhost/containers/c1", headers={"x-api-key": API_KEY})
+    assert r.status_code == 200
+    assert r.json()["Config"]["Env"] == ["DB_PASSWORD=********", "PATH=/usr/bin"]
+    # the docker attrs are not changed
+    assert remote_docker.container.attrs["Config"]["Env"][0] == "DB_PASSWORD=hunter2"
+
+
 def test_logs(node):
     container = node.containers.get("c1")
     assert container.logs() == b"line one\nline two"
