@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from mc.config import MC_API_KEY
+from mc import config
 from mc.server.auth_helper import verify_jwt_access_token
 
 
@@ -18,6 +18,8 @@ def authenticate_user_with_jwt_token(token: str) -> AuthUser:
     return AuthUser(username=claims.get("sub"), token_type="bearer")
 
 def authenticate_user_with_api_key(api_key: str) -> AuthUser:
-    if MC_API_KEY is not None and len(MC_API_KEY) > 32 and api_key == MC_API_KEY:
+    # read at call time so config changes (and test patches) are picked up
+    mc_api_key = config.MC_API_KEY
+    if mc_api_key is not None and len(mc_api_key) > 32 and api_key == mc_api_key:
         return AuthUser(username="api-key-user", token_type="api-key")
     raise ValueError("Invalid API key")

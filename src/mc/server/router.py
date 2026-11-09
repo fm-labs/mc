@@ -8,7 +8,7 @@ from mc.server.routes_auth import router as auth_router
 from mc.server.routes_config import router as config_router
 from mc.server.routes_rpc import router as rpc_router
 from mc.server.routes_system import router as system_router
-#from inventorydb.routes import router as objbase_router
+from inventorydb.routes import router as objbase_router
 
 API_PREFIX = "/api"
 
@@ -28,8 +28,8 @@ app_router.include_router(tools_router, prefix=API_PREFIX, tags=["tools"],
 app_router.include_router(apps_router, prefix=API_PREFIX, tags=["apps"],
                           dependencies=[Security(dep_auth_user)])
 
-# app_router.include_router(objbase_router, prefix=API_PREFIX, tags=["inventory"],
-#                           dependencies=[Security(dep_auth_user)])
+app_router.include_router(objbase_router, prefix=API_PREFIX, tags=["inventory"],
+                          dependencies=[Security(dep_auth_user)])
 
 # Enabled plugins and integrations
 # PLUGINS_ENABLED = ["containers"]

@@ -16,6 +16,7 @@ from requests.structures import CaseInsensitiveDict
 from mc.plugin.containers.manager import ContainerClientsManager, bootstrap_container_connection_manager
 from mc.plugin.containers.node_client import NodeApiError, NodeConfig, NodeContainerClient, parse_node_configs
 from mc.server import deps
+from mc.server.auth import AuthUser
 
 API_KEY = "node-test-api-key-which-is-really-long-so-we-have-the-minimum-length"
 NODE_URL = "http://node1:3080"
@@ -347,6 +348,8 @@ def test_local_routes_use_node(remote_app, monkeypatch):
     app = FastAPI()
     app.state.ccm = manager
     app.include_router(router, prefix="/api")
+    # this test is about node routing, not auth: act as a signed-in user on the local instance
+    app.dependency_overrides[deps.dep_auth_user] = lambda: AuthUser(username="operator", token_type="bearer")
     local = TestClient(app)
 
     # "connected" is deprecated and always true; the UI tracks connections itself

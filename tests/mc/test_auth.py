@@ -14,7 +14,7 @@ from mc.server import deps
 from mc.server import routes_auth
 from mc.server.auth_helper import create_jwt_access_token
 
-API_KEY = "auth-test-api-key"
+API_KEY = "auth-test-api-key-long-enough-for-the-minimum-length"
 
 
 @pytest.fixture
@@ -47,7 +47,8 @@ def test_login_then_request_with_token(client):
 
     res = client.get("/api/auth/user", headers=bearer(res.json()["access_token"]))
     assert res.status_code == 200
-    assert res.json() == {"username": "operator"}
+    assert res.json()["username"] == "operator"
+    assert res.json()["token_type"] == "bearer"
 
 
 def test_login_wrong_password(client):
@@ -107,5 +108,5 @@ def test_unsigned_token_is_rejected(client):
 
 
 def test_api_key(client):
-    assert client.get("/api/auth/user", headers={"x-api-key": API_KEY}).json() == {"username": "api-key-user"}
+    assert client.get("/api/auth/user", headers={"x-api-key": API_KEY}).json()["username"] == "api-key-user"
     assert client.get("/api/auth/user", headers={"x-api-key": "wrong-key-123"}).status_code == 401
