@@ -23,7 +23,7 @@ def dep_auth_user(token: str | None = Security(oauth2_scheme),
 
     if api_key is not None:
         try:
-            if MC_API_KEY is not None and len(MC_API_KEY) > 8 and api_key == MC_API_KEY:
+            if MC_API_KEY is not None and len(MC_API_KEY) > 32 and api_key == MC_API_KEY:
                 return get_user_from_api_key(api_key)
         except Exception as e:
             raise HTTPException(status_code=401, detail="Invalid key", headers=err_headers) from e
