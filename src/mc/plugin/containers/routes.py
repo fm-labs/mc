@@ -17,6 +17,7 @@ from starlette.responses import StreamingResponse
 from mc.cache import cached_fn, clear_cache
 from mc.docker.helper import docker_prune
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
+from mc.plugin.containers.docker_helper import list_container_dir
 from mc.plugin.containers.manager import ContainerHost, enumerate_configured_container_hosts, connect_container_host
 from mc.rpc import PruneScopeLiteral
 
@@ -195,6 +196,27 @@ def get_container_top(
         kwargs = {"ps_args": ps_args} if ps_args else {}
         result = container.top(**kwargs)
         return {"Titles": result.get("Titles") or [], "Processes": result.get("Processes") or []}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/containers/{alias}/containers/{container_id}/files")
+def get_container_files(
+    alias: str,
+    container_id: str,
+    client: ContainerClientDep,
+    path: Annotated[str, Query()] = "/",
+) -> dict:
+    """
+    Entries of one directory in a container's filesystem, for a lazy-loaded file tree.
+    Returns {"path": ..., "entries": [{"name", "path", "type", "is_dir", "size", "mtime"}], "truncated": bool}.
+    The container must be running and have a shell (sh).
+    """
+    try:
+        container: Container = client.containers.get(container_id)
+        return list_container_dir(container, path)
     except HTTPException:
         raise
     except Exception as e:

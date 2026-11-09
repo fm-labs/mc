@@ -235,6 +235,25 @@ def test_top_route_errors(remote_app):
     assert r.status_code == 400
 
 
+def test_files_route(remote_app):
+    headers = {"x-api-key": API_KEY}
+    r = remote_app.get("/api/containers/localhost/containers/c1/files", params={"path": "/etc/../usr"}, headers=headers)
+    assert r.status_code == 200
+    assert r.json() == {"path": "/usr", "entries": [], "truncated": False}
+    r = remote_app.get("/api/containers/localhost/containers/missing/files", headers=headers)
+    assert r.status_code == 400
+
+
+def test_files_via_node_exec(node):
+    from mc.plugin.containers.docker_helper import list_container_dir
+
+    # the remote fake echoes the command; the path survives the node's exec round trip
+    container = node.containers.get("c1")
+    result = container.exec_run(["sh", "-c", "echo hi", "sh", "/my dir"])
+    assert result.output.endswith(b"sh '/my dir'")
+    assert list_container_dir(container, "/")["entries"] == []
+
+
 def test_logs(node):
     container = node.containers.get("c1")
     assert container.logs() == b"line one\nline two"
