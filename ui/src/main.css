@@ -4,9 +4,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  /* same monospace stack as the www marketing page */
+  /* same monospace stack as the www marketing page
   --font-sans: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+   */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);

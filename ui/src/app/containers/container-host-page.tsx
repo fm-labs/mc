@@ -23,7 +23,7 @@ const VIEW_HEADERS: Record<string, { title: string, icon: string }> = {
     events: {title: "Events", icon: "container-events"},
 };
 
-// Shown instead of the view while the host is disconnected
+// Shown instead of the view while the host is disabled
 const ContainerHostDisconnected = ({view}: { view?: string }) => {
     const {setEnabled} = useContainerHost();
     const header = VIEW_HEADERS[view || "container"] ?? VIEW_HEADERS.container;
@@ -31,8 +31,8 @@ const ContainerHostDisconnected = ({view}: { view?: string }) => {
         <>
             <DockerHostHeader title={header.title} icon={header.icon}/>
             <div className="rounded-lg border border-dashed px-4 py-10 text-center">
-                <p className="text-muted-foreground">This host is disconnected. No data is fetched while it is off.</p>
-                <Button className="mt-3" onClick={() => setEnabled(true)}>Connect</Button>
+                <p className="text-muted-foreground">This host is disabled. No data is fetched while it is off.</p>
+                <Button className="mt-3" onClick={() => setEnabled(true)}>Enable</Button>
             </div>
         </>
     );

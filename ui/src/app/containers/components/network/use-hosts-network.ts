@@ -17,7 +17,7 @@ export type FetchResult = { ok: string[], failed: { hostId: string, error: strin
 // Network data of all enabled hosts, read from the browser session cache.
 // Only paths missing from the cache are fetched; `refresh` force-fetches everything.
 export const useHostsNetwork = () => {
-    const {hosts, isHostEnabled} = useContainerHosts();
+    const {hosts, isHostEnabled, withHostConnection} = useContainerHosts();
     const {api} = useApi();
     const [tick, setTick] = React.useState(0);
     const [fetching, setFetching] = React.useState(false);
@@ -36,7 +36,7 @@ export const useHostsNetwork = () => {
         const jobs = hostIds.map((hostId) => {
             const paths = force ? NETWORK_PATHS : NETWORK_PATHS.filter((p) => !readCached(hostCacheKey(hostId, p))?.data);
             return Promise.all(paths.map((path) =>
-                cached(hostCacheKey(hostId, path), () => api.get(`/api/containers/${hostId}/${path}`), 0, force)));
+                cached(hostCacheKey(hostId, path), () => withHostConnection(hostId, () => api.get(`/api/containers/${hostId}/${path}`)), 0, force)));
         });
         if (jobs.length === 0) return {ok: [], failed: []};
         setFetching(true);
@@ -56,7 +56,7 @@ export const useHostsNetwork = () => {
             setFetching(false);
             setTick((t) => t + 1);
         }
-    }, [hostIds, api]);
+    }, [hostIds, api, withHostConnection]);
 
     // fill gaps in the cache once per set of enabled hosts
     React.useEffect(() => {

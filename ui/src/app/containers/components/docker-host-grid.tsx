@@ -1,15 +1,14 @@
 import { Button } from "@/components/ui/button.tsx";
 import { Link } from "react-router";
 import AppIcon from "@/components/app-icon.tsx";
-import { ContainerHostProvider, useContainerHost } from "@/app/containers/components/container-host-provider.tsx";
-import { DockerHostStatus } from "@/app/containers/components/docker-host-status.tsx";
+import { ContainerHostProvider } from "@/app/containers/components/container-host-provider.tsx";
+import { HostStatusBadge } from "@/app/containers/components/host-status.tsx";
 import { DockerHostError } from "@/app/containers/components/docker-host-error.tsx";
 import { DockerHostSummary } from "@/app/containers/components/docker-host-summary.tsx";
 import {useContainerHosts} from "@/app/containers/components/container-hosts-provider.tsx";
 
 
 export const DockerHostsGridItem = ({host}: {host: any}) => {
-    const { summary } = useContainerHost()
 
     return (<li
         className="rounded-lg border p-4 hover:shadow-md"
@@ -22,8 +21,7 @@ export const DockerHostsGridItem = ({host}: {host: any}) => {
             </div>
             <Button asChild variant={"outline"}>
                 <div>
-                    <DockerHostStatus />
-                    <Link to={`${host.name}/container`}>{summary ? "Connected" : "Disconnected"}</Link>
+                    <Link to={`${host.name}/container`}><HostStatusBadge hostId={host.name} /></Link>
                 </div>
             </Button>
         </div>

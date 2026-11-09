@@ -360,20 +360,36 @@ def test_ensure_node_adds_prefix_once():
     assert m.get("n2").base_url == NODE_URL
 
 
-def test_dep_errors(monkeypatch):
-    """Unknown hosts are 404, hosts that can't be created are 502 (not 500)."""
+def test_connect_errors(monkeypatch):
+    """Hosts must be connected first: unknown or unconnected hosts are 404, bad configs fail the connect with 400."""
     from fastapi import HTTPException
 
     from mc import config
     from mc.plugin.containers.deps import dep_container_connection
+    from mc.plugin.containers.routes import connect_host
 
-    monkeypatch.setattr(config, "CONFIG", {"docker_hosts": {"bad": {"url": "nope+tcp://x"}}})
+    monkeypatch.setattr(config, "CONFIG", {"docker_hosts": {
+        "bad": {"url": "nope+tcp://x"},
+        "node1": {"url": f"node+{NODE_URL}", "api_key": API_KEY},
+    }})
     m = ContainerClientsManager()
 
-    with pytest.raises(HTTPException) as e:
-        dep_container_connection("unknown", m)
-    assert e.value.status_code == 404
+    # requests don't connect on their own anymore
+    for alias in ("unknown", "bad", "node1"):
+        with pytest.raises(HTTPException) as e:
+            dep_container_connection(alias, m)
+        assert e.value.status_code == 404
 
-    with pytest.raises(HTTPException) as e:
-        dep_container_connection("bad", m)
-    assert e.value.status_code == 502
+    # 400, not 401: the UI logs out on 401
+    for alias in ("unknown", "bad"):
+        with pytest.raises(HTTPException) as e:
+            connect_host(alias, m)
+        assert e.value.status_code == 400
+        assert not m.connected(alias)
+
+    # connecting is idempotent and makes the host usable
+    assert connect_host("node1", m) == {"id": "node1", "connected": True}
+    assert connect_host("node1", m) == {"id": "node1", "connected": True}
+    assert m.connected("node1")
+    assert dep_container_connection("node1", m) is m.get("node1")
+

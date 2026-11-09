@@ -4,6 +4,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/compo
 import {diskTotal, HostStats} from "@/app/containers/components/stats/host-stats.ts";
 import {formatAge, formatBytes} from "@/app/containers/components/stats/format.ts";
 import {DiskBar} from "@/app/containers/components/stats/stats-ui.tsx";
+import {HostStatusBadge} from "@/app/containers/components/host-status.tsx";
 
 const Count = ({value, label}: { value: number, label: string }) => (
     <div>
@@ -20,10 +21,11 @@ const HostCard = ({stats}: { stats: HostStats }) => {
             <CardHeader className="px-4">
                 <CardTitle className="flex items-center justify-between gap-2">
                     <Link to={`/containers/${stats.hostId}`} className="truncate hover:underline">{stats.hostId}</Link>
-                    {info?.ServerVersion && <Badge variant="outline">Docker {info.ServerVersion}</Badge>}
+                    <HostStatusBadge hostId={stats.hostId} className="shrink-0 font-normal"/>
                 </CardTitle>
-                <CardDescription className="truncate">
-                    {[info?.OperatingSystem, info?.Architecture, info?.KernelVersion].filter(Boolean).join(" · ") || "No engine info cached"}
+                <CardDescription className="flex min-w-0 items-center gap-2">
+                    {info?.ServerVersion && <Badge variant="outline" className="shrink-0">Docker {info.ServerVersion}</Badge>}
+                    <span className="truncate">{[info?.OperatingSystem, info?.Architecture, info?.KernelVersion].filter(Boolean).join(" · ") || "No engine info cached"}</span>
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 px-4 text-sm">

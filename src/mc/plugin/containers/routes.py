@@ -40,14 +40,13 @@ def get_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
     return jsonable_encoder(configured_hosts)
 
 @router.get("/containers/{alias}/connect")
-def connect_host(alias: str, manager: ContainerManagerDep):
-    client = manager.get(alias)
-    if client:
-        return client
-    try:
-        return connect_container_host(manager, alias)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+def connect_host(alias: str, manager: ContainerManagerDep) -> dict:
+    if not manager.get(alias):
+        try:
+            connect_container_host(manager, alias)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+    return {"id": alias, "connected": True}
 
 
 @router.get("/containers/{alias}/version")

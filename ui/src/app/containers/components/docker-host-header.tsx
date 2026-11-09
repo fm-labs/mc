@@ -3,6 +3,7 @@ import {Link} from "react-router";
 import {useContainerHost} from "@/app/containers/components/container-host-provider.tsx";
 import AppIcon from "@/components/app-icon.tsx";
 import {formatBytes} from "@/app/containers/components/stats/format.ts";
+import {HostStatusBadge} from "@/app/containers/components/host-status.tsx";
 
 type DockerHostHeaderProps = {
     title?: string
@@ -17,21 +18,18 @@ const Stat = ({icon, value, label, to, className}: { icon: string, value: React.
     </Link>
 );
 
-// Status dot that doubles as a subtle connect/disconnect toggle
-const ConnectionToggle = () => {
-    const {enabled, setEnabled, summary} = useContainerHost();
-    const status = enabled ? (summary ? "Connected" : "Connecting") : "Disconnected";
-    const dot = enabled ? (summary ? "bg-green-500" : "bg-amber-500 animate-pulse") : "bg-gray-400";
-    const action = enabled ? "Disconnect" : "Connect";
-
+// Connection status, plus the user's enable/disable toggle
+const HostStatusControls = () => {
+    const {enabled, setEnabled, config} = useContainerHost();
     return (
-        <button type="button" onClick={() => setEnabled(!enabled)} title={`${status} – click to ${action.toLowerCase()}`}
-                aria-label={`${action} host`}
-                className="group ml-1 inline-flex items-center gap-1.5 rounded-full px-1.5 py-0.5 text-xs transition-colors hover:bg-muted">
-            <span className={`size-2.5 rounded-full ${dot}`}/>
-            <span className="group-hover:hidden">{status}</span>
-            <span className="hidden text-foreground group-hover:inline">{action}</span>
-        </button>
+        <span className="ml-1 inline-flex items-center gap-1">
+            <HostStatusBadge hostId={config.hostId}/>
+            <button type="button" onClick={() => setEnabled(!enabled)}
+                    title={enabled ? "Stop fetching data from this host" : "Connect and fetch data from this host"}
+                    className="rounded px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                {enabled ? "Disable" : "Enable"}
+            </button>
+        </span>
     );
 };
 
@@ -56,7 +54,7 @@ const DockerHostHeader = ({title, icon, children}: PropsWithChildren<DockerHostH
                     <div className="min-w-0">
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <span className="truncate font-medium">{config.hostId}</span>
-                            <ConnectionToggle/>
+                            <HostStatusControls/>
                             {info?.ServerVersion && (
                                 <span className="ml-1 rounded border px-1.5 text-xs">v{info.ServerVersion}</span>
                             )}

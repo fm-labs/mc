@@ -6,7 +6,6 @@ from collections.abc import Iterable
 from typing import Any
 
 from docker import DockerClient
-from fastapi import HTTPException
 from podman import PodmanClient
 from pydantic import BaseModel
 
@@ -27,7 +26,6 @@ class ContainerClientsManager:
         self._create_locks: dict[str, threading.Lock] = {}
         # all configured nodes, including the ones that aren't connected
         self.nodes: dict[str, NodeConfig] = {}
-        self._connected: dict[str, bool] = {}
 
     def get(self, name: str) -> ContainerClient | None:
         return self._clients.get(name)
@@ -42,7 +40,7 @@ class ContainerClientsManager:
         return self._urls
 
     def connected(self, name: str) -> bool:
-        return self._connected.get(name, False)
+        return name in self._clients
 
     def _connect(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient:
         """

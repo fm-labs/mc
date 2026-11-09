@@ -51,7 +51,7 @@ export const ContainerHostProvider: React.FC<{
     hideDisconnectButton?: boolean
 }> = ({children, host, disabledFallback, hideDisconnectButton}) => {
     const {api, apiBaseUrl} = useApi()
-    const {isHostEnabled, setHostEnabledState} = useContainerHosts()
+    const {isHostEnabled, setHostEnabledState, connectHost, withHostConnection} = useContainerHosts()
     const enabled = isHostEnabled(host.name)
     const [error, setError] = React.useState<string | null>(null);
     const [info, setInfo] = React.useState<any>(null);
@@ -83,9 +83,9 @@ export const ContainerHostProvider: React.FC<{
                 //return;
             }
             const hostId = config.hostId;
-            const response = await api.get(`/api/containers/${hostId}/${path}`, {
+            const response = await withHostConnection(hostId, () => api.get(`/api/containers/${hostId}/${path}`, {
                 signal: controller.signal
-            });
+            }));
             console.log("Data fetched:", path, config.hostId, response);
             //setError(null);
             abortControllerRef.current = null;
@@ -98,7 +98,7 @@ export const ContainerHostProvider: React.FC<{
         } finally {
             abortControllerRef.current = null;
         }
-    }, [config, setError, api])
+    }, [config, setError, api, withHostConnection])
 
     const fetchContainerData = React.useCallback((path: string, force?: boolean, ttl?: number) => {
         const cacheKey = `container_host_${config.hostId}_path_${path}`;
@@ -139,27 +139,28 @@ export const ContainerHostProvider: React.FC<{
                 throw new Error("No hostId configured");
             }
             const hostId = config.hostId;
-            await api.post(`/api/containers/${hostId}/images/pull`, {image: imageName});
+            await withHostConnection(hostId, () => api.post(`/api/containers/${hostId}/images/pull`, {image: imageName}), {track: false});
             // Refresh images and summary after pulling
             await Promise.all([fetchImages(true), fetchSummary(true)]);
         } catch (error) {
             console.error("Error pulling image:", error);
             throw error;
         }
-    }, [config, api, fetchImages, fetchSummary])
+    }, [config, api, withHostConnection, fetchImages, fetchSummary])
 
     const pruneResources = React.useCallback(async (scope: DockerPruneScope) => {
         if (!config || config.hostId === undefined || config.hostId === null) {
             throw new Error("No hostId configured");
         }
-        const response = await api.get(`/api/containers/${config.hostId}/prune/${scope}`);
+        const hostId = config.hostId;
+        const response = await withHostConnection<Record<string, any>>(hostId, () => api.get(`/api/containers/${hostId}/prune/${scope}`), {track: false});
         // Refresh host data and the cached lists of the prune
         await Promise.allSettled([
             fetchInfo(true),
             fetchSummary(true),
         ]);
         return response;
-    }, [config, api, fetchInfo, fetchSummary, fetchContainerData])
+    }, [config, api, withHostConnection, fetchInfo, fetchSummary])
 
     // const updateAll = React.useCallback(async (force?: boolean) => {
     //     await Promise.all([
@@ -181,11 +182,19 @@ export const ContainerHostProvider: React.FC<{
             return;
         }
 
-        // Initial fetch
+        // Connect, then initial fetch
         console.log("Initial fetch for Container host", config.hostId, autorefreshInterval);
-        fetchInfo().then(fetchSummary).catch(() => {
-            console.warn("Error fetching initial container data");
-        })
+        setError(null);
+        connectHost(config.hostId)
+            .catch((e: any) => {
+                setError(e?.response?.data?.detail ?? e?.message ?? String(e));
+                throw e;
+            })
+            .then(() => fetchInfo())
+            .then(() => fetchSummary())
+            .catch(() => {
+                console.warn("Error fetching initial container data");
+            })
 
         // Auto-refresh
         let containerUpdateTimer: any;

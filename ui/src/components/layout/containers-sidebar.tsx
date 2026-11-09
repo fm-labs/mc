@@ -1,6 +1,6 @@
 import {LOCAL_NODE} from "@/lib/node-headers.ts";
 import * as React from "react"
-import {Minus, MoreHorizontal, Plus} from "lucide-react"
+import {Minus, MoreHorizontal, Plus, Power} from "lucide-react"
 
 import {
     Collapsible,
@@ -26,7 +26,14 @@ import {NavUser} from "@/components/layout/nav-user.tsx";
 import {appNavigationData, appSidebarData} from "@/components/layout/data/app-navigation-data.ts";
 import {NavSecondary} from "@/components/layout/nav-secondary.tsx";
 import {EnvironmentSwitcher} from "@/components/layout/environment-switcher.tsx";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu.tsx";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu.tsx";
+import {HostStatusDot, hostStatusTitle} from "@/app/containers/components/host-status.tsx";
 
 type NavItem = {
     title: string
@@ -37,11 +44,12 @@ type NavItem = {
 }
 
 type ContainerNavItem = NavItem & {
-    isConnected?: boolean
+    hostId: string
+    isEnabled: boolean
     secondaryItems?: NavItem[]
 }
 
-// Icon color for connected hosts, per engine
+// Icon color for enabled hosts, per engine
 const ENGINE_COLORS: Record<string, string> = {
     "docker": "text-[#2496ED]",
     "container-host": "text-[#2496ED]",
@@ -55,7 +63,7 @@ const isMcHost = (host: { id: string, properties?: { engine?: string } }) =>
     host.id === LOCAL_NODE || host.properties?.engine === "node"
 
 export function ContainersSidebar({...props}: React.ComponentProps<typeof Sidebar>) {
-    const {hosts, isHostEnabled} = useContainerHosts()
+    const {hosts, isHostEnabled, setHostEnabledState, getHostStatus} = useContainerHosts()
     const navigate = useNavigate()
 
     const navContainers: ContainerNavItem[] = React.useMemo(() => {
@@ -63,9 +71,10 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
         const items: ContainerNavItem[] = hosts.map((host) => {
 
             return {
-                title: host.id || host.id,
+                title: host.id,
+                hostId: host.id,
                 isActive: false,
-                isConnected: isHostEnabled(host.id),
+                isEnabled: isHostEnabled(host.id),
                 url: `/containers/${host.id}`,
                 icon: host.properties?.engine || "container-host",
                 items: [
@@ -197,18 +206,16 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                         <CollapsibleTrigger asChild>
                                             <div
                                                 onClick={() => navigate(item.url + '/container')}
-                                                className={`flex min-w-0 items-center gap-2 ${item.isConnected ? "" : "text-muted-foreground"}`}
-                                                title={item.isConnected ? "Connected" : "Not connected"}>
+                                                className={`flex min-w-0 items-center gap-2 ${item.isEnabled ? "" : "text-muted-foreground"}`}
+                                                title={hostStatusTitle({enabled: item.isEnabled, ...getHostStatus(item.hostId)})}>
                                                 <AppIcon icon={item?.icon}
-                                                         className={`shrink-0 ${item.isConnected ? engineColor(item.icon) : "opacity-60"}`}/>
+                                                         className={`shrink-0 ${item.isEnabled ? engineColor(item.icon) : "opacity-60"}`}/>
                                                 <span
-                                                    className={`truncate ${item.isConnected ? "font-medium" : ""}`}>{item.title}</span>
-                                                {item.isConnected &&
-                                                    <span className="size-1.5 shrink-0 rounded-full bg-green-500"
-                                                          aria-label="Connected"/>}
+                                                    className={`truncate ${item.isEnabled ? "font-medium" : "line-through decoration-muted-foreground/40"}`}>{item.title}</span>
+                                                <HostStatusDot hostId={item.hostId}/>
                                             </div>
                                         </CollapsibleTrigger>
-                                        {item.secondaryItems?.length ? <DropdownMenu>
+                                        <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <MoreHorizontal className="ml-auto"/>
                                             </DropdownMenuTrigger>
@@ -217,14 +224,19 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                                                 align={isMobile ? "end" : "start"}
                                                 className="min-w-56 rounded-lg"
                                             >
-                                                {item.secondaryItems.map((sec) => <DropdownMenuItem key={sec.url} asChild>
+                                                <DropdownMenuItem onSelect={() => setHostEnabledState(item.hostId, !item.isEnabled)}>
+                                                    <Power/>
+                                                    {item.isEnabled ? "Disable host" : "Enable host"}
+                                                </DropdownMenuItem>
+                                                {item.secondaryItems?.length ? <DropdownMenuSeparator/> : null}
+                                                {item.secondaryItems?.map((sec) => <DropdownMenuItem key={sec.url} asChild>
                                                     <NavLink to={sec.url}>
                                                         <AppIcon icon={sec?.icon}/>
                                                         {sec.title}
                                                     </NavLink>
                                                 </DropdownMenuItem>)}
                                             </DropdownMenuContent>
-                                        </DropdownMenu> : null}
+                                        </DropdownMenu>
                                     </SidebarMenuButton>
                                     {item.items?.length ? (
                                         <CollapsibleContent>

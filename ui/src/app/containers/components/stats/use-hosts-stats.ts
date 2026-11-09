@@ -13,7 +13,7 @@ export type FetchAllResult = { ok: string[], failed: { hostId: string, error: st
 const RELOAD_INTERVAL = 10000;
 
 export const useHostsStats = () => {
-    const {hosts, isHostEnabled} = useContainerHosts();
+    const {hosts, isHostEnabled, withHostConnection} = useContainerHosts();
     const {api} = useApi();
     const [tick, setTick] = React.useState(0);
     const [fetching, setFetching] = React.useState(false);
@@ -33,7 +33,7 @@ export const useHostsStats = () => {
             const results = await Promise.allSettled(hostIds.map((hostId) =>
                 Promise.all(FETCH_PATHS.map((path) =>
                     cached(`container_host_${hostId}_path_${path}`,
-                        () => api.get(`/api/containers/${hostId}/${path}`), 0, true)))));
+                        () => withHostConnection(hostId, () => api.get(`/api/containers/${hostId}/${path}`)), 0, true)))));
             return {
                 ok: hostIds.filter((_, i) => results[i].status === "fulfilled"),
                 failed: hostIds
@@ -45,7 +45,7 @@ export const useHostsStats = () => {
             setFetching(false);
             setTick((t) => t + 1);
         }
-    }, [hosts, isHostEnabled, api]);
+    }, [hosts, isHostEnabled, api, withHostConnection]);
 
     const {stats, missing} = React.useMemo(() => {
         const stats: HostStats[] = [];
