@@ -254,7 +254,7 @@ def test_unreachable_node():
 
 def test_bootstrap_registers_nodes(monkeypatch):
     # don't connect to a docker daemon
-    monkeypatch.setattr(ContainerClientsManager, "add", lambda self, name, url, test_ping=False: None)
+    monkeypatch.setattr(ContainerClientsManager, "_connect", lambda self, name, url, test_ping=False: None)
     m = bootstrap_container_connection_manager(
         {
             "docker_hosts": {
@@ -331,7 +331,7 @@ def test_ensure_is_safe_for_parallel_requests(monkeypatch):
             self._clients[name] = client
         return client
 
-    monkeypatch.setattr(ContainerClientsManager, "add", slow_add)
+    monkeypatch.setattr(ContainerClientsManager, "_connect", slow_add)
     m = ContainerClientsManager()
     results, errors = [], []
 

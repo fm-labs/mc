@@ -17,7 +17,7 @@ from starlette.responses import StreamingResponse
 from mc.cache import cached_fn, clear_cache
 from mc.docker.helper import docker_prune
 from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
-from mc.plugin.containers.manager import ContainerHost, enumerate_container_hosts
+from mc.plugin.containers.manager import ContainerHost, enumerate_configured_container_hosts, connect_container_host
 from mc.rpc import PruneScopeLiteral
 
 router = APIRouter()
@@ -33,7 +33,21 @@ class CommandExecRequest(BaseModel):
 
 @router.get("/containers/hosts")
 def get_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
-    return enumerate_container_hosts()
+    configured_hosts = enumerate_configured_container_hosts()
+    # add connection status to each entry
+    for host in configured_hosts:
+        host.connected = manager.connected(host.id)
+    return jsonable_encoder(configured_hosts)
+
+@router.get("/containers/{alias}/connect")
+def connect_host(alias: str, manager: ContainerManagerDep):
+    client = manager.get(alias)
+    if client:
+        return client
+    try:
+        return connect_container_host(manager, alias)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/containers/{alias}/version")

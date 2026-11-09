@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from docker import DockerClient
+from fastapi import HTTPException
 from podman import PodmanClient
 from pydantic import BaseModel
 
@@ -26,6 +27,7 @@ class ContainerClientsManager:
         self._create_locks: dict[str, threading.Lock] = {}
         # all configured nodes, including the ones that aren't connected
         self.nodes: dict[str, NodeConfig] = {}
+        self._connected: dict[str, bool] = {}
 
     def get(self, name: str) -> ContainerClient | None:
         return self._clients.get(name)
@@ -39,10 +41,13 @@ class ContainerClientsManager:
         """
         return self._urls
 
-    def add(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient:
+    def connected(self, name: str) -> bool:
+        return self._connected.get(name, False)
+
+    def _connect(self, name: str, base_url: str, test_ping: bool = False) -> ContainerClient:
         """
         Create and register a client from a URL like "docker+unix:///var/run/docker.sock", "podman+ssh://..."
-        or "node+http://host:3080" (no engine means docker). Nodes added this way have no API key, use add_node().
+        or "node+http://host:3080" (no engine means docker).
         """
         # split base_url into engine and url
         if "+" in base_url:
@@ -66,7 +71,7 @@ class ContainerClientsManager:
 
         return self.register(name, c, base_url, test_ping=test_ping)
 
-    def add_node(self, node: NodeConfig, test_ping: bool = False) -> ContainerClient:
+    def _connect_node(self, node: NodeConfig, test_ping: bool = False) -> ContainerClient:
         """Register a client for another mc instance."""
         url = node.url if node.url.startswith("node+") else f"node+{node.url}"
         return self.register(node.name, NodeContainerClient.from_config(node), url, test_ping)
@@ -104,7 +109,10 @@ class ContainerClientsManager:
             existing = self.get(name)
             if existing:
                 return existing
-            return self.add(name, base_url, test_ping)
+            try:
+                return self._connect(name, base_url, test_ping)
+            except Exception as e:
+                raise
 
     def ensure_node(self, node: NodeConfig, test_ping: bool = False) -> ContainerClient:
         """Like ensure(), for a node."""
@@ -116,7 +124,7 @@ class ContainerClientsManager:
             if existing:
                 return existing
             self.nodes[node.name] = node
-            return self.add_node(node, test_ping)
+            return self._connect_node(node, test_ping)
 
     def remove(self, name: str, close: bool = True) -> bool:
         with self._lock:
@@ -203,7 +211,7 @@ class ContainerHost(BaseModel):
 
 CONTAINER_HOSTS: list[ContainerHost] | None = None
 
-def enumerate_container_hosts():
+def enumerate_configured_container_hosts() -> list[ContainerHost]:
     global CONTAINER_HOSTS
     if CONTAINER_HOSTS is None:
         CONTAINER_HOSTS = parse_docker_hosts_config(config.CONFIG)
@@ -215,29 +223,26 @@ def parse_docker_hosts_config(mc_config: dict) -> list[ContainerHost]:
     List the hosts from the "docker_hosts" config section, plus the localhost fallback.
     A host is "connected" if its client was created already (clients are created on first use, see deps.py).
     """
-    docker_hosts = mc_config.get("docker_hosts") or {}
-    if not isinstance(docker_hosts, dict):
-        docker_hosts = {}
-
-    #def is_connected(name: str) -> bool:
-    #    return manager is not None and manager.get(name) is not None
+    configured_hosts = mc_config.get("docker_hosts") or {}
+    if not isinstance(configured_hosts, dict):
+        configured_hosts = {}
 
     hosts: list[ContainerHost] = []
 
     # localhost fallback
-    if "localhost" not in docker_hosts:
+    if "localhost" not in configured_hosts:
         hosts.append(
             ContainerHost(
                 id="localhost",
                 name="localhost",
-                connected=True, # deprecated
+                connected=False, # deprecated
                 properties=ContainerHostProperties(
-                    engine="docker", url="unix:///var/run/docker.sock", autoconnect=False
+                    engine="docker", url="unix:///var/run/docker.sock", autoconnect=True
                 ),
             )
         )
 
-    for name, entry in docker_hosts.items():
+    for name, entry in configured_hosts.items():
         if not isinstance(entry, dict) or not entry.get("url"):
             logger.warning(f"Container host '{name}' has no URL, skipping")
             continue
@@ -250,7 +255,7 @@ def parse_docker_hosts_config(mc_config: dict) -> list[ContainerHost]:
             ContainerHost(
                 id=name,
                 name=name,
-                connected=True, # deprecated
+                connected=False, # deprecated
                 properties=ContainerHostProperties(
                     engine=engine, url=url, autoconnect=bool(entry.get("autoconnect", False))
                 ),
@@ -259,3 +264,39 @@ def parse_docker_hosts_config(mc_config: dict) -> list[ContainerHost]:
 
     return hosts
 
+
+def connect_container_host(manager: ContainerClientsManager, alias: str) -> ContainerClient:
+    # init the container client from config.
+    #
+    # example config:
+    # "docker_hosts" : {
+    #    "localhost": { "url" : "unix:///var/run/docker.sock" },
+    #    "remote": { "url" : "ssh://my-remote-host" },
+    #    "node": { "url" : "node+https://other-mc-node", "api_key": "..." }
+    # }
+
+    host_conf = config.CONFIG.get("docker_hosts", {}).get(alias)
+
+    # localhost fallback, if not explicitly configured
+    # todo make auto-localhost fallback configurable
+    if not host_conf and alias == "localhost":
+        try:
+            return manager.ensure(alias, "unix:///var/run/docker.sock", test_ping=False)
+        except Exception as e:
+            logger.warning(f"Can't connect to container host '{alias}': {e}")
+            raise
+
+    if not isinstance(host_conf, dict) or not host_conf.get("url"):
+        logger.warning(f"Invalid host configuration: '{alias}'")
+        raise ValueError(f"Invalid host configuration")
+
+    try:
+        url = host_conf["url"]
+        if url.startswith("node+"):
+            node_conf = NodeConfig.model_validate({**host_conf, "name": alias})
+            return manager.ensure_node(node_conf, test_ping=False)
+
+        return manager.ensure(alias, url, test_ping=False)
+    except Exception as e:
+        logger.warning(f"Can't connect to container host '{alias}': {e}")
+        raise

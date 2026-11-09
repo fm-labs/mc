@@ -3,7 +3,7 @@ from typing import Sequence
 from fastmcp.server.providers import Provider
 from fastmcp.tools import Tool
 
-from mc.plugin.containers.manager import enumerate_container_hosts, ContainerHost
+from mc.plugin.containers.manager import enumerate_configured_container_hosts, ContainerHost
 
 
 #@mcp.tool
@@ -11,7 +11,7 @@ def list_docker_hosts() -> list[ContainerHost]:
     """
     Returns a list of docker hosts
     """
-    return enumerate_container_hosts()
+    return enumerate_configured_container_hosts()
 
 
 
