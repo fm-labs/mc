@@ -211,6 +211,34 @@ def load_builtin_tools():
             "required": ["secret_length"]
         }
     )
+    TOOLS_CACHE["mc-ssh-node-provisioning"] = CmdToolSpec(
+        name="mc-ssh-node-provisioning",
+        description="Provision a new MC node",
+        cmd=f"{MC_BIN_DIR}/mc-ssh-node-provisioning.sh",
+        args=["{{ssh_host}}"],
+        input_schema={
+            "type": "object",
+            "properties": {
+                "ssh_host": {"type": "string"},
+            },
+            "required": ["ssh_host"]
+        }
+    )
+    TOOLS_CACHE["mc-ssh-node-api-call"] = CmdToolSpec(
+        name="mc-ssh-node-api-call",
+        description="Call Remote API via ssh",
+        cmd=f"{MC_BIN_DIR}/mc-ssh-node-api-call.sh",
+        args=["{{ssh_host}}", "{{api_key}}", "{{api_path}}"],
+        input_schema={
+            "type": "object",
+            "properties": {
+                "ssh_host": {"type": "string"},
+                "api_key": {"type": "string"},
+                "api_path": {"type": "string", "default": "/api/health"},
+            },
+            "required": ["ssh_host", "api_key", "api_path"],
+        }
+    )
 
 
 def enumerate_tools():
