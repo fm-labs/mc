@@ -171,7 +171,11 @@ const DockerHostContainers = () => {
                             <Layers className={"inline-block w-4 h-4 ml-1 mr-2"} />
                             {group}
                         </span>
-                        {/*<DockerComposeControlIcons />*/}
+                        {group !== "_" && (
+                            <DockerComposeControlIcons projectName={group}
+                                                       containers={_containers}
+                                                       onActionDone={() => loadContainers(true)} />
+                        )}
                     </h3>
                     <ul>
                         {_containers.sort((a: any, b: any) => {

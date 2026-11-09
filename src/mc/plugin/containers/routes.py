@@ -20,6 +20,7 @@ from mc.plugin.containers.deps import ContainerClientDep, ContainerManagerDep
 from mc.plugin.containers.docker_helper import (
     _END_OF_STREAM,
     _PRUNE_CACHE_KEYS,
+    filter_containers_by_project,
     list_container_dir,
     read_container_file,
     redact_container_envvars,
@@ -553,10 +554,56 @@ async def stream_events(request: Request, alias: str, client: ContainerClientDep
         },
     )
 
-# @router.post("/containers/{alias}/compose/{project_name}/actions/{action}")
-# def post_compose_action(alias: str, project_name: str, action: str,
-#                                  client: ContainerClientDep) -> dict:
-#     try:
-#         raise HTTPException(status_code=501, detail="Not implemented yet")
-#     except Exception as e:
-#         raise HTTPException(status_code=400, detail=str(e))
+@router.post("/containers/{alias}/compose/{project_name}/actions/{action}",
+             dependencies=[Security(dep_auth_user, scopes=['container:control'])])
+def post_compose_action(alias: str, project_name: str, action: str, client: ContainerClientDep) -> dict:
+    """
+    Run an action on all containers of a compose project (found by the com.docker.compose.project label).
+    This uses the containers that exist; it doesn't read the compose files, so "up" doesn't create or
+    recreate containers, and "down" doesn't remove the project's networks or volumes.
+
+    up:      start stopped containers, unpause paused ones
+    stop:    stop running containers
+    restart: restart all containers
+    down:    remove all containers (force)
+    """
+    if action not in ("up", "stop", "restart", "down"):
+        raise HTTPException(status_code=404, detail=f"Unknown action {action}")
+    try:
+        containers = filter_containers_by_project(client.containers.list(all=True), project_name)
+        if not containers:
+            raise HTTPException(status_code=404, detail=f"No containers found for compose project {project_name}")
+
+        errors = []
+        for container in containers:
+            status = (container.attrs.get("State") or {}).get("Status")
+            try:
+                if action == "up":
+                    if status == "paused":
+                        container.unpause()
+                    elif status != "running":
+                        container.start()
+                elif action == "stop":
+                    if status in ("running", "paused", "restarting"):
+                        container.stop()
+                elif action == "restart":
+                    container.restart()
+                elif action == "down":
+                    container.remove(force=True)
+            except Exception as e:
+                errors.append(f"{container.name}: {e}")
+
+        clear_cache(f"containers_{alias}_containers")
+        clear_cache(f"containers_{alias}_df")
+        for container in containers:
+            clear_cache(f"containers_{alias}_container_{container.id}")
+
+        if errors:
+            raise ValueError(f"Action {action} failed for {len(errors)} of {len(containers)} containers: "
+                             + "; ".join(errors))
+        return {"action": action, "status": "ok", "message": f"Action {action} was successful",
+                "containers": len(containers)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
