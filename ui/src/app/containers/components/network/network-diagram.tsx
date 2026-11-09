@@ -10,7 +10,14 @@ import {
     networkNodeWidth,
 } from "@/app/containers/components/network/network-graph.ts";
 import {hostBox, Layout, nodeExtent, Point} from "@/app/containers/components/network/network-layout.ts";
-import {TREE, treeExtent} from "@/app/containers/components/network/network-tree-layout.ts";
+import {
+    CARD,
+    ContainerCard,
+    containerCard,
+    portPillWidth,
+    TREE,
+    treeExtent,
+} from "@/app/containers/components/network/network-tree-layout.ts";
 
 // ---- colors (hex, readable on light and dark backgrounds) ----
 
@@ -92,8 +99,8 @@ const treeEdge = (e: GraphEdge, a: Point, b: Point, cross: boolean): EdgeGeometr
         // a = network (or the container whose stack is shared), b = container
         const sy = e.kind === "network-container" ? a.y + 20 : a.y;
         return {
-            d: `M${a.x},${sy} C${a.x},${sy + 90} ${b.x - 90},${b.y} ${b.x - 18},${b.y}`,
-            label: {x: b.x - 52, y: b.y - 9},
+            d: `M${a.x},${sy} C${a.x},${sy + 90} ${b.x - 90},${b.y} ${b.x + CARD.left},${b.y}`,
+            label: {x: b.x + CARD.left - 34, y: b.y - 9},
         };
     }
     if (e.kind === "host-network") {
@@ -102,10 +109,10 @@ const treeEdge = (e: GraphEdge, a: Point, b: Point, cross: boolean): EdgeGeometr
     }
     if (e.kind === "network-container") {
         const spine = b.x - (TREE.containerInset - TREE.spineInset);
-        return {d: roundedPath([[a.x, a.y + 20], [a.x, a.y + 40], [spine, a.y + 40], [spine, b.y], [b.x - 18, b.y]])};
+        return {d: roundedPath([[a.x, a.y + 20], [a.x, a.y + 40], [spine, a.y + 40], [spine, b.y], [b.x + CARD.left, b.y]])};
     }
     // shared stack: a = child, b = parent above it
-    return {d: roundedPath([[b.x, b.y + 18], [b.x, a.y], [a.x - 18, a.y]])};
+    return {d: roundedPath([[b.x, b.y + 18], [b.x, a.y], [a.x + CARD.left, a.y]])};
 };
 
 // ---- nodes ----
@@ -150,29 +157,63 @@ const NetworkShape = ({node, selected}: { node: NetworkNode, selected: boolean }
     );
 };
 
-const ContainerShape = ({node, selected, labelRight, sub}: {
-    node: ContainerNode, selected: boolean, labelRight?: boolean, sub?: string
-}) => {
+// Tree mode: a card with the name, IP addresses and published ports
+const ContainerCardBody = ({node, card, selected}: { node: ContainerNode, card: ContainerCard, selected: boolean }) => {
+    let y = 6;
+    return (
+        <>
+            <rect x={CARD.left} y={CARD.top} width={CARD.width} height={card.height} rx={10}
+                  fill="var(--card)" stroke={selected ? "var(--ring)" : "var(--border)"} strokeWidth={selected ? 2.5 : 1}/>
+            <text x={CARD.textX} y={card.ips.length || card.portRows.length ? -4 : 4} fontSize={12} fontWeight={600} fill="var(--foreground)">
+                {truncate(node.label, 26)}
+            </text>
+            {card.ips.map(({ip, network}) => {
+                const baseline = (y += CARD.ipH) - 4;
+                const room = Math.floor((CARD.left + CARD.width - CARD.textX - 12 - ip.length * 6.1) / 5.6);
+                return (
+                    <text key={`${network}-${ip}`} x={CARD.textX} y={baseline} fontSize={10.5}>
+                        <tspan fontFamily="ui-monospace, monospace" fill="var(--foreground)">{ip}</tspan>
+                        {room > 3 && <tspan dx={6} fontSize={9.5} fill="var(--muted-foreground)">{truncate(network, room)}</tspan>}
+                    </text>
+                );
+            })}
+            {card.portRows.map((row, i) => {
+                const top = y + 2;
+                y += CARD.portRowH;
+                let x = CARD.textX;
+                return (
+                    <g key={i}>
+                        {row.map((label) => {
+                            const w = portPillWidth(label);
+                            const px = x;
+                            x += w + CARD.portGap;
+                            return (
+                                <g key={label}>
+                                    <rect x={px} y={top} width={w} height={CARD.portPillH} rx={CARD.portPillH / 2}
+                                          fill="#0ea5e9" fillOpacity={0.12} stroke="#0ea5e9" strokeOpacity={0.5}/>
+                                    <text x={px + w / 2} y={top + 11} textAnchor="middle" fontSize={9.5}
+                                          fontFamily="ui-monospace, monospace" fill="var(--foreground)">{label}</text>
+                                </g>
+                            );
+                        })}
+                    </g>
+                );
+            })}
+        </>
+    );
+};
+
+const ContainerShape = ({node, selected, tree}: { node: ContainerNode, selected: boolean, tree?: boolean }) => {
     const fill = projectColor(node.project);
     const ring = stateColor(node);
     const active = node.state === "running" || node.state === "paused";
     return (
         <g opacity={active ? 1 : 0.7}>
-            {selected && <circle r={22} fill="none" stroke="var(--ring)" strokeWidth={3}/>}
+            {tree && <ContainerCardBody node={node} card={containerCard(node)} selected={selected}/>}
+            {selected && !tree && <circle r={22} fill="none" stroke="var(--ring)" strokeWidth={3}/>}
             <circle r={16} fill={fill ?? "var(--muted)"} stroke={ring} strokeWidth={3}/>
             <Box x={-8} y={-8} width={16} height={16} color={fill ? "#fff" : "var(--muted-foreground)"} strokeWidth={2}/>
-            {labelRight ? (
-                <>
-                    <text x={26} y={sub ? -2 : 4} fontSize={12} fontWeight={500} fill="var(--foreground)" {...haloProps}>
-                        {truncate(node.label, 24)}
-                    </text>
-                    {sub && (
-                        <text x={26} y={12} fontSize={10} fontFamily="ui-monospace, monospace" fill="var(--muted-foreground)" {...haloProps}>
-                            {truncate(sub, 28)}
-                        </text>
-                    )}
-                </>
-            ) : (
+            {!tree && (
                 <text y={31} textAnchor="middle" fontSize={11.5} fontWeight={500} fill="var(--foreground)" {...haloProps}>
                     {truncate(node.label, 22)}
                 </text>
@@ -337,16 +378,6 @@ const NetworkDiagram = ({graph, layout, selectedId, onSelect, search, className}
 
     const showIps = view.k >= 1.1;
 
-    // tree: the IP (or image) shown under each container name
-    const containerSub = React.useMemo(() => {
-        const m = new Map<string, string>();
-        if (!tree) return m;
-        graph.edges.forEach((e) => {
-            if (e.kind === "network-container" && e.ip && layout.edgeRoles?.[e.id] === "tree") m.set(e.target, e.ip);
-        });
-        graph.nodes.forEach((n) => { if (n.kind === "container" && !m.has(n.id) && n.image) m.set(n.id, n.image); });
-        return m;
-    }, [graph, layout, tree]);
 
     // draw order: host-network edges, other edges, then networks, containers and hosts on top
     const order = {network: 0, container: 1, host: 2};
@@ -418,7 +449,7 @@ const NetworkDiagram = ({graph, layout, selectedId, onSelect, search, className}
                                onPointerLeave={() => !drag.current && setHoverId(undefined)}>
                                 {n.kind === "host" && <HostShape node={n} selected={selected}/>}
                                 {n.kind === "network" && <NetworkShape node={n} selected={selected}/>}
-                                {n.kind === "container" && <ContainerShape node={n} selected={selected} labelRight={tree} sub={containerSub.get(n.id)}/>}
+                                {n.kind === "container" && <ContainerShape node={n} selected={selected} tree={tree}/>}
                             </g>
                         );
                     })}
