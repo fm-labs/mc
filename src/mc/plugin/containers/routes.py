@@ -6,7 +6,7 @@ from typing import Annotated, Any, Literal
 
 import anyio
 from docker.models.containers import Container
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Security
 from fastapi.encoders import jsonable_encoder
 from fastapi.params import Path, Query
 from pydantic import BaseModel
@@ -26,6 +26,7 @@ from mc.plugin.containers.docker_helper import (
 )
 from mc.plugin.containers.manager import ContainerHost, enumerate_configured_container_hosts, connect_container_host
 from mc.rpc import PruneScopeLiteral
+from mc.server.deps import dep_auth_user
 
 router = APIRouter()
 
@@ -38,7 +39,8 @@ class CommandExecRequest(BaseModel):
     command: str
 
 
-@router.get("/containers/hosts")
+@router.get("/containers/hosts",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
     configured_hosts = enumerate_configured_container_hosts()
     # add connection status to each entry
@@ -46,7 +48,9 @@ def get_hosts(manager: ContainerManagerDep) -> list[ContainerHost]:
         host.connected = manager.connected(host.id)
     return jsonable_encoder(configured_hosts)
 
-@router.get("/containers/{alias}/connect")
+
+@router.get("/containers/{alias}/connect",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def connect_host(alias: str, manager: ContainerManagerDep) -> dict:
     if not manager.get(alias):
         try:
@@ -56,7 +60,8 @@ def connect_host(alias: str, manager: ContainerManagerDep) -> dict:
     return {"id": alias, "connected": True}
 
 
-@router.get("/containers/{alias}/version")
+@router.get("/containers/{alias}/version",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_engine_version(alias: str, client: ContainerClientDep) -> dict:
     def fetch_version():
         version_info = client.version()
@@ -68,7 +73,8 @@ def get_engine_version(alias: str, client: ContainerClientDep) -> dict:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/info")
+@router.get("/containers/{alias}/info",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_engine_info(alias: str, client: ContainerClientDep) -> dict:
     def fetch_info():
         _info = client.info()
@@ -80,7 +86,8 @@ def get_engine_info(alias: str, client: ContainerClientDep) -> dict:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/df")
+@router.get("/containers/{alias}/df",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_engine_df(alias: str, client: ContainerClientDep) -> dict:
     def fetch_df():
         summary = client.df()
@@ -92,7 +99,8 @@ def get_engine_df(alias: str, client: ContainerClientDep) -> dict:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/containers")
+@router.get("/containers/{alias}/containers",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def list_containers(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_containers():
         collection = client.containers.list(all=True, filters={"status": ["running", "exited", "created", "paused"]})
@@ -108,7 +116,8 @@ def list_containers(alias: str, client: ContainerClientDep) -> list[dict]:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/containers/{container_id}")
+@router.get("/containers/{alias}/containers/{container_id}",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_container(alias: str, container_id: str, client: ContainerClientDep) -> dict:
     def fetch_container():
         _container: Container = client.containers.get(container_id)
@@ -120,7 +129,8 @@ def get_container(alias: str, container_id: str, client: ContainerClientDep) -> 
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.post("/containers/{alias}/containers/{container_id}/actions/{action}")
+@router.post("/containers/{alias}/containers/{container_id}/actions/{action}",
+             dependencies=[Security(dep_auth_user, scopes=['container:control'])])
 def post_container_action(alias: str, container_id: str, action: str, client: ContainerClientDep) -> dict:
     container: Container = client.containers.get(container_id)
     try:
@@ -162,12 +172,13 @@ def post_container_action(alias: str, container_id: str, action: str, client: Co
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.post("/containers/{alias}/containers/{container_id}/exec")
+@router.post("/containers/{alias}/containers/{container_id}/exec",
+             dependencies=[Security(dep_auth_user, scopes=['container:admin'])])
 def post_container_exec(
-    alias: str,
-    container_id: Annotated[str, Path()],
-    exec_req: CommandExecRequest,
-    client: ContainerClientDep,
+        alias: str,
+        container_id: Annotated[str, Path()],
+        exec_req: CommandExecRequest,
+        client: ContainerClientDep,
 ) -> dict:
     container: Container = client.containers.get(container_id)
     command = exec_req.command
@@ -186,12 +197,13 @@ def post_container_exec(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/containers/{container_id}/top")
+@router.get("/containers/{alias}/containers/{container_id}/top",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_container_top(
-    alias: str,
-    container_id: str,
-    client: ContainerClientDep,
-    ps_args: Annotated[str | None, Query()] = None,
+        alias: str,
+        container_id: str,
+        client: ContainerClientDep,
+        ps_args: Annotated[str | None, Query()] = None,
 ) -> dict:
     """
     Running processes of a container, like `docker top`.
@@ -208,12 +220,13 @@ def get_container_top(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/containers/{container_id}/files")
+@router.get("/containers/{alias}/containers/{container_id}/files",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_container_files(
-    alias: str,
-    container_id: str,
-    client: ContainerClientDep,
-    path: Annotated[str, Query()] = "/",
+        alias: str,
+        container_id: str,
+        client: ContainerClientDep,
+        path: Annotated[str, Query()] = "/",
 ) -> dict:
     """
     Entries of one directory in a container's filesystem, for a lazy-loaded file tree.
@@ -229,12 +242,13 @@ def get_container_files(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/containers/{container_id}/file")
+@router.get("/containers/{alias}/containers/{container_id}/file",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_container_file(
-    alias: str,
-    container_id: str,
-    client: ContainerClientDep,
-    path: Annotated[str, Query()],
+        alias: str,
+        container_id: str,
+        client: ContainerClientDep,
+        path: Annotated[str, Query()],
 ) -> dict:
     """
     Content of one file in a container (the first 1 MiB).
@@ -250,7 +264,8 @@ def get_container_file(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/containers/{container_id}/diff")
+@router.get("/containers/{alias}/containers/{container_id}/diff",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_container_diff(alias: str, container_id: str, client: ContainerClientDep) -> list[dict]:
     """
     Filesystem changes of a container compared to its image, like `docker diff`.
@@ -265,14 +280,15 @@ def get_container_diff(alias: str, container_id: str, client: ContainerClientDep
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/containers/{container_id}/logs")
+@router.get("/containers/{alias}/containers/{container_id}/logs",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def get_container_logs(
-    alias: str,
-    container_id: str,
-    client: ContainerClientDep,
-    since: Annotated[int, Query()] = 0,
-    until: Annotated[int, Query()] = 0,
-    tail: Annotated[int, Query()] = 100,
+        alias: str,
+        container_id: str,
+        client: ContainerClientDep,
+        since: Annotated[int, Query()] = 0,
+        until: Annotated[int, Query()] = 0,
+        tail: Annotated[int, Query()] = 100,
 ) -> dict:
     container: Container = client.containers.get(container_id)
 
@@ -289,17 +305,18 @@ def get_container_logs(
     return {"container_id": container_id, "logs": logs}
 
 
-@router.get("/containers/{alias}/containers/{container_id}/logs/stream")
+@router.get("/containers/{alias}/containers/{container_id}/logs/stream",
+            dependencies=[Security(dep_auth_user, scopes=['container:read'])])
 def stream_container_logs(
-    request: Request,
-    alias: str,
-    container_id: str,
-    client: ContainerClientDep,
-    since: Annotated[int, Query()] = 0,
-    until: Annotated[int, Query()] = 0,
-    tail: Annotated[int, Query()] = 100,
-    follow: Annotated[bool, Query()] = True,
-    format: Annotated[Literal["sse", "json"], Query()] = "json",
+        request: Request,
+        alias: str,
+        container_id: str,
+        client: ContainerClientDep,
+        since: Annotated[int, Query()] = 0,
+        until: Annotated[int, Query()] = 0,
+        tail: Annotated[int, Query()] = 100,
+        follow: Annotated[bool, Query()] = True,
+        format: Annotated[Literal["sse", "json"], Query()] = "json",
 ) -> StreamingResponse:
     print("Streaming logs for container", container_id)
     container: Container = client.containers.get(container_id)
@@ -383,7 +400,8 @@ def stream_container_logs(
         )
 
 
-@router.get("/containers/{alias}/images")
+@router.get("/containers/{alias}/images",
+             dependencies=[Security(dep_auth_user, scopes=['image:read'])])
 def list_images(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_images():
         collection = client.images.list()
@@ -396,7 +414,8 @@ def list_images(alias: str, client: ContainerClientDep) -> list[dict]:
     return cached_fn(f"containers_{alias}_images", fetch_images, ttl=CACHE_TTL)()
 
 
-@router.get("/containers/{alias}/images/{image_id}")
+@router.get("/containers/{alias}/images/{image_id}",
+            dependencies=[Security(dep_auth_user, scopes=['image:read'])])
 def get_image(alias: str, image_id: str, client: ContainerClientDep) -> dict:
     def fetch_image_details():
         image = client.images.get(image_id)
@@ -409,7 +428,8 @@ class PullImageRequest(BaseModel):
     image: str
 
 
-@router.post("/containers/{alias}/images/pull")
+@router.post("/containers/{alias}/images/pull",
+             dependencies=[Security(dep_auth_user, scopes=['image:write'])])
 def pull_image(alias: str, body: PullImageRequest, client: ContainerClientDep) -> dict:
     try:
         # todo - this can take a long time, make it async and stream progress
@@ -421,7 +441,8 @@ def pull_image(alias: str, body: PullImageRequest, client: ContainerClientDep) -
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@router.get("/containers/{alias}/volumes")
+@router.get("/containers/{alias}/volumes",
+            dependencies=[Security(dep_auth_user, scopes=['volume:read'])])
 def list_volumes(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_volumes():
         collection = client.volumes.list()
@@ -434,7 +455,8 @@ def list_volumes(alias: str, client: ContainerClientDep) -> list[dict]:
     return cached_fn(f"containers_{alias}_volumes", fetch_volumes, ttl=CACHE_TTL)()
 
 
-@router.get("/containers/{alias}/volumes/{volume_id}")
+@router.get("/containers/{alias}/volumes/{volume_id}",
+            dependencies=[Security(dep_auth_user, scopes=['volume:read'])])
 def get_volume(alias: str, volume_id: str, client: ContainerClientDep) -> dict:
     def fetch_volume_details():
         volume = client.volumes.get(volume_id)
@@ -443,7 +465,8 @@ def get_volume(alias: str, volume_id: str, client: ContainerClientDep) -> dict:
     return cached_fn(f"containers_{alias}_volume_{volume_id}", fetch_volume_details, ttl=CACHE_TTL)()
 
 
-@router.get("/containers/{alias}/networks")
+@router.get("/containers/{alias}/networks",
+            dependencies=[Security(dep_auth_user, scopes=['network:read'])])
 def list_networks(alias: str, client: ContainerClientDep) -> list[dict]:
     def fetch_networks():
         collection = client.networks.list()
@@ -459,10 +482,11 @@ def list_networks(alias: str, client: ContainerClientDep) -> list[dict]:
 # Cached list endpoints affected by each prune scope ("info" and "df" are always cleared)
 
 
-@router.get("/containers/{alias}/prune/{scope}")
+@router.get("/containers/{alias}/prune/{scope}",
+            dependencies=[Security(dep_auth_user, scopes=['container:admin'])])
 def prune_resources(alias: str,
-                           scope: PruneScopeLiteral,
-                           client: ContainerClientDep) -> dict:
+                    scope: PruneScopeLiteral,
+                    client: ContainerClientDep) -> dict:
     try:
         return docker_prune(client, scope)
     except Exception as e:
@@ -528,7 +552,6 @@ async def stream_events(request: Request, alias: str, client: ContainerClientDep
             "Transfer-Encoding": "chunked",
         },
     )
-
 
 # @router.post("/containers/{alias}/compose/{project_name}/actions/{action}")
 # def post_compose_action(alias: str, project_name: str, action: str,

@@ -14,23 +14,25 @@ from mc.plugin.tools.routes import router as tools_router
 # PLUGINS_ENABLED = ["containers"]
 # INVENTORY_ITEMS_ENABLED = ["app_stack", "container_registry", "mc_node"]
 
+API_PREFIX = "/api"
+
 app_router = APIRouter()
 # app_router.include_router(
-#     inventory_router, prefix="/api", tags=["inventory"], dependencies=[Security(get_current_user)]
+#     inventory_router, prefix=API_PREFIX, tags=["inventory"], dependencies=[Security(get_current_user)]
 # )
-app_router.include_router(auth_router, prefix="/api", tags=["auth"],
+app_router.include_router(auth_router, prefix=API_PREFIX, tags=["auth"],
                           dependencies=[])
-app_router.include_router(objbase_router, prefix="/api", tags=["inventory"],
+app_router.include_router(objbase_router, prefix=API_PREFIX, tags=["inventory"],
                           dependencies=[Security(dep_auth_user)])
-app_router.include_router(rpc_router, prefix="/api", tags=["rpc"],
+app_router.include_router(rpc_router, prefix=API_PREFIX, tags=["rpc"],
                           dependencies=[Security(dep_auth_user)])
-app_router.include_router(containers_router, prefix="/api", tags=["container"],
+app_router.include_router(containers_router, prefix=API_PREFIX, tags=["container"],
                           dependencies=[Security(dep_auth_user)])
-app_router.include_router(config_router, prefix="/api", tags=["config"],
+app_router.include_router(config_router, prefix=API_PREFIX, tags=["config"],
                           dependencies=[Security(dep_auth_user)])
-app_router.include_router(tools_router, prefix="/api", tags=["tools"],
+app_router.include_router(tools_router, prefix=API_PREFIX, tags=["tools"],
                           dependencies=[Security(dep_auth_user)])
-app_router.include_router(apps_router, prefix="/api", tags=["apps"],
+app_router.include_router(apps_router, prefix=API_PREFIX, tags=["apps"],
                           dependencies=[Security(dep_auth_user)])
 
 # for plugin_name in PLUGINS_ENABLED:
@@ -42,16 +44,16 @@ app_router.include_router(apps_router, prefix="/api", tags=["apps"],
 #     router = getattr(module, "router")
 #     if router:
 #         app_router.include_router(
-#             router, prefix="/api", tags=[plugin_name], dependencies=[Security(get_current_user)]
+#             router, prefix=API_PREFIX, tags=[plugin_name], dependencies=[Security(get_current_user)]
 #         )
 
 
-@app_router.get("/api/info", tags=["system"])
+@app_router.get(f"{API_PREFIX}/info", tags=["system"])
 def info() -> dict:
     return {"version": API_VERSION}
 
 
-@app_router.get("/api/health", tags=["system"])
+@app_router.get(f"{API_PREFIX}/health", tags=["system"])
 def health():
     return {"status": "OK"}
 
