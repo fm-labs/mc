@@ -108,6 +108,11 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                         url: `/containers/${host.id}/events`,
                         icon: "container-events"
                     },
+                    {
+                        title: "Apps",
+                        url: `/manage/${host.id}/apps`,
+                        icon: "apps"
+                    },
 
                 ],
                 // these pages only exist on an mc: this one, or a node reached via the node proxy
@@ -122,11 +127,6 @@ export function ContainersSidebar({...props}: React.ComponentProps<typeof Sideba
                             title: "RPC",
                             url: `/manage/${host.id}/rpc`,
                             icon: "settings"
-                        },
-                        {
-                            title: "Apps",
-                            url: `/manage/${host.id}/apps`,
-                            icon: "apps"
                         },
                         {
                             title: "Settings",

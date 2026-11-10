@@ -32,6 +32,7 @@ import {
 import { type SVGProps } from "react";
 import { IconPodman } from "@/assets/brand-icons/icon-podman.tsx";
 import {
+    BlocksIcon,
     HatGlassesIcon,
     Layers2Icon,
     LayersIcon, PauseIcon, PlayIcon, PowerIcon, PowerOffIcon, RotateCcw, RotateCcwIcon,
@@ -66,7 +67,7 @@ const appIconsMap: {[key: string]: any} = {
     "website": IconWebhook,
     "webcam": IconCamera,
     "application": IconDashboard,
-    "apps": IconDashboard,
+    "apps": BlocksIcon,
     "tasks": IconListDetails,
     "report": IconReport,
     "domain": IconWorld,
