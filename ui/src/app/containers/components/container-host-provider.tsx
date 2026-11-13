@@ -6,14 +6,12 @@ import {
     ContainerHost,
     useContainerHosts
 } from "@/app/containers/components/container-hosts-provider.tsx";
-import { Button } from "@/components/ui/button";
 import DockerHostHeader from "@/app/containers/components/docker-host-header.tsx";
 
 export type DockerPruneScope = "system" | "containers" | "images" | "volumes" | "networks" | "buildcache";
 
 type ContainerHostContextConfig = {
     hostId: string,
-    connected?: boolean,
 }
 
 type ContainerHostContextType = {
@@ -62,8 +60,8 @@ export const ContainerHostProvider: React.FC<{
     const abortControllerRef = React.useRef<AbortController | null>(null);
 
     const config = React.useMemo(() => {
-        return {hostId: host.name, connected: !!summary}
-    }, [host.name, summary])
+        return {hostId: host.name}
+    }, [host.name])
 
     const setEnabled = React.useCallback((newVal: boolean) => {
         setHostEnabledState(host.name, newVal);
