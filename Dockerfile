@@ -1,4 +1,4 @@
-ARG MC_VERSION=v2.5.2
+ARG MC_VERSION=v2.5.3
 ARG PYTHON_IMAGE=docker.io/library/python:3.14-alpine
 ARG NODEJS_IMAGE=docker.io/library/node:25-alpine
 
