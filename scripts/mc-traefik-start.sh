@@ -55,7 +55,7 @@ entryPoints:
 certificatesResolvers:
   le:
     acme:
-      email: acme@example.org
+      email: acme@fmhub.eu
       storage: /letsencrypt/acme.json
       httpChallenge:
         entryPoint: web
